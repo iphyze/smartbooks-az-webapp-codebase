@@ -1,0 +1,107 @@
+.container-header-right-flexbox{
+    position: absolute;
+    right: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+.header-bell-box{
+    position: relative;
+    margin-right: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+.header-bell-icon{
+    position: relative;
+    font-size: 20px;
+    color: rgb(170, 170, 170);
+    margin-right: 5px;
+}
+.header-bell-number{
+    position: relative;
+    background-color: rgb(222, 115, 115);
+    color: white;
+    padding: 3px 5px;
+    font-size: 10px;
+    text-align: center;
+    border-radius: 3px;
+    display: block;
+}
+.header-user-box{
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+.header-user-icon{
+    position: relative;
+    font-size: 30px;
+    margin-right: 10px;
+    color: rgb(215, 207, 214);
+}
+.header-user-name-box{
+    position: relative;
+}
+.header-user-name{
+    position: relative;
+    font-size: 12px;
+    font-family: Montserrat-Medium;
+    color: #532A9C;
+}
+.header-user-role{
+    position: relative;
+    font-size: 10px;
+    font-family: Montserrat-Light;
+    color: #1b0a38;
+}
+
+
+@media screen and (max-width: 960px){
+ 
+  
+    .container-header-right-flexbox{
+        right: 50px;
+    }
+    .header-bell-box{
+        position: relative;
+        margin-right: 15px;
+    }
+    .header-bell-icon{
+        position: relative;
+        font-size: 18px;
+        margin-right: 5px;
+    }
+    .header-bell-number{
+        position: absolute;
+        right: -5px;
+        top: -10px;
+        padding: 2px 5px;
+        font-size: 10px;
+        border-radius: 2px;
+    }
+    .header-user-box{
+        position: relative;
+        display: none;
+    }
+    .header-user-icon{
+        font-size: 28px;
+    }
+    .header-user-name-box{
+        position: relative;
+    }
+    .header-user-name{
+        font-size: 10px;
+    }
+    .header-user-role{
+        position: relative;
+        font-size: 9px;
+        font-family: Montserrat-Light;
+        color: #1b0a38;
+    }
+    
+
+}

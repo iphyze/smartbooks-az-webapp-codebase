@@ -1,0 +1,270 @@
+.login-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    transition: all 0.5s linear;
+    overflow: hidden;
+}
+.login-box-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background-image: url('../../assets/images/smartbooks/so-white.png');
+    background-repeat: repeat;
+    transition: all 0.5s linear;
+}
+.login-flexbox {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+}
+.login-form-container {
+    position: relative;
+    width: 60%;
+    min-height: 500px;
+    height: auto;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 80px 80px 0px rgba(0, 25, 21, 0.1);
+    padding: 50px;
+    display: flex;
+    flex-wrap: wrap;
+}
+.animated-circle-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+.animated-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #00b196;
+    position: absolute;
+    animation: moveInOut 3s ease-in-out infinite alternate;
+}
+.animated-circle-2 {
+    width: 10px;
+    height: 10px;
+    background-color: #015847;
+    animation-direction: reverse;
+}
+.animated-circle-3 {
+    width: 15px;
+    height: 15px;
+    background-color: #015847;
+    animation-duration: 2s;
+}
+@keyframes moveInOut {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(40px, 40px);
+    }
+}
+.login-inner-flexbox-col {
+    position: relative;
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    /* overflow: hidden; */
+}
+.login-logo-img-box {
+    position: relative;
+    width: 250px;
+    height: auto;
+    overflow: hidden;
+    margin-bottom: 20px;
+    left: -15px;
+}
+.smartbooks-logo {
+    position: relative;
+    width: 100%;
+    height: auto;
+}
+.welcome-text {
+    position: relative;
+    width: 100%;
+    height: auto;
+}
+.login-welcome {
+    position: relative;
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+    color: black;
+    font-size: 14px;
+}
+.login-sub-welcome {
+    position: relative;
+    width: 100%;
+    margin-bottom: 10px;
+    color: #2e2e2e;
+    font-family: Montserrat-Medium;
+    font-size: 17px;
+    line-height: 1.5;
+}
+.feature-list {
+    position: relative;
+    padding: 0;
+    width: 100%;
+    height: 35px;
+    overflow: hidden;
+}
+.feature-list li {
+    position: relative;
+    width: 100%;
+    font-size: 24px;
+    line-height: 35px;
+    font-family: Montserrat-Medium;
+    animation: slideUp 20s ease-in-out infinite alternate;
+}
+@keyframes slideUp {
+    25% {
+        opacity: 1;
+        transform: translateY(-35px);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-70px);
+    }
+    75% {
+        opacity: 1;
+        transform: translateY(-105px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(-140px);
+    }
+}
+.feature-list li:nth-child(1) {
+    color: #00b196;
+}
+
+.feature-list li:nth-child(2) {
+    color: #163430;
+}
+
+.feature-list li:nth-child(3) {
+    color: #00b196;
+}
+
+.feature-list li:nth-child(4) {
+    color: #163430;
+}
+.login-col-form {
+    justify-content: center;
+    align-items: center;
+    justify-items: center;
+    align-content: center;
+    padding: 10px;
+}
+.login-show-btn{
+    position: absolute;
+    background-color: transparent;
+    border: none;
+    font-family: Montserrat-Regular;
+    font-size: 11px;
+    color: #449e9e;
+    right: 10px;
+    top: -4px;
+}
+.login-submit-btn {
+    position: relative;
+    width: 100%;
+    background-color: #00b196;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    margin: 20px auto;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+    transition: all 0.5s linear;
+}
+.login-inner-bg {
+    position: absolute;
+    left: -100%;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(60, 154, 154);
+    transition: all 0.5s linear;
+}
+.login-submit-btn:hover .login-inner-bg {
+    left: 0;
+}
+.login-loader-loader {
+    position: relative;
+    width: 35px;
+    aspect-ratio: 2;
+    --_g: no-repeat radial-gradient(circle closest-side, #fff 90%, #0000);
+    background:
+        var(--_g) 0% 50%,
+        var(--_g) 50% 50%,
+        var(--_g) 100% 50%;
+    background-size: calc(100%/3) 50%;
+    animation: l3 1s infinite linear;
+}
+@keyframes l3 {
+    20% {
+        background-position: 0% 0%, 50% 50%, 100% 50%
+    }
+
+    40% {
+        background-position: 0% 100%, 50% 0%, 100% 50%
+    }
+
+    60% {
+        background-position: 0% 50%, 50% 100%, 100% 0%
+    }
+
+    80% {
+        background-position: 0% 50%, 50% 50%, 100% 100%
+    }
+}
+
+.login-inner-text {
+    position: relative;
+    width: 100%;
+    font-size: 14px;
+    font-family: Montserrat-Regular;
+}
+
+
+
+@media screen and (max-width: 960px) {
+    .login-flexbox {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+    }
+
+    .login-form-container {
+        width: 100%;
+        padding: 40px 20px;
+    }
+}

@@ -1,0 +1,48 @@
+/* ─────────────────────────────────────────────
+   Scrollable Modal Adjustments
+───────────────────────────────────────────── */
+.modal-content-scrollable {
+  background-color: white;
+  border-radius: 15px / 16px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh; /* Prevents modal from exceeding screen height */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column; /* Enables child elements to flex appropriately */
+  overflow: hidden; /* Hide overflow on main container */
+}
+
+.theme-dark .modal-content-scrollable {
+  background-color: #22282e;
+}
+
+/* Header stays pinned to top */
+.modal-content-scrollable .modal-header {
+  flex-shrink: 0; /* Prevents header from shrinking */
+}
+
+/* Body scrolls independently */
+.modal-body-scrollable {
+  padding: 30px 20px;
+  text-align: left; /* Left align text inside forms */
+  overflow-y: auto; /* The actual scroll mechanism */
+  flex-grow: 1; /* Takes up all available space between header and footer */
+}
+
+/* Footer stays pinned to bottom */
+.modal-content-scrollable .modal-footer {
+  flex-shrink: 0; /* Prevents footer from shrinking */
+}
+
+/* Small form override inside modal to look clean (Optional) */
+.invoice-form-two {
+  width: 50%;
+}
+
+@media (max-width: 768px) {
+  .invoice-form-two {
+    width: 100%;
+  }
+}

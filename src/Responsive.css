@@ -1,0 +1,662 @@
+@media screen and (max-width: 1366px){
+ 
+.navbar{
+  position: relative;
+  width: 20%;
+}  
+.content-container{
+  position: relative;
+  width: 80%;
+}
+
+
+/* Dashboard Home Styling */
+.dashboard-home-stats{
+  position: relative;
+}
+.dhs-card{
+  position: relative;
+  width: calc(23.5% - 5px);
+  min-height: 120px;
+  height: auto;
+  padding: 20px;
+}
+.dhs-iconbox{
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+}
+.dhs-figurebox{
+  width: 100%;
+}
+.dhs-figure{
+  font-size: 24px;
+}
+
+.dash-nav-col{
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  height: auto;
+}
+.dash-nav-col-2{
+  position: relative;
+  width: calc(49% - 5px);
+  margin-bottom: 30px;
+}
+
+.table-wrapper{
+  position: relative;
+  width: 150%;
+}
+
+/* Invoice Form Container */
+.invoice-form-box{
+  position: relative;
+  width: 100%;
+  padding: 50px 30px;
+}
+.invoice-items-table {
+  width: 250%;
+}
+    
+}
+
+@media screen and (max-width: 1280px){
+
+
+.navbar{
+    position: absolute;
+    width: 30% !important;
+    top: 0;
+    left: -40%;
+    transition: all linear 0.5s;
+    z-index: 1000;
+}
+.navbar-inner{
+    padding: 30px 0;
+}
+.open-nav{
+    left: 0;
+}
+.content-container{
+    position: relative;
+    width: 100%;
+    /* min-height: auto; */
+    padding: 120px 20px;
+}
+.toggle-nav{
+    visibility: visible;
+    position: absolute;
+    right: 20px;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: rgb(130, 130, 130);
+}
+.toggle-settings{
+    visibility: visible;
+    position: absolute;
+    right: 50px;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: rgb(130, 130, 130);
+}
+.logout-btn:hover{
+    cursor: auto;
+}
+
+/* Header Logo */
+.navbar-logo{
+    position: relative;
+    width: 200px;
+    padding: 20px 20px;
+}
+.nav-dashboard-logo{
+    width: 100%;
+}
+/* Header Css */
+.container-header{
+    height: 80px;
+}  
+.container-header-right-flexbox{
+    right: 50px;
+}
+.header-bell-box{
+    position: relative;
+    margin-right: 15px;
+}
+.header-bell-icon{
+    position: relative;
+    font-size: 18px;
+    margin-right: 5px;
+}
+
+
+/* Dashboard Home Styling */
+.dhs-card{
+  position: relative;
+  width: calc(50% - 10px);
+  min-height: 120px;
+  height: auto;
+}
+.dhs-iconbox{
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+}
+.dhs-figurebox{
+  width: calc(100% - 75px);
+}
+.dhs-figure{
+  font-size: 24px;
+}
+
+.dhcharts-col-chart{
+  width: calc(65% - 10px);
+  height: 480px;
+}
+.dhcharts-col-customers{
+  width: calc(35% - 10px);
+}
+.chart-title{
+  position: relative;
+  width: calc(50% - 5px);
+}
+.chart-select{
+  position: relative;
+  width: calc(120px - 5px);
+}
+.mainChartBox{
+  width: 150%;
+  height: 100%;
+}
+
+
+
+.dash-nav-col{
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  height: auto;
+}
+.dash-nav-col-2{
+  position: relative;
+  width: calc(49% - 5px);
+  margin-bottom: 30px;
+}
+
+.table-box{
+  position: relative;
+  width: 100%;
+}
+.table-wrapper{
+  position: relative;
+  width: 200%;
+}
+
+
+/* Invoice Form Container */
+.invoice-form-box{
+  position: relative;
+  width: 100%;
+  padding: 50px 30px;
+}
+.invoice-form-full {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+.invoice-items-table {
+  width: 200%;
+}
+
+}
+
+@media screen and (max-width: 960px){
+/* *::-webkit-scrollbar{
+    width: 0px;
+    border-radius: 20px;
+   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.5);
+} */
+.navbar{
+    position: absolute;
+    width: 70% !important;
+    top: 0;
+    left: -80%;
+    transition: all linear 0.5s;
+    z-index: 1000;
+}
+.navbar-inner{
+    padding: 30px 0;
+}
+.open-nav{
+    left: 0;
+}
+.content-container{
+    position: relative;
+    width: 100%;
+    min-height: auto;
+    padding: 120px 20px;
+}
+.toggle-nav{
+    visibility: visible;
+    position: absolute;
+    right: 20px;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: rgb(130, 130, 130);
+}
+.toggle-settings{
+    visibility: visible;
+    position: absolute;
+    right: 50px;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: rgb(130, 130, 130);
+}
+.logout-btn:hover{
+    cursor: auto;
+}
+
+
+/* Header Logo */
+.navbar-logo{
+    position: relative;
+    width: 200px;
+}
+.nav-dashboard-logo{
+    width: 100%;
+}
+
+/* Header Css */
+.container-header{
+    height: 80px;
+}  
+.container-header-right-flexbox{
+    right: 50px;
+}
+.header-bell-box{
+    position: relative;
+    margin-right: 15px;
+}
+.header-bell-icon{
+    position: relative;
+    font-size: 18px;
+    margin-right: 5px;
+}
+.header-bell-number{
+    position: absolute;
+    right: -5px;
+    top: -10px;
+    padding: 2px 5px;
+    font-size: 10px;
+    border-radius: 2px;
+}
+.header-user-box{
+    position: relative;
+    /* display: none; */
+}
+.header-user-icon{
+    font-size: 28px;
+}
+.header-user-name-box{
+    position: relative;
+}
+.header-user-name{
+    font-size: 10px;
+}
+.header-user-role{
+    position: relative;
+    font-size: 9px;
+    font-family: Montserrat-Light;
+    color: #1b0a38;
+}
+.settings-dropdown {
+    position: fixed;
+    top: 85px;
+    right: 10px;
+    left: 10px;
+    width: 95%;
+}
+.datatable-table {
+  width: 300%;
+}
+.delete-modal {
+    width: 95%;
+    margin: 1rem;
+}
+.delete-modal-actions {
+  flex-direction: column;
+}
+.cancel-button,
+.delete-button {
+  width: 100%;
+  justify-content: center;
+}
+.view-modal {
+  position: relative;
+  width: 95%;
+  height: 90vh;
+  padding: 20px 0px;
+}
+.view-modal-header{
+  padding: 20px 20px; 
+}
+.view-modal-close{
+  position: absolute;
+  right: 20px;
+  top: 30px;
+  width: 35px;
+  height: 35px;
+  font-size: 14px;
+}
+.view-modal-ht{
+  font-size: 18px;
+}
+.view-modal-subtext{
+  font-size: 12px;
+}
+.view-modal-content{
+  height: 83%;
+  padding: 15px;
+}
+.view-modal-details{
+  margin-bottom: 20px;
+  border-radius: 20px;
+  padding: 20px;
+}
+.vmc-ht{
+  font-size: 14px;
+}
+.edit-modal {
+  position: relative;
+  width: 95%;
+  height: 90vh;
+  padding: 20px 0px;
+}
+.advance-form {
+  width: 100%;
+  padding: 50px 10px;
+}
+.form-grid{
+  position: relative;
+  gap: 0px;
+}
+.main-form-group{
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+.main-form-group-full{
+  width: calc(100%);
+}
+
+/* Dashboard Home Styling */
+.dhs-card{
+  position: relative;
+  width: 100%;
+  min-height: 120px;
+  height: auto;
+}
+.dhs-iconbox{
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+}
+.dhs-figurebox{
+  width: calc(100% - 65px);
+}
+.dhs-figure{
+  font-size: 20px;
+}
+.dhcharts-col-chart{
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+.chartBox{
+  position: relative;
+  width: 100%;
+  height: 420px;
+}
+.chart-title{
+  position: relative;
+  width: calc(50% - 5px);
+}
+.chart-select{
+  position: relative;
+  width: calc(120px - 5px);
+}
+.chartInnerBox{
+  width: 100%;
+  height: 300px;
+}
+.mainChartBox{
+  width: 200%;
+  height: 100%;
+}
+.dhcharts-col-customers{
+  position: relative;
+  width: 100%;
+}
+.recent-tx-card {
+  min-height: 200px;
+}
+
+.dash-nav-col{
+  position: relative;
+  width: 100%;
+  height: 240px;
+}
+.dash-nav-col-2{
+  margin-bottom: 0px;
+}
+.client-add-btn{
+  width: 50px;
+  height: 50px;
+  font-size: 14px;
+}
+.customer-ht{
+  position: relative;
+  width: 100%;
+  font-size: 20px;
+  color: white;
+}
+.customer-brief-text{
+  position: relative;
+  width: 80%;
+  font-size: 14px;
+  line-height: 24px;
+}
+.customer-count-text{
+  width: 120px;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 24px;
+}
+.customer-count{
+  position: relative;
+  width: 50%;
+  font-size: 24px;
+  margin-left: 10px;
+}
+
+
+/* Invoice Section */
+.invoice-section{
+  width: 100%;
+}
+.main-table-box{
+  position: relative;
+  width: 100%;
+  padding: 50px 15px;
+}
+.table-controls{
+  position: relative;
+  width: 100%;
+}
+.table-search-box{
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+.table-search-input{
+  width: 100%;
+  padding: 14px 15px;
+}
+.filters-box{
+  position: relative;
+  width: 100%;
+  justify-content: space-between;
+}
+.filter-wrapper{
+  width: calc(50% - 10px);
+  position: relative;
+}
+.box-filter{
+  width: 100%; 
+}
+.filter-wrapper-label{
+  width: 100%;
+  font-size: 12px;
+}
+.table-box{
+  position: relative;
+  width: 100%;
+}
+.table-wrapper{
+  position: relative;
+  width: 300%;
+}
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  transition: all 0.5s linear;
+}
+.invoice-table th{
+  padding: 20px 15px;
+}
+.empty-table-box{
+  position: relative;
+  width: 100%;
+  margin-top: 30px;
+}
+.empty-table-icon{
+  position: relative;
+  font-size: 40px;
+}
+.empty-table-text{
+  position: relative;
+  width: 28rem;
+  font-size: 14px;
+  line-height: 24px;
+}
+.invoice-create-btn{
+  position: relative;
+  width: 16rem;
+  padding: 18px 20px;
+  background-color: #2ECC71;
+  color: white;
+  font-size: 14px;
+}
+
+
+/* Modal Overlay */
+.modal-content {
+  width: 90%;
+  max-width: none;
+}
+.modal-title{
+  margin: 0;
+  font-size: 16px;
+}
+.modal-icon {
+  font-size: 30px;
+}
+.modal-confirm-icon{
+  font-size: 48px;
+}
+.modal-text{
+  font-size: 18px;
+  line-height: 30px;
+  font-family: Montserrat-Medium;
+}
+.modal-text-confirm{
+  width: 90%;
+  font-size: 14px;
+  line-height: 20px;
+}
+.box-filter-limit, .box-filter-action{
+  width: 100%;
+  margin-bottom: 10px;
+}
+.pagination-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+}
+.top-action-wrapper{
+  position: relative;
+  top: 0;
+  width: 100%;
+}
+
+/* Invoice View Modal */
+.invoice-view-modal-content {
+  background-color: transparent;
+  width: 90%;
+  max-width: none;
+  height: 90vh;
+}
+.invoice-paper{
+  padding: 30px 20px;
+}
+.inv-detailt-tab{
+  position: relative;
+  width: 200%;
+}
+
+
+/* Invoice Form Container */
+.invoice-form-box{
+  position: relative;
+  width: 100%;
+  padding: 50px 20px;
+}
+.invoice-form{
+    width: 100%;
+}
+/* .invoice-table-row {
+  display: block;
+  width: 100%;
+} */
+.invoice-form-full {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+.invoice-items-table {
+  width: 400%;
+}
+.invoice-totals {
+  width: 100%;
+  max-width:none;
+}
+.invoice-action-btn-wrapper {
+  width: 100%;
+  max-width:none;
+}
+
+}

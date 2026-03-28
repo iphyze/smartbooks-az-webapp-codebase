@@ -1,0 +1,139 @@
+@media screen and (max-width: 1366px){
+.login-headertext{
+    width: 60%;
+    font-size: 24px;
+}
+.login-brieftext{
+    position: relative;
+    width: 90%;
+}
+.login-inner-box{
+    padding: 40px;
+}
+.plans-flex-col{
+    position: relative;
+    width: 30%;
+}
+}
+
+@media screen and (max-width: 1280px){
+.login-overlay{
+    width: 45%;
+    padding: 20px;
+}
+.login-headertext{
+    width: 100%;
+    font-size: 24px;
+}
+.login-brieftext{
+    position: relative;
+    width: 100%;
+}
+.login-logo-box{
+    width: 180px;
+}
+.login-dashboard-box{
+    width: 100%;
+}
+.login-inner-box{
+    padding: 40px 20px;
+}
+.login-form-headertext{
+    font-size: 24px;
+}
+.plans-flex-col{
+    position: relative;
+    width: 30%;
+}
+
+}
+
+@media screen and (max-width: 960px){
+.login-container{
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column-reverse;
+}
+.login-col{
+    position: relative;
+    width: 100%;
+    height: auto;
+    padding: 50px 20px;
+}
+.login-dashboard-box{
+    width: 100%;
+}
+.business-img-box{
+    width: 50%;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+.stat-oneimg{
+    right: -80px;
+    top: -50px;
+    width: 180px;
+}
+.stat-twoimg{
+    left: -80px;
+    bottom: -70px;
+    width: 180px;
+}
+.login-headertext{
+    width: 100%;
+    font-size: 24px;
+}
+.login-brieftext{
+    position: relative;
+    width: 100%;
+}
+.login-inner-box{
+    padding: 50px 10px;
+}
+.login-form-headertext{
+    font-size: 24px;
+}
+.login-form-half{
+    width: 100%;
+}
+.login-logo-box{
+    position: relative;
+    width: 180px;
+    height: auto;
+}
+.hidden-img{
+    display: block;
+}
+
+
+/* Plan Container */
+.choose-plan-wrapper{
+    position: relative;
+    padding: 100px 20px;
+}
+.plans-flex-col{
+    position: relative;
+    width: 95%;
+    min-height: 500px;
+    padding: 50px 20px;
+}
+.plan-title{
+    font-size: 16px;
+}
+.plan-amount-large{
+    font-size: 30px;
+}
+
+/* Main Login Overlay */
+.main-login-box{
+    padding: 100px 20px;
+}
+.create-account-text{
+    font-size: 12px;
+}
+.forgot-password-btn{
+    font-size: 12px;
+}
+
+
+}

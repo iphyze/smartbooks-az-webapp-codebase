@@ -1,0 +1,695 @@
+.input-form-wrapper {
+  position: relative;
+  width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.input-form-group {
+  position: relative;
+  width: 100%;
+  height: auto;
+  border: 1px solid rgb(219, 219, 219);
+  padding: 10px;
+  border-radius: 10px;
+  background-color: white;
+  transition: all 0.5s linear;
+}
+
+.theme-dark .input-form-group {
+  background-color: #22282e;
+  border: 1px solid #3d4955;
+}
+
+.input-form-error {
+  background-color: rgb(255, 248, 248);
+  border: 1px solid rgb(255, 202, 202);
+  box-shadow: 0px 0px 10px 0px rgba(236, 153, 153, 0.3);
+}
+
+.theme-dark .input-form-error {
+  background-color: rgb(72, 69, 69);
+  border: 1px solid rgb(255, 202, 202);
+  box-shadow: 0px 0px 10px 0px rgba(236, 153, 153, 0.3);
+}
+
+.input-form-label {
+  position: relative;
+  width: 100%;
+  height: auto;
+  font-family: Montserrat-Regular;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 2px;
+  padding-left: 2px;
+  color: #849393;
+  transition: all 0.5s linear;
+}
+
+.theme-dark .input-form-label {
+  color: #919ca0;
+}
+
+.input-label-message {
+  color: rgb(243, 147, 147);
+  transition: all 0.5s linear;
+}
+
+.theme-dark .input-label-message {
+  color: rgb(243, 147, 147);
+}
+
+.input-error-message {
+  position: relative;
+  width: 100%;
+  height: auto;
+  font-family: Montserrat-Light;
+  font-size: 12px;
+  display: block;
+  color: rgb(243, 147, 147);
+  margin-top: 10px;
+  padding: 0px 10px;
+  transition: all 0.5s linear;
+}
+
+.theme-dark .input-error-message {
+  color: rgb(243, 147, 147);
+}
+
+.form-wrapper {
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.form-input {
+  position: relative;
+  width: 100%;
+  border: none;
+  background-color: transparent !important;
+  padding: 5px 20px;
+  padding-left: 30px;
+  font-family: Montserrat-Regular;
+  font-size: 12px;
+  transition: all 0.5s linear;
+  color: #286060;
+  outline: 0;
+}
+
+.theme-dark .form-input {
+  color: #f1ffff !important;
+}
+
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #286060 !important;
+  -webkit-transition: background-color 5000s ease-in-out 0s;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Hide spinners for Chrome, Safari, Edge */
+.form-input::-webkit-inner-spin-button,
+.form-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.form-input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.form-input-select {
+  position: relative;
+  width: 100%;
+  border: none;
+  background-color: transparent;
+  font-family: Montserrat-Regular;
+  font-size: 12px;
+  transition: all 0.5s linear;
+  color: #286060;
+  padding: 0px;
+}
+
+.theme-dark .form-input-select {
+  color: #f1ffff;
+}
+
+.form-input-textarea {
+  width: 100%;
+  resize: none;
+  padding-top: 5px;
+}
+
+.form-input-no-padding{
+  padding-left: 2px;
+  padding-bottom: 1px;
+}
+
+.form-input-textarea-row {
+  padding: 12px 0px !important;
+}
+
+.form-input-number {
+  padding: 12px 0px !important;
+}
+
+.input-error {
+  color: rgb(243, 147, 147);
+}
+
+.theme-dark .input-error {
+  color: rgb(243, 147, 147);
+}
+
+.form-input::placeholder,
+.form-input-select::placeholder {
+  color: #a7b2b2;
+  font-family: Montserrat-Light;
+}
+
+.theme-dark .form-input::placeholder,
+.theme-dark .form-input-select::placeholder {
+  color: #878f8f;
+}
+
+.input-error::placeholder {
+  color: rgb(243, 147, 147);
+}
+
+.theme-dark .input-error::placeholder {
+  color: rgb(243, 147, 147) !important;
+}
+
+.form-input:focus {
+  color: #286060;
+}
+
+.form-input:focus::placeholder {
+  color: #286060;
+}
+
+.input-form-group:focus-within {
+  border: 1px solid #add6d6;
+  box-shadow: 0px 0px 15px 0px rgba(65, 126, 126, 0.1);
+}
+
+.theme-dark .input-form-group:focus-within {
+  border: 1px solid #388383;
+  box-shadow: 0px 0px 15px 0px rgba(93, 174, 174, 0.1);
+}
+
+.input-form-group:focus-within .input-form-label {
+  color: #286060;
+  /* padding-left: 5px; */
+}
+
+.theme-dark .input-form-group:focus-within .input-form-label {
+  color: #59b5b5;
+}
+
+.input-icon {
+  position: absolute;
+  left: 5px;
+  color: #c3cdcd;
+  font-size: 14px;
+  transition: all 0.5s linear;
+}
+
+.theme-dark .input-icon {
+  color: #6c7476;
+  pointer-events: none;
+}
+
+.chevron-input-icon {
+  position: absolute;
+  top: -5px;
+  right: 5px;
+  color: #c3cdcd;
+  font-size: 14px;
+  transition: all 0.5s linear;
+  pointer-events: none;
+}
+
+.theme-dark .chevron-input-icon {
+  color: #6c7476;
+}
+
+.chevron-input-icon.chevron-rotate {
+  transform: rotate(180deg);
+}
+
+.input-form-group:focus-within .input-icon {
+  color: #286060;
+}
+
+.input-form-group:focus-within .chevron-input-icon {
+  color: #286060;
+}
+
+.theme-dark .input-form-group:focus-within .input-icon {
+  color: #388383;
+}
+
+.theme-dark .input-form-group:focus-within .chevron-input-icon {
+  color: #388383;
+}
+
+.input-icon-error {
+  color: rgb(243, 147, 147);
+}
+
+.theme-dark .input-icon-error {
+  color: rgb(243, 147, 147);
+}
+
+/* React Select Custom Styles */
+.form-input-select__control {
+  border: none !important;
+  border-radius: 0px !important;
+  background-color: transparent !important;
+  color: #286060 !important;
+  font-family: Montserrat-Regular !important;
+  font-size: 12px !important;
+  transition: all 0.5s linear !important;
+  display: flex !important;
+  align-items: center !important;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+.theme-dark .form-input-select__control {
+  color: #f1ffff !important;
+}
+
+.form-input-select__control--is-focused {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.form-input-select__value-container {
+  padding: 0px !important;
+}
+
+.form-input-select__single-value {
+  color: #286060 !important;
+  font-family: Montserrat-Regular !important;
+  font-size: 12px !important;
+}
+
+.theme-dark .form-input-select__single-value {
+  color: #f1ffff !important;
+}
+
+.form-input-select__placeholder {
+  color: #a7b2b2 !important;
+  font-family: Montserrat-Light !important;
+  font-size: 12px !important;
+}
+
+.theme-dark .form-input-select__placeholder {
+  color: #878f8f !important;
+}
+
+.form-input-select__input {
+  color: #286060 !important;
+  font-family: Montserrat-Regular !important;
+  font-size: 12px !important;
+}
+
+.theme-dark .form-input-select__input {
+  color: #f1ffff !important;
+}
+
+.form-input-select__indicators {
+  display: none !important;
+  /* min-height: auto !important; */
+}
+
+.form-input-select__indicator {
+  color: #a7b2b2 !important;
+}
+
+.form-input-select__dropdown-indicator {
+  color: #a7b2b2 !important;
+}
+
+.form-input-select__indicator-separator {
+  display: none !important;
+}
+
+.form-input-select__menu {
+  position: absolute;
+  left: -10px;
+  background-color: white !important;
+  width: 105% !important;
+  z-index: 9000 !important;
+  border-radius: 10px !important;
+  overflow-y: auto;
+  min-height: 200px;
+  box-shadow: 0px 10px 50px 0px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.5s linear;
+  border: 1px solid rgb(236, 236, 236) !important;
+  margin-top: 15px !important;
+  padding: 5px 0 !important;
+  padding-top: 0 !important;
+}
+
+.theme-dark .form-input-select__menu {
+  background-color: #22282e !important;
+  box-shadow: 0px 10px 50px 0px rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid #3d4955 !important;
+}
+
+.form-input-select__menu-list {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  padding: 10px 0 !important;
+}
+
+.form-input-select__option {
+  position: relative;
+  width: 100% !important;
+  height: auto;
+  font-size: 12px !important;
+  font-family: Montserrat-Light !important;
+  line-height: 1.8 !important;
+  padding: 10px 15px;
+  /* transition: all 0.5s ease-in-out; */
+  color: #286060 !important;
+  background-color: transparent !important;
+}
+
+.theme-dark .form-input-select__option {
+  color: #f1ffff !important;
+}
+
+.form-input-select__option:hover {
+  background-color: #286060 !important;
+  color: white !important;
+}
+
+.form-input-select__option--is-focused {
+  background-color: #02c6a9 !important;
+  color: white !important;
+}
+
+.theme-dark .form-input-select__option--is-focused {
+  background-color: #0f6f61 !important;
+}
+
+.form-input-select__option--is-selected {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+.theme-dark .form-input-select__option--is-selected {
+  background-color: #165249 !important;
+}
+
+.form-input-select__no-options {
+  position: relative;
+  width: 100%;
+  height: auto;
+  font-size: 12px !important;
+  font-family: Montserrat-Light !important;
+  line-height: 1.5 !important;
+  padding: 10px 15px;
+  transition: all 0.5s ease-in-out;
+  color: #286060 !important;
+}
+
+/* Error state for select */
+.input-error .form-input-select__control {
+  color: rgb(243, 147, 147) !important;
+}
+
+.input-error .form-input-select__single-value {
+  color: rgb(243, 147, 147) !important;
+}
+
+.input-error .form-input-select__indicator {
+  color: rgb(243, 147, 147) !important;
+}
+
+.input-error .form-input-select__placeholder {
+  color: rgb(243, 147, 147) !important;
+}
+
+.theme-dark .input-error .form-input-select__control {
+  color: rgb(243, 147, 147) !important;
+}
+
+.theme-dark .input-error .form-input-select__single-value {
+  color: rgb(243, 147, 147) !important;
+}
+
+.theme-dark .input-error .form-input-select__indicator {
+  color: rgb(243, 147, 147) !important;
+}
+
+.theme-dark .input-error .form-input-select__placeholder {
+  color: rgb(243, 147, 147) !important;
+}
+
+
+
+/* Date Picker Styling */
+.input-date-picker {
+  width: 100% !important;
+}
+
+.input-date-picker .react-datepicker__input-container input {
+  width: 100%;
+  padding: 0 !important;
+  padding-left: 2px !important;
+  border: none !important;
+  background-color: transparent !important;
+  color: #286060 !important;
+  transition: all 0.5s linear !important;
+  font-family: Montserrat-Regular !important;
+  font-size: 12px !important;
+}
+
+.theme-dark .input-date-picker .react-datepicker__input-container input {
+  color: #f1ffff !important;
+}
+
+.input-date-picker .react-datepicker__input-container input:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.react-datepicker {
+  margin-top: 10px !important;
+  font-family: Montserrat-Light !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0px 10px 50px 0px rgba(0, 0, 0, 0.08) !important;
+  padding: 10px !important;
+}
+
+.react-datepicker__header {
+  background-color: transparent !important;
+  border-bottom: 1px solid #e7e7ed !important;
+  padding: 10px 0 !important;
+  margin-bottom: 10px !important;
+}
+
+.react-datepicker__current-month {
+  color: #286060 !important;
+  font-family: Montserrat-Regular !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
+  margin-bottom: 10px !important;
+}
+
+.react-datepicker__day-name {
+  color: #849393 !important;
+  font-family: Montserrat-Bold !important;
+  font-size: 12px !important;
+  margin: 5px !important;
+}
+
+.react-datepicker__day {
+  color: #286060 !important;
+  font-family: Montserrat-Light !important;
+  font-size: 12px;
+  margin: 5px !important;
+  border-radius: 50% !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+.react-datepicker__navigation {
+  color: #286060 !important;
+  top: 10px !important;
+}
+
+.react-datepicker__navigation:hover::before {
+  border-color: #286060 !important;
+}
+
+.react-datepicker__triangle {
+  border-bottom-color: white !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: #a7b2b2 !important;
+  width: 6px !important;
+  height: 6px !important;
+  margin-top: 10px;
+}
+
+.react-datepicker__navigation:hover *::before {
+  border-color: #a7b2b2 !important;
+}
+
+.react-datepicker__month-dropdown-container select,
+.react-datepicker__year-dropdown-container select {
+  background-color: transparent !important;
+  color: #a7b2b2 !important;
+  border: 1px solid #a7b2b2 !important;
+  font-family: Montserrat-Light !important;
+  font-size: 12px !important;
+  padding: 5px 8px !important;
+  border-radius: 10px !important;
+  outline: none !important;
+}
+
+/* ── Dark Mode: Datepicker Popup Container ── */
+.theme-dark .react-datepicker {
+  background-color: #22282e !important;
+  box-shadow: 0px 10px 50px 0px rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid #3d4955 !important;
+}
+
+/* ── Dark Mode: Header ── */
+.theme-dark .react-datepicker__header {
+  background-color: #22282e !important;
+  border-bottom: 1px solid #3d4955 !important;
+}
+
+.theme-dark .react-datepicker__current-month {
+  color: #f1ffff !important;
+}
+
+/* ── Dark Mode: Day Names (Mon, Tue...) ── */
+.theme-dark .react-datepicker__day-name {
+  color: #878f8f !important;
+}
+
+/* ── Dark Mode: Day Numbers ── */
+.theme-dark .react-datepicker__day {
+  color: #f1ffff !important;
+}
+
+.theme-dark .react-datepicker__day:hover {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+.theme-dark .react-datepicker__day--selected {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+.theme-dark .react-datepicker__day--keyboard-selected {
+  background-color: #00b196 !important;
+  color: white !important;
+}
+
+/* ── Dark Mode: Outside/Disabled Days ── */
+.theme-dark .react-datepicker__day--outside-month {
+  color: #3d4955 !important;
+}
+
+.theme-dark .react-datepicker__day--disabled {
+  color: #3d4955 !important;
+}
+
+/* ── Dark Mode: Navigation Arrows ── */
+.theme-dark .react-datepicker__navigation-icon::before {
+  border-color: #878f8f !important;
+}
+
+.theme-dark .react-datepicker__navigation:hover *::before {
+  border-color: #f1ffff !important;
+}
+
+/* ── Dark Mode: Triangle ── */
+.theme-dark .react-datepicker__triangle {
+  border-bottom-color: #22282e !important;
+  fill: #22282e !important;
+  stroke: #3d4955 !important;
+}
+
+/* ── Dark Mode: Month/Year Dropdowns ── */
+.theme-dark .react-datepicker__month-dropdown-container select,
+.theme-dark .react-datepicker__year-dropdown-container select {
+  background-color: #22282e !important;
+  color: #878f8f !important;
+  border: 1px solid #3d4955 !important;
+}
+
+/* ── Dark Mode: Error State Input Text ── */
+.theme-dark .input-error .input-date-picker .react-datepicker__input-container input {
+  color: rgb(243, 147, 147) !important;
+}
+
+
+.add-new-btn-container{
+  position: sticky;
+  bottom: -10px;
+  width: 100%;
+}
+.add-new-select-btn {
+  width: 100%;
+  background-color: #00b196;
+  color: white;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 12px 10px;
+  font-family: Montserrat-Regular;
+  font-size: 12px !important;
+  transition: all 0.2s ease;
+}
+.add-new-select-btn:hover {
+  background-color: #008470;
+}
+.theme-dark .add-new-select-btn {
+  background-color:#0f6f61;
+}
+.theme-dark .add-new-select-btn:hover {
+  background-color:#0a5247;
+}
+.input-disabled{
+  background-color: rgb(249, 249, 249);
+}
+.theme-dark .input-disabled{
+  background-color: rgb(39, 45, 52);
+}
