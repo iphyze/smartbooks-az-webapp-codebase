@@ -391,6 +391,7 @@ const JournalOverview = () => {
               }}
               onConfirm={handleDelete}
               count={selectedItems.length}
+              page="journal"
             />
           )}
         </AnimatePresence>

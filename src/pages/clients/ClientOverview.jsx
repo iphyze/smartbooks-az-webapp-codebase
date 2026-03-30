@@ -392,6 +392,7 @@ const ClientOverview = () => {
               }}
               onConfirm={handleDelete}
               count={selectedItems.length}
+              page="client"
             />
           )}
         </AnimatePresence>

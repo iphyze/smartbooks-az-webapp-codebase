@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import useThemeStore from "../../stores/useThemeStore";
 
-const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, count }) => {
+const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, count, page }) => {
   const { theme } = useThemeStore();
   const modalRef = useRef(null);
   const [isDeleting, setIsDeleting] = useState(false); // 1. Add loading state
@@ -92,7 +92,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, count }) => {
             <i className="fas fa-exclamation-triangle"></i>
           </div>
           <p className="modal-text-confirm">
-            Are you sure you want to delete ({count}) journal{count > 1 ? 's' : ''}?
+            Are you sure you want to delete ({count}) {page || 'Item'}{count > 1 ? 's' : ''}?
             This action cannot be undone.
           </p>
         </div>

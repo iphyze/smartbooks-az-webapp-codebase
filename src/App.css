@@ -3171,6 +3171,9 @@ body.theme-dark{
   justify-content: flex-end;
   align-items: flex-start;
 }
+.main-submit-action-btn{
+  justify-content: flex-start;
+}
 .invoice-action-btn-wrapper {
   width: 100%;
   max-width: 400px;

@@ -36,7 +36,7 @@ const NavBar = ({ nav, setNav }) => {
       basePath: "/account",
       items: [
         { path: "/account/home", label: "Overview", icon: "fas fa-list-alt" },
-        { path: "/account/create-account", label: "Create Account", icon: "fas fa-plus-circle" },
+        { path: "/account/create", label: "Create Account", icon: "fas fa-plus-circle" },
         // { path: "/account/report", label: "Report", icon: "fas fa-chart-bar" }
       ]
     },
@@ -52,7 +52,7 @@ const NavBar = ({ nav, setNav }) => {
       basePath: "/client",
       items: [
         { path: "/client/home", label: "Overview", icon: "fas fa-list-alt" },
-        { path: "/client/create-client", label: "Add Client", icon: "fas fa-user-plus" },
+        { path: "/client/create", label: "Add Client", icon: "fas fa-user-plus" },
         // { path: "/client/report", label: "Report", icon: "fas fa-chart-bar" }
       ]
     },

@@ -5,7 +5,16 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useClientStore from "../../stores/useClientStore";
+import Select from "react-select"; // Added React Select import
 import "../inputs-styles/Inputs.css";
+
+/* ─────────────────────────────────────────────
+   Options
+───────────────────────────────────────────── */
+const LEDGER_OPTIONS = [
+  { value: "Yes", label: "Yes" },
+  { value: "No", label: "No" }
+];
 
 /* ─────────────────────────────────────────────
    Main Component
@@ -18,6 +27,7 @@ const CreateClientForm = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null); // Added for React Select chevron rotation
 
   /* ── Form State ── */
   const [clientDetails, setClientDetails] = useState({
@@ -25,6 +35,7 @@ const CreateClientForm = () => {
     clients_email: "",
     clients_number: "",
     clients_address: "",
+    create_ledger: "Yes", // Added to state
   });
 
   /* ── Fetch Next ID on Mount ── */
@@ -45,6 +56,8 @@ const CreateClientForm = () => {
       e.clients_number = "Client phone number is required";
     if (!clientDetails.clients_address || clientDetails.clients_address.trim() === "") 
       e.clients_address = "Client address is required";
+    if (!clientDetails.create_ledger) 
+      e.create_ledger = "Ledger option is required";
     return e;
   }, [clientDetails]);
 
@@ -93,8 +106,7 @@ const CreateClientForm = () => {
 
     const payload = {
       clients_id: nextClientId,
-      ...clientDetails,
-      create_ledger: "Yes",
+      ...clientDetails, // create_ledger is now dynamically included here
     };
 
     const success = await createClient(payload);
@@ -108,6 +120,7 @@ const CreateClientForm = () => {
         clients_email: "",
         clients_number: "",
         clients_address: "",
+        create_ledger: "Yes", // Reset to default
       });
       navigate("/client/home");
     }
@@ -258,10 +271,38 @@ const CreateClientForm = () => {
               </div>
             </div>
 
+            {/* Create Ledger Select Field */}
+            <div className="invoice-form invoice-form-three">
+              <div className="input-form-wrapper">
+                <div className={`input-form-group ${errors.create_ledger ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${errors.create_ledger ? "input-label-message" : ""}`} htmlFor="create_ledger">
+                    Create Ledger?
+                  </label>
+                  <div className="form-wrapper">
+                    <Select
+                      options={LEDGER_OPTIONS}
+                      onChange={(opt) => handleDetailChange("create_ledger", opt?.value || "")}
+                      value={LEDGER_OPTIONS.find((o) => o.value === clientDetails.create_ledger) || null}
+                      placeholder="Select"
+                      className={`form-input-select ${errors.create_ledger ? "input-error" : ""}`}
+                      classNamePrefix="form-input-select"
+                      inputId="create_ledger"
+                      onMenuOpen={() => setOpenMenuId("create_ledger")}
+                      onMenuClose={() => setOpenMenuId(null)}
+                    />
+                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "create_ledger" ? "chevron-rotate" : "", errors.create_ledger ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                  </div>
+                </div>
+                {errors.create_ledger && (
+                  <div className="input-error-message">{errors.create_ledger}</div>
+                )}
+              </div>
+            </div>
+
           </div>
 
           {/* ── SUBMIT ── */}
-          <div className="invoice-action-btn">
+          <div className="invoice-action-btn main-submit-action-btn">
             <div className="invoice-action-btn-wrapper">
               <button
                 type="submit"

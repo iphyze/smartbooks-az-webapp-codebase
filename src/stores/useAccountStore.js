@@ -5,7 +5,7 @@ import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 import api from '../services/api';
 
-const useProjectStore = create(
+const useAccountStore = create(
   persist(
     (set, get) => ({
       // ── Data (Transient - Do not persist) ────────────────────────────────
@@ -16,50 +16,19 @@ const useProjectStore = create(
       selectedItems: [],
       selectedItemsData: {},
 
-      // ── Single Project Data (Transient) ──────────────────────────────────
-      singleProject: null,
-      singleProjectInvoices: [],
-      singleProjectSummary: null,
+      // ── Single Account Data (Transient) ──────────────────────────────────
+      singleAccount: null,
+      singleAccountLedgers: [],
+      singleAccountSummary: null,
       fetchingSingle: false,
-      singleProjectError: null,
-
-      // ── Next Project Code (Transient) ────────────────────────────────────
-      nextProjectCode: null,
-      fetchingNextCode: false,
-      nextCodeError: null,
+      singleAccountError: null,
 
       // ── Pagination & Sort (Persistent - Do persist) ──────────────────────
       currentPage: 1,
       itemsPerPage: 10,
       searchQuery: '',
-      sortBy: 'project_name',
+      sortBy: 'type',
       sortOrder: 'ASC',
-
-      /* ═════════════════════════════════════════════════════════════════════
-         Fetch Next Project Code
-      ═════════════════════════════════════════════════════════════════════ */
-      fetchNextProjectCode: async () => {
-        const token = useAuthStore.getState().token;
-        set({ fetchingNextCode: true, nextCodeError: null });
-
-        try {
-          const response = await api.get('/projects/fetch-last-project-id', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          set({
-            nextProjectCode: response.data.project_code + 1,
-            fetchingNextCode: false,
-          });
-        } catch (error) {
-          const message = error.response?.data?.message || error.message;
-          set({
-            nextCodeError: message,
-            fetchingNextCode: false,
-          });
-          useToastStore.getState().showToast(`Failed to fetch next project code: ${message}`, 'error');
-        }
-      },
 
       /* ═════════════════════════════════════════════════════════════════════
          fetchData
@@ -80,7 +49,7 @@ const useProjectStore = create(
 
           if (searchQuery) params.append('search', searchQuery);
 
-          const response = await api.get(`/projects/filtered-request?${params}`, {
+          const response = await api.get(`/accounting-type/filtered-request?${params}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -89,7 +58,7 @@ const useProjectStore = create(
             total: response.data.meta.total,
             currentPage: response.data.meta.page,
             itemsPerPage: response.data.meta.limit,
-            sortBy: response.data.meta.sortBy || 'project_name',
+            sortBy: response.data.meta.sortBy || 'type',
             sortOrder: response.data.meta.sortOrder || 'ASC',
             loading: false,
           });
@@ -98,27 +67,27 @@ const useProjectStore = create(
             error: error.response?.data?.message || error.message,
             loading: false,
           });
-          useToastStore.getState().showToast('Failed to fetch projects', 'error');
+          useToastStore.getState().showToast('Failed to fetch account types', 'error');
         }
       },
 
       /* ═════════════════════════════════════════════════════════════════════
-         Fetch Single Project
+         Fetch Single Account
       ═════════════════════════════════════════════════════════════════════ */
-      fetchSingleProject: async (projectId) => {
+      fetchSingleAccount: async (accountId) => {
         const token = useAuthStore.getState().token;
         
-        set({ fetchingSingle: true, singleProjectError: null, singleProject: null, singleProjectInvoices: [], singleProjectSummary: null });
+        set({ fetchingSingle: true, singleAccountError: null, singleAccount: null, singleAccountLedgers: [], singleAccountSummary: null });
 
         try {
-          const response = await api.get(`/projects/fetch-single-project?projectId=${projectId}`, {
+          const response = await api.get(`/accounting-type/fetch-single-account?accountId=${accountId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
           set({
-            singleProject: response.data.data.project,
-            singleProjectInvoices: response.data.data.invoices || [],
-            singleProjectSummary: response.data.data.summary || null,
+            singleAccount: response.data.data.account,
+            singleAccountLedgers: response.data.data.ledgers || [],
+            singleAccountSummary: response.data.data.account_summary || null,
             fetchingSingle: false,
           });
 
@@ -126,72 +95,76 @@ const useProjectStore = create(
         } catch (error) {
           const message = error.response?.data?.message || error.message;
           set({
-            singleProjectError: message,
+            singleAccountError: message,
             fetchingSingle: false,
           });
-          useToastStore.getState().showToast(`Failed to fetch project: ${message}`, 'error');
+          useToastStore.getState().showToast(`Failed to fetch account: ${message}`, 'error');
           return null;
         }
       },
 
-      clearSingleProject: () => set({ 
-        singleProject: null, 
-        singleProjectInvoices: [], 
-        singleProjectSummary: null, 
-        singleProjectError: null, 
+      clearSingleAccount: () => set({ 
+        singleAccount: null, 
+        singleAccountLedgers: [], 
+        singleAccountSummary: null, 
+        singleAccountError: null, 
         fetchingSingle: false 
       }),
 
       /* ═════════════════════════════════════════════════════════════════════
-         Create Project
+         Create Account Type
       ═════════════════════════════════════════════════════════════════════ */
-      createProject: async (projectData) => {
+      createAccountType: async (accountData) => {
         const token = useAuthStore.getState().token;
 
         try {
           await api.post(
-            '/projects/create-project',
+            '/accounting-type/create-account-type',
             {
-              project_name: projectData.project_name,
-              project_code: projectData.project_code,
+              type: accountData.type,
+              category_id: accountData.category_id,
+              category: accountData.category,
+              sub_category: accountData.sub_category,
             },
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
 
-          useToastStore.getState().showToast('Project created successfully', 'success');
+          useToastStore.getState().showToast('Account type created successfully', 'success');
           return true;
         } catch (error) {
-          const message = error.response?.data?.message || 'Failed to create project';
+          const message = error.response?.data?.message || 'Failed to create account type';
           useToastStore.getState().showToast(message, 'error');
           return false;
         }
       },
 
       /* ═════════════════════════════════════════════════════════════════════
-         Edit Project
+         Edit Account Type
       ═════════════════════════════════════════════════════════════════════ */
-      editProject: async (projectData) => {
+      editAccountType: async (accountData) => {
         const token = useAuthStore.getState().token;
 
         try {
           await api.put(
-            '/projects/edit-project',
+            '/accounting-type/edit-account-type',
             {
-              id: projectData.id,
-              project_name: projectData.project_name,
-              project_code: projectData.project_code,
+              id: accountData.id,
+              type: accountData.type,
+              category_id: accountData.category_id,
+              category: accountData.category,
+              sub_category: accountData.sub_category,
             },
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
 
-          useToastStore.getState().showToast('Project updated successfully', 'success');
+          useToastStore.getState().showToast('Account type updated successfully', 'success');
           return true;
         } catch (error) {
-          const message = error.response?.data?.message || 'Failed to update project';
+          const message = error.response?.data?.message || 'Failed to update account type';
           useToastStore.getState().showToast(message, 'error');
           return false;
         }
@@ -205,14 +178,14 @@ const useProjectStore = create(
         const token = useAuthStore.getState().token;
 
         try {
-          await api.delete('/project/delete-project', {
+          await api.delete('/accounting-type/delete-account-type', {
             headers: { Authorization: `Bearer ${token}` },
-            data: { projectIds: selectedItems },
+            data: { accountTypeIds: selectedItems },
           });
 
           await get().fetchData();
           set({ selectedItems: [], selectedItemsData: {} });
-          useToastStore.getState().showToast('Projects deleted successfully', 'success');
+          useToastStore.getState().showToast('Account types deleted successfully', 'success');
           return true;
         } catch (error) {
           const message = error.response?.data?.message || error.message;
@@ -282,21 +255,22 @@ const useProjectStore = create(
       exportToExcel: () => {
         try {
           const data = get().data;
-          const exportData = data.map((project) => ({
-            'Project Name': project.project_name,
-            'Project Code': project.project_code,
-            'Code': project.code,
-            'Created At': formatDateTime(project.created_at),
-            'Created By': project.created_by,
-            'Updated At': formatDateTime(project.updated_at),
-            'Updated By': project.updated_by,
+          const exportData = data.map((account) => ({
+            'Type': account.type,
+            'Category ID': account.category_id,
+            'Category': account.category,
+            'Sub Category': account.sub_category,
+            'Created At': formatDateTime(account.created_at),
+            'Created By': account.created_by,
+            'Updated At': formatDateTime(account.updated_at),
+            'Updated By': account.updated_by,
           }));
 
           const wb = XLSX.utils.book_new();
           const ws = XLSX.utils.json_to_sheet(exportData, { skipHeader: false });
-          XLSX.utils.book_append_sheet(wb, ws, 'Projects');
+          XLSX.utils.book_append_sheet(wb, ws, 'Account Types');
 
-          const fileName = `projects_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          const fileName = `account_types_export_${new Date().toISOString().split('T')[0]}.xlsx`;
           XLSX.writeFile(wb, fileName);
           useToastStore.getState().showToast('Data exported successfully', 'success');
         } catch (error) {
@@ -318,7 +292,7 @@ const useProjectStore = create(
 
     // ── Persist Configuration ──────────────────────────────────────────────
     {
-      name: 'project-storage',
+      name: 'account-type-storage',
       storage: createJSONStorage(() => localStorage),
 
       partialize: (state) => ({
@@ -330,4 +304,4 @@ const useProjectStore = create(
   )
 );
 
-export default useProjectStore;
+export default useAccountStore;

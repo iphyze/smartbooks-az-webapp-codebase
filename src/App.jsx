@@ -25,6 +25,14 @@ import ClientOverview from "./pages/clients/ClientOverview";
 import CreateClient from "./pages/clients/CreateClient";
 import EditClient from "./pages/clients/EditClient";
 import ViewClient from "./pages/clients/ViewClient";
+import ProjectOverview from "./pages/projects/ProjectOverview";
+import CreateProject from "./pages/projects/CreateProject";
+import EditProject from "./pages/projects/EditProject";
+import ViewProject from "./pages/projects/ViewProject";
+import AccountOverview from "./pages/account/AccountOverview";
+import CreateAccount from "./pages/account/CreateAccount";
+import EditAccount from "./pages/account/EditAccount";
+import ViewAccount from "./pages/account/ViewAccount";
 
 const App = () => {
   
@@ -62,6 +70,20 @@ const App = () => {
           <Route path="/client/create" element={<CreateClient />} />
           <Route path="/client/edit/:id" element={<EditClient />} />
           <Route path="/client/view/:clientId" element={<ViewClient />} />
+
+
+          {/* Client */}
+          <Route path="/project/home" element={<ProjectOverview />} />
+          <Route path="/project/create" element={<CreateProject />} />
+          <Route path="/project/edit/:id" element={<EditProject />} />
+          <Route path="/project/view/:projectId" element={<ViewProject />} />
+
+
+          {/* Account */}
+          <Route path="/account/home" element={<AccountOverview />} />
+          <Route path="/account/create" element={<CreateAccount />} />
+          <Route path="/account/edit/:id" element={<EditAccount />} />
+          <Route path="/account/view/:accountId" element={<ViewAccount />} />
           
 
           <Route path="*" element={<NotFound />} />

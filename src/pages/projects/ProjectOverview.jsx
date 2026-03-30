@@ -1,64 +1,50 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import 'aos/dist/aos.css';
 import useThemeStore from "../../stores/useThemeStore";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { fadeIn, fadeInUp, fadeInDown } from "../../utils/animation";
+import { fadeInUp } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import TableLoaderComponent from "../../components/TableLoaderComponent";
 import ChartSearchableSelect from "../../components/ChartSearchableSelect";
 import EmptyTable from "../../components/EmptyTable";
 import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationModal";
 import ErrorModal from "../../components/modals/ErrorModal";
-import UpdateModal from "../../components/modals/UpdateModal"; // Import UpdateModal
-import useInvoiceStore from "../../stores/useInvoiceStore"; // Updated Store
-import useAuthStore from "../../stores/useAuthStore";
-import { formatCurrencyDecimals } from "../../utils/helper";
+import useProjectStore from "../../stores/useProjectStore";
 
-const InvoiceOverview = () => {
+const ProjectOverview = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
 
-  // Consume the Invoice Store
+  // Consume the Project Store
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy,
     sortOrder, searchQuery, selectedItems, fetchData, setCurrentPage,
     setItemsPerPage, setSearchQuery, setSorting, toggleItemSelection,
-    clearSelection, deleteSelectedItems, exportToExcel, getTotalPages,
-    updateInvoiceStatus // New action for status update
-  } = useInvoiceStore();
+    clearSelection, deleteSelectedItems, exportToExcel, getTotalPages
+  } = useProjectStore();
 
   // Local UI states for modals and actions
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Invoices", to: "/invoice/home", active: false }
-  ];
-
-  // Options for the Status Update Modal
-  const statusOptions = [
-    { id: "Paid", label: "Paid" },
-    { id: "Pending", label: "Pending" },
-    { id: "Overdue", label: "Overdue" },
-    { id: "Cancelled", label: "Cancelled" }
+    { label: "Projects", to: "/project/home", active: false }
   ];
 
   // Options for Bulk Actions dropdown
   const actionOptions = [
     { id: "", label: "Select Action" },
-    { id: "update-status", label: "Update Status" },
     { id: "delete", label: "Delete" }
   ];
 
   useEffect(() => {
-    document.title = "Smartbooks | Invoice Overview";
+    document.title = "Smartbooks | Project Overview";
   }, []);
 
   // Fetch data whenever relevant store states change
@@ -93,16 +79,15 @@ const InvoiceOverview = () => {
   };
 
   const handleSelectAll = () => {
-    // Invoice data uses 'id' as primary key based on sample
-    const currentPageIds = data.map(item => item.invoice_number);
-    const allSelected = currentPageIds.every(invoice_number => selectedItems.includes(invoice_number));
+    const currentPageIds = data.map(item => item.id);
+    const allSelected = currentPageIds.every(id => selectedItems.includes(id));
 
     if (allSelected) {
-      const newSelection = selectedItems.filter(invoice_number => !currentPageIds.includes(invoice_number));
-      useInvoiceStore.setState({ selectedItems: newSelection });
+      const newSelection = selectedItems.filter(id => !currentPageIds.includes(id));
+      useProjectStore.setState({ selectedItems: newSelection });
     } else {
       const newSelection = [...new Set([...selectedItems, ...currentPageIds])];
-      useInvoiceStore.setState({ selectedItems: newSelection });
+      useProjectStore.setState({ selectedItems: newSelection });
     }
   };
 
@@ -110,8 +95,6 @@ const InvoiceOverview = () => {
     setSelectedAction(actionId);
     if (actionId === "delete") {
       setShowDeleteModal(true);
-    } else if (actionId === "update-status") {
-      setShowUpdateModal(true);
     }
   };
 
@@ -122,30 +105,27 @@ const InvoiceOverview = () => {
     clearSelection();
   };
 
-  const handleUpdateStatus = async (status) => {
-    await updateInvoiceStatus(status);
-    setShowUpdateModal(false);
-    setSelectedAction("");
-    clearSelection();
-  };
-
-  const handleDeleteInvoice = async (invoice_id) => {
-    if(invoice_id !== ""){
-      useInvoiceStore.setState({ selectedItems: [invoice_id] });
+  const handleDeleteProject = async (projectId) => {
+    if (projectId !== "") {
+      useProjectStore.setState({ selectedItems: [projectId] });
       setShowDeleteModal(true);
     }
-  }
+  };
 
   const handleCloseErrorModal = () => {
-    useInvoiceStore.setState({ error: null });
+    useProjectStore.setState({ error: null });
   };
 
-  const handleViewInvoice = (invoice) => {
-    navigate(`/invoice/view/${invoice.invoice_number}`, { state: { invoice } });
+  const handleViewProject = (project) => {
+    navigate(`/project/view/${project.project_code}`, { state: { project } });
   };
 
-  const handleEditInvoice = (invoice) => {
-    navigate(`/invoice/edit/${invoice.invoice_number}`, { state: { invoice } });
+  const handleEditProject = (project) => {
+    navigate(`/project/edit/${project.project_code}`, { state: { project } });
+  };
+
+  const handleExport = () => {
+    exportToExcel();
   };
 
   const getSortIcon = (columnKey) => {
@@ -198,34 +178,27 @@ const InvoiceOverview = () => {
     return pages;
   };
 
-  // Helper for status styles
-  const getStatusStyle = (type) => {
-      switch (type) {
-          case 'Paid': return 'success';
-          case 'Pending': return 'warning';
-          case 'Overdue': return 'danger';
-          case 'Cancelled': return 'danger';
-          default: return null;
-      }
-  };
-
   return (
     <div className={`main-container theme-${theme}`}>
       <Header setNav={setNav} nav={nav} />
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Invoice Overview' links={links} />
+        <PageNav pageTitle='Project Overview' links={links} />
 
         <motion.div variants={fadeInUp} initial="hidden" animate="show"
           transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
           className={`invoice-section theme-${theme}`}
         >
           <div className="top-action-wrapper">
-            <Link to='/invoice/create' className="create-new-invoice-btn">
+            <Link to='/project/create' className="create-new-invoice-btn">
               <span className="fas fa-circle-plus"></span>
-              <span>Create Invoice</span>
+              <span>Create Project</span>
             </Link>
+            {/* <button className="create-new-invoice-btn export-btn" onClick={handleExport} title="Export to Excel">
+              <span className="fas fa-file-excel"></span>
+              <span>Export</span>
+            </button> */}
           </div>
 
           <div className="main-table-box">
@@ -237,7 +210,7 @@ const InvoiceOverview = () => {
                   <div className="table-search-box">
                     <input 
                       type="text" 
-                      placeholder="Search..."
+                      placeholder="Search by project name or code..."
                       value={searchQuery} 
                       onChange={handleSearchChange} 
                       onKeyDown={handleSearchSubmit}
@@ -289,57 +262,57 @@ const InvoiceOverview = () => {
                             ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
                             />
                           </th>
-                          <th onClick={() => handleSort('invoice_number')} className="sortable">
-                            Inv # {getSortIcon('invoice_number')}
+                          <th onClick={() => handleSort('project_name')} className="sortable">
+                            Project Name {getSortIcon('project_name')}
                           </th>
-                          <th onClick={() => handleSort('invoice_date')} className="sortable">
-                            Date {getSortIcon('invoice_date')}
+                          <th onClick={() => handleSort('project_code')} className="sortable">
+                            Project Code {getSortIcon('project_code')}
                           </th>
-                          <th>Client</th>
-                          <th onClick={() => handleSort('due_date')} className="sortable">
-                            Due Date {getSortIcon('due_date')}
+                          <th onClick={() => handleSort('code')} className="sortable">
+                            Code {getSortIcon('code')}
                           </th>
-                          <th onClick={() => handleSort('status')} className="sortable">
-                            Status {getSortIcon('status')}
+                          <th onClick={() => handleSort('created_at')} className="sortable">
+                            Created At {getSortIcon('created_at')}
                           </th>
-                          <th>Amt</th>
+                          <th onClick={() => handleSort('created_by')} className="sortable">
+                            Created By {getSortIcon('created_by')}
+                          </th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {data.map((invoice) => (
-                          <tr key={invoice.id} className={selectedItems.includes(invoice.invoice_number) ? 'selected' : ''}>
+                        {data.map((project) => (
+                          <tr key={project.id} className={selectedItems.includes(project.id) ? 'selected' : ''}>
                             <td className="checkbox-cell">
                               <input
                                 type="checkbox"
-                                className={`table-checkbox fas fa-check ${selectedItems.includes(invoice.invoice_number) && 'selected-checkbox'}`}
-                                checked={selectedItems.includes(invoice.invoice_number)}
-                                onChange={() => toggleItemSelection(invoice.invoice_number)}
+                                className={`table-checkbox fas fa-check ${selectedItems.includes(project.id) && 'selected-checkbox'}`}
+                                checked={selectedItems.includes(project.id)}
+                                onChange={() => toggleItemSelection(project.id)}
                               />
                             </td>
-                            <td className="number-tab">{invoice.invoice_number}</td>
-                            <td>{new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</td>
                             <td>
                               <div className="table-flex-box">
-                                <span className="table-customer-text number-tab">{invoice.clients_name}</span>
+                                <span className="table-customer-text">{project.project_name}</span>
                               </div>
                             </td>
-                            <td>{new Date(invoice.due_date).toLocaleDateString('en-GB')}</td>
+                            <td className="number-tab">{project.project_code}</td>
+                            <td className="number-tab">{project.code}</td>
+                            <td className="number-tab">{new Date(project.created_at).toLocaleDateString('en-GB')}</td>
                             <td>
-                              <span className={`badge badge-${getStatusStyle(invoice.status)}`}>
-                                <span className={`badge-circle badge-circle-${getStatusStyle(invoice.status)}`}/> {invoice.status}
-                              </span>
+                              <div className="table-flex-box">
+                                <span className="table-customer-text number-tab">{project.created_by}</span>
+                              </div>
                             </td>
-                            <td className="data-table-bold-text">{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</td>
                             <td>
                               <div className="action-buttons">
-                                <button className="btn-edit" title="Edit" onClick={() => handleEditInvoice(invoice)}>
-                                  <span className="fas fa-pen"></span> 
-                                </button>
-                                <button className="btn-view" title="View" onClick={() => handleViewInvoice(invoice)}>
+                                <button className="btn-view" title="View" onClick={() => handleViewProject(project)}>
                                   <span className="fas fa-file"></span> 
                                 </button>
-                                <button className="btns-delete" title="Delete" onClick={() => handleDeleteInvoice(invoice.invoice_number)}>
+                                <button className="btn-edit" title="Edit" onClick={() => handleEditProject(project)}>
+                                  <span className="fas fa-pen"></span> 
+                                </button>
+                                <button className="btns-delete" title="Delete" onClick={() => handleDeleteProject(project.id)}>
                                   <span className="fas fa-trash"></span> 
                                 </button>
                               </div>
@@ -393,9 +366,9 @@ const InvoiceOverview = () => {
 
                 {data.length === 0 && (
                   <EmptyTable
-                    icon="fas fa-file-invoice" 
-                    message="No invoices found matching your criteria"
-                    link="/invoice/create"
+                    icon="fas fa-project-diagram" 
+                    message="No projects found matching your criteria"
+                    link="/project/create"
                   />
                 )}
               </>
@@ -415,24 +388,7 @@ const InvoiceOverview = () => {
               }}
               onConfirm={handleDelete}
               count={selectedItems.length}
-              page="invoice"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Update Status Modal */}
-        <AnimatePresence>
-          {showUpdateModal && (
-            <UpdateModal
-              isOpen={showUpdateModal}
-              onClose={() => {
-                setShowUpdateModal(false);
-                setSelectedAction("");
-                clearSelection();
-              }}
-              onConfirm={handleUpdateStatus}
-              count={selectedItems.length}
-              statusOptions={statusOptions}
+              page="project"
             />
           )}
         </AnimatePresence>
@@ -453,4 +409,4 @@ const InvoiceOverview = () => {
   );
 };
 
-export default InvoiceOverview;
+export default ProjectOverview;
