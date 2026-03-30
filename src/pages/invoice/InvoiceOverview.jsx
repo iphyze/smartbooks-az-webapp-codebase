@@ -203,6 +203,7 @@ const InvoiceOverview = () => {
       switch (type) {
           case 'Paid': return 'success';
           case 'Pending': return 'warning';
+          case 'Partially Paid': return 'warning';
           case 'Overdue': return 'danger';
           case 'Cancelled': return 'danger';
           default: return null;

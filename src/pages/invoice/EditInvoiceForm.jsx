@@ -167,8 +167,9 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
     account_name: "",
     account_number: "",
     account_currency: "",
-    status: "",
+    // status: "",
     rate_date: "",
+    paid: "", // Added paid field
   });
 
   /* ── Row State ── */
@@ -199,8 +200,9 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
       account_name: invoice.account_name || "",
       account_number: invoice.account_number || "",
       account_currency: invoice.account_currency || "",
-      status: invoice.status || "",
+      // status: invoice.status || "",
       rate_date: invoice.rate_date || "",
+      paid: invoice.paid ? String(parseFloat(invoice.paid) || 0.00) : 0.00, // Added paid population
     });
 
     if (invoice.items && invoice.items.length > 0) {
@@ -245,8 +247,10 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
     if (!invoiceDetails.clients_name) e.clients_name = "Client is required";
     if (!invoiceDetails.currency) e.currency = "Currency is required";
     if (!invoiceDetails.rate_date) e.rate_date = "Rate date is required";
-    if (!invoiceDetails.status) e.status = "Status is required";
+    // if (!invoiceDetails.status) e.status = "Status is required";
     if (!invoiceDetails.tin_number) e.tin_number = "TIN display option is required";
+    if (invoiceDetails.paid === "" || invoiceDetails.paid === null) e.paid = "Paid amount is required";
+    else if (isNaN(parseFloat(invoiceDetails.paid)) || parseFloat(invoiceDetails.paid) < 0) e.paid = "Invalid paid amount";
     return e;
   }, [invoiceDetails]);
 
@@ -374,7 +378,8 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
       account_number: invoiceDetails.account_number,
       account_currency: invoiceDetails.account_currency,
       rate_date: invoiceDetails.rate_date,
-      status: invoiceDetails.status,
+      // status: invoiceDetails.status,
+      paid: parseFloat(invoiceDetails.paid) || 0, // Added paid to payload
       id: invoiceItems.map((i) => i.db_id ?? 0),
       description: invoiceItems.map((i) => i.description),
       amount: invoiceItems.map((i) => parseFloat(i.amount) || 0),
@@ -552,7 +557,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
             </div>
 
             {/* Status */}
-            <div className="invoice-form invoice-form-three">
+            {/* <div className="invoice-form invoice-form-three">
               <div className="input-form-wrapper">
                 <div className={`input-form-group ${headerErrors.status ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.status ? "input-label-message" : ""}`} htmlFor="status">Status</label>
@@ -562,6 +567,29 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                   </div>
                 </div>
                 {headerErrors.status && <div className="input-error-message">{headerErrors.status}</div>}
+              </div>
+            </div> */}
+
+            {/* Paid Amount */}
+            <div className="invoice-form invoice-form-three">
+              <div className="input-form-wrapper">
+                <div className={`input-form-group ${headerErrors.paid ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.paid ? "input-label-message" : ""}`} htmlFor="paid">Paid Amount</label>
+                  <div className="form-wrapper">
+                    <input
+                      type="number"
+                      id="paid"
+                      className={`form-input form-input-no-padding ${headerErrors.paid ? "input-error" : ""}`}
+                      value={invoiceDetails.paid}
+                      onChange={(e) => handleDetailChange("paid", e.target.value)}
+                      onWheel={(e) => e.target.blur()}
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                {headerErrors.paid && <div className="input-error-message">{headerErrors.paid}</div>}
               </div>
             </div>
           </div>
