@@ -41,10 +41,10 @@ const NavBar = ({ nav, setNav }) => {
       ]
     },
     ledgers: {
-      basePath: "/ledgers",
+      basePath: "/ledger",
       items: [
-        { path: "/ledgers/home", label: "Overview", icon: "fas fa-list-alt" },
-        { path: "/ledgers/create-ledger", label: "Create Ledger", icon: "fas fa-plus-circle" },
+        { path: "/ledger/home", label: "Overview", icon: "fas fa-list-alt" },
+        { path: "/ledger/create", label: "Create Ledger", icon: "fas fa-plus-circle" },
         // { path: "/ledgers/report", label: "Report", icon: "fas fa-chart-bar" }
       ]
     },
@@ -68,7 +68,7 @@ const NavBar = ({ nav, setNav }) => {
       basePath: "/project",
       items: [
         { path: "/project/home", label: "Overview", icon: "fas fa-list-alt" },
-        { path: "/project/create-project", label: "Create Project", icon: "fas fa-plus-circle" },
+        { path: "/project/create", label: "Create Project", icon: "fas fa-plus-circle" },
         // { path: "/project/report", label: "Report", icon: "fas fa-chart-bar" }
       ]
     },
@@ -109,8 +109,8 @@ const NavBar = ({ nav, setNav }) => {
       basePath: "/banks",
       items: [
         { path: "/banks/home", label: "Overview", icon: "fas fa-list-alt" },
-        { path: "/banks/add-bank", label: "Add Bank", icon: "fas fa-plus-circle" },
-        { path: "/banks/transactions", label: "Transactions", icon: "fas fa-exchange-alt" }
+        { path: "/banks/create", label: "Add Bank", icon: "fas fa-plus-circle" },
+        // { path: "/banks/transactions", label: "Transactions", icon: "fas fa-exchange-alt" }
       ]
     },
     rate: {

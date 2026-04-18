@@ -8,16 +8,19 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import useToastStore from "../../stores/useToastStore";
 import useRateSearchStore from "../../stores/useRateSearchStore";
-import useRateStore from "../../stores/useRateStore"; // Added for createRate
+import useRateStore from "../../stores/useRateStore";
 import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
 import "../inputs-styles/Inputs.css";
 import useClientSearchStore from "../../stores/useClientSearchStore";
 import useProjectSearchStore from "../../stores/useProjectSearchStore";
 import useBankSearchStore from "../../stores/useBankSearchStore";
+import useClientStore from "../../stores/useClientStore"; // Added for createClientModal
 import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
 import CreateRateModal from "../../components/modals/CreateRateModal";
-
+import CreateClientsModal from "../../components/modals/CreateClientsModal"; // Added
+import CreateProjectModal from "../../components/modals/CreateProjectModal";
+import CreateBankModal from "../../components/modals/CreateBankModal";
 
 
 /* ─────────────────────────────────────────────
@@ -31,9 +34,9 @@ function createEmptyItem(sn) {
 
 const formatNumber = (num) => Number(num || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const CURRENCY_OPTIONS = [ { value: "NGN", label: "NGN" }, { value: "USD", label: "USD" }, { value: "GBP", label: "GBP" }, { value: "EUR", label: "EUR" } ];
-const POST_JV_OPTIONS = [ { value: "Yes", label: "Yes" }, { value: "No", label: "No" } ];
-const TIN_OPTIONS = [ { value: "Yes", label: "Yes" }, { value: "No", label: "No" } ];
+const CURRENCY_OPTIONS = [{ value: "NGN", label: "NGN" }, { value: "USD", label: "USD" }, { value: "GBP", label: "GBP" }, { value: "EUR", label: "EUR" }];
+const POST_JV_OPTIONS = [{ value: "Yes", label: "Yes" }, { value: "No", label: "No" }];
+const TIN_OPTIONS = [{ value: "Yes", label: "Yes" }, { value: "No", label: "No" }];
 
 function calculateTotals(items) {
   let totalDiscount = 0, totalVat = 0, totalWht = 0, grandTotal = 0;
@@ -60,15 +63,18 @@ function computeRowSubtotal(item) {
 const CreateInvoiceForm = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
-  const { rates, searchRates, isLoading: ratesLoading } = useRateSearchStore(); // Added isLoading
-  const { clients, searchClients, isLoading: clientsLoading } = useClientSearchStore(); // Added isLoading
-  const { projects, searchProjects, isLoading: projectsLoading } = useProjectSearchStore(); // Added isLoading
-  const { banks, searchBanks, isLoading: banksLoading } = useBankSearchStore(); // Added isLoading
+  const { rates, searchRates, isLoading: ratesLoading } = useRateSearchStore();
+  const { clients, searchClients, isLoading: clientsLoading } = useClientSearchStore();
+  const { projects, searchProjects, isLoading: projectsLoading } = useProjectSearchStore();
+  const { banks, searchBanks, isLoading: banksLoading } = useBankSearchStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [showCreateRateModal, setShowCreateRateModal] = useState(false); // State for Rate Modal
+  const [showCreateRateModal, setShowCreateRateModal] = useState(false);
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false); // Added for Client Modal
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false); // Added for Project Modal
+  const [showCreateBankModal, setShowCreateBankModal] = useState(false); // Added for Bank Modal
 
   const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null });
 
@@ -131,7 +137,7 @@ const CreateInvoiceForm = () => {
 
   const handleDetailChange = (field, value) => setInvoiceDetails((prev) => ({ ...prev, [field]: value }));
   const handleItemChange = (id, field, value) => setInvoiceItems((prev) => prev.map((item) => item.id !== id ? item : { ...item, [field]: value }));
-  
+
   const addItem = () => setInvoiceItems((prev) => [...prev, createEmptyItem(prev.length + 1)]);
   const requestRemoveItem = (itemId) => { if (invoiceItems.length === 1) return; setDeleteModal({ open: true, itemId }); };
   const confirmRemoveItem = () => {
@@ -141,7 +147,38 @@ const CreateInvoiceForm = () => {
 
   const handleRateCreated = () => {
     setShowCreateRateModal(false);
-    searchRates(""); // Refresh the dropdown list
+    searchRates("");
+  };
+
+  const handleClientCreated = (newClient) => {
+    setShowCreateClientModal(false);
+    searchClients("");
+    // Auto-populate the client fields with the newly created client
+    if (newClient) {
+      handleDetailChange("clients_name", newClient.clients_name);
+      handleDetailChange("clients_id", newClient.clients_id);
+    }
+  };
+
+  const handleProjectCreated = (newProject) => {
+    setShowCreateProjectModal(false);
+    searchProjects("");
+    // Auto-populate the project field with the newly created project
+    if (newProject) {
+      handleDetailChange("project", newProject.project_name);
+    }
+  };
+
+    const handleBankCreated = (newBank) => {
+    setShowCreateBankModal(false);
+    searchBanks("");
+    // Auto-populate all 4 bank fields with the newly created bank data
+    if (newBank) {
+      handleDetailChange("bank_name", newBank.bank_name);
+      handleDetailChange("account_name", newBank.account_name);
+      handleDetailChange("account_number", newBank.account_number);
+      handleDetailChange("account_currency", newBank.account_currency);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -229,13 +266,14 @@ const CreateInvoiceForm = () => {
                   <div className={`input-form-group ${headerErrors.clients_name ? "input-form-error" : ""}`}>
                     <label className={`input-form-label ${headerErrors.clients_name ? "input-label-message" : ""}`} htmlFor="clients_name">Client Name</label>
                     <div className="form-wrapper">
-                      <Select options={clientOptions} onInputChange={(val) => { if (val.length > 1) searchClients(val); }} onMenuOpen={() => setOpenMenuId("clients_name")} onMenuClose={() => { setOpenMenuId(null); searchClients(""); }} onChange={(opt) => { if (opt) { handleDetailChange("clients_name", opt.value); handleDetailChange("clients_id", opt.client?.clients_id || ""); } else { handleDetailChange("clients_name", ""); handleDetailChange("clients_id", ""); }}} value={invoiceDetails.clients_name ? { value: invoiceDetails.clients_name, label: invoiceDetails.clients_name } : null} placeholder="Search client..." className={`form-input-select ${headerErrors.clients_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="clients_name" isLoading={clientsLoading} />
+                      <Select options={clientOptions} onInputChange={(val) => { if (val.length > 1) searchClients(val); }} onMenuOpen={() => setOpenMenuId("clients_name")} onMenuClose={() => { setOpenMenuId(null); searchClients(""); }} onChange={(opt) => { if (opt) { handleDetailChange("clients_name", opt.value); handleDetailChange("clients_id", opt.client?.clients_id || ""); } else { handleDetailChange("clients_name", ""); handleDetailChange("clients_id", ""); } }} value={invoiceDetails.clients_name ? { value: invoiceDetails.clients_name, label: invoiceDetails.clients_name } : null} placeholder="Search client..." className={`form-input-select ${headerErrors.clients_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="clients_name" isLoading={clientsLoading} />
                       <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "clients_name" ? "chevron-rotate" : "", headerErrors.clients_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                     </div>
                   </div>
                   {headerErrors.clients_name && <div className="input-error-message">{headerErrors.clients_name}</div>}
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => alert("Open Create Client Modal")} title="Add New Client"><span className="fas fa-plus"></span></button>
+                {/* Button to trigger Create Client Modal */}
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client"><span className="fas fa-plus"></span></button>
               </div>
             </div>
 
@@ -261,9 +299,8 @@ const CreateInvoiceForm = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Button to trigger Create Rate Modal */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => alert("Open Create Project Modal")} title="Add New project"><span className="fas fa-plus"></span></button>
+                {/* UPDATE THIS BUTTON BELOW */}
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateProjectModal(true)} title="Add New project"><span className="fas fa-plus"></span></button>
               </div>
             </div>
 
@@ -298,7 +335,8 @@ const CreateInvoiceForm = () => {
                   </div>
                   {headerErrors.bank_name && <div className="input-error-message">{headerErrors.bank_name}</div>}
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => alert("Open Create Bank Modal")} title="Add New Bank"><span className="fas fa-plus"></span></button>
+                {/* UPDATE THIS BUTTON BELOW */}
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateBankModal(true)} title="Add New Bank"><span className="fas fa-plus"></span></button>
               </div>
             </div>
 
@@ -385,6 +423,9 @@ const CreateInvoiceForm = () => {
       <AnimatePresence>
         {deleteModal.open && (<DeleteLineItemModal isOpen={deleteModal.open} onClose={() => setDeleteModal({ open: false, itemId: null })} onConfirm={confirmRemoveItem} isNew={true} />)}
         {showCreateRateModal && (<CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />)}
+        {showCreateClientModal && (<CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />)}
+        {showCreateProjectModal && (<CreateProjectModal isOpen={showCreateProjectModal} onClose={() => setShowCreateProjectModal(false)} onProjectCreated={handleProjectCreated} />)}
+        {showCreateBankModal && (<CreateBankModal isOpen={showCreateBankModal} onClose={() => setShowCreateBankModal(false)} onBankCreated={handleBankCreated} />)}
       </AnimatePresence>
     </>
   );

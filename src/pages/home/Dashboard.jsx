@@ -6,6 +6,8 @@ import Header from "../Header";
 import useThemeStore from "../../stores/useThemeStore";
 import useDashboardStore from "../../stores/useDashboardStore";
 import PageNav from "../../components/PageNav";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -29,15 +31,43 @@ const fmtShort = (val) => {
   return num.toFixed(0);
 };
 
+/** Return today's Date object */
+const today = () => new Date();
+
+/** Return Jan 1 of the current year */
+const yearStart = () => {
+  const d = new Date();
+  d.setMonth(0);
+  d.setDate(1);
+  return d;
+};
+
+/** Return a Date that is `days` days before `base` */
+const daysAgo = (base, days) => {
+  const d = new Date(base);
+  d.setDate(d.getDate() - days);
+  return d;
+};
+
+/** Format a Date object to YYYY-MM-DD string */
+const toISO = (d) => {
+  if (!d) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 const TEAL   = "#00b196";
 const BLUE   = "#004AAD";
 const AMBER  = "#f59e0b";
 const RED    = "#ef4444";
 const PURPLE = "#8b5cf6";
 const SLATE  = "#64748b";
+const GREEN  = "#10b981";
 
 const STATUS_COLOR = { Paid: TEAL, Pending: AMBER, Overdue: RED, Cancelled: SLATE, Partial: PURPLE };
-const PIE_COLORS   = [TEAL, BLUE, AMBER, RED, PURPLE, "#10b981", "#f97316"];
+const PIE_COLORS   = [TEAL, BLUE, AMBER, RED, PURPLE, GREEN, "#f97316"];
 
 /* ─────────────────────────────────────────
    Skeleton loader
@@ -111,7 +141,7 @@ const ChartTip = ({ active, payload, label }) => {
 };
 
 /* ─────────────────────────────────────────
-   Currency tab
+   Currency tabs
 ───────────────────────────────────────── */
 const CurrencyTabs = ({ options, active, onChange }) => (
   <div className="db-cur-tabs">
@@ -142,33 +172,37 @@ const StatusBadge = ({ status }) => {
    MAIN DASHBOARD
 ═══════════════════════════════════════════════════════════════ */
 const Dashboard = () => {
-  const [nav, setNav]           = useState(false);
-  const [activeCur, setActiveCur] = useState("NGN");
-  const [trendCur, setTrendCur]   = useState("NGN");
-  const [dateFrom, setDateFrom]   = useState("");
-  const [dateTo, setDateTo]       = useState("");
+  const [nav, setNav]               = useState(false);
+  const [activeCur, setActiveCur]   = useState("NGN");
+  const [trendCur, setTrendCur]     = useState("NGN");
 
-  const { theme }                                = useThemeStore();
+  /* Date filter state – default: Jan 1 current year → today */
+  const [dateFrom, setDateFrom] = useState(yearStart());
+  const [dateTo,   setDateTo]   = useState(today());
+
+  const { theme }                                      = useThemeStore();
   const { data, loading, fetchDashboardData, setDateFilter } = useDashboardStore();
 
   const links = [{ label: "Home", to: "/", active: true }];
 
   useEffect(() => {
     document.title = "Smartbooks | Dashboard";
+    // Fetch with year-to-date default on mount
     fetchDashboardData();
   }, []);
 
   /* ── Derived values ── */
-  const overview  = data?.data?.overview  || {};
-  const rates     = data?.data?.latest_rates || null;
-  const bankData  = data?.data?.bank_balances || {};
-  const topClients = data?.data?.top_clients || [];
-  const recentInv  = data?.data?.recent_invoices || [];
-  const revEx      = data?.data?.revenue_expenses || [];
-  const monthly    = data?.data?.monthly_trend || [];
-  const invStatus  = data?.data?.invoice_status || {};
-  const receivables = data?.data?.receivables || [];
-  const jSummary   = data?.data?.journal_summary || [];
+  const overview     = data?.data?.overview        || {};
+  const rates        = data?.data?.latest_rates    || null;
+  const bankData     = data?.data?.bank_balances   || {};
+  const topClients   = data?.data?.top_clients     || [];
+  const recentInv    = data?.data?.recent_invoices || [];
+  const revEx        = data?.data?.revenue_expenses || [];
+  const monthly      = data?.data?.monthly_trend   || [];
+  const invStatus    = data?.data?.invoice_status  || {};
+  const receivables  = data?.data?.receivables     || [];
+  const jSummary     = data?.data?.journal_summary || [];
+  const revBreakdown = data?.data?.revenue_breakdown || [];
 
   /* Receivables for active currency */
   const activeReceiv = useMemo(() =>
@@ -186,8 +220,8 @@ const Dashboard = () => {
   const trendData = useMemo(() => {
     const filtered = monthly.filter(m => m.currency === trendCur);
     return filtered.map(m => ({
-      month: m.month,
-      Revenue: parseFloat(m.revenue) || 0,
+      month:    m.month,
+      Revenue:  parseFloat(m.revenue)  || 0,
       Expenses: parseFloat(m.expenses) || 0,
     }));
   }, [monthly, trendCur]);
@@ -195,7 +229,11 @@ const Dashboard = () => {
   /* Invoice status pie data */
   const statusPie = useMemo(() => {
     const rows = invStatus[activeCur] || [];
-    return rows.map(r => ({ name: r.status, value: parseFloat(r.total_amount) || 0, count: r.count }));
+    return rows.map(r => ({
+      name:  r.status,
+      value: parseFloat(r.total_amount) || 0,
+      count: r.count,
+    }));
   }, [invStatus, activeCur]);
 
   /* Top clients bar data */
@@ -204,38 +242,81 @@ const Dashboard = () => {
       .filter(c => c.currency === activeCur)
       .slice(0, 7)
       .map(c => ({
-        name: c.clients_name.split(" ").slice(0, 2).join(" "),
-        Billed: parseFloat(c.total_billed) || 0,
+        name:        c.clients_name.split(" ").slice(0, 2).join(" "),
+        Billed:      parseFloat(c.total_billed)      || 0,
         Outstanding: parseFloat(c.total_outstanding) || 0,
       })),
     [topClients, activeCur]
   );
 
-  /* Journal type summary */
-  const journalBars = useMemo(() =>
-    jSummary
-      .filter(j => j.currency === activeCur)
-      .slice(0, 8)
-      .map(j => ({
-        name: `${j.journal_type}`.slice(0, 10),
-        Debit: parseFloat(j.total_debit) || 0,
-        Credit: parseFloat(j.total_credit) || 0,
+  /* Journal type summary bars (Receipts vs Payments, filtered by currency) */
+  const journalBars = useMemo(() => {
+    const types = ["Sales", "Expenses", "Receipt", "Payment"];
+    return types.map(type => {
+      const match = jSummary.find(j => j.journal_type === type && j.currency === activeCur);
+      return {
+        name:   type,
+        Debit:  match ? parseFloat(match.total_debit)  || 0 : 0,
+        Credit: match ? parseFloat(match.total_credit) || 0 : 0,
+      };
+    });
+  }, [jSummary, activeCur]);
+
+  /* Revenue breakdown by ledger name (Sales vs Referrals, etc.) for active currency */
+  const revBreakdownData = useMemo(() =>
+    revBreakdown
+      .filter(r => r.currency === activeCur)
+      .slice(0, 6)
+      .map(r => ({
+        name:  r.revenue_type?.slice(0, 12) || "Other",
+        Total: parseFloat(r.total) || 0,
       })),
-    [jSummary, activeCur]
+    [revBreakdown, activeCur]
   );
 
-  /* Bank NGN accounts */
+  /* Bank accounts */
   const bankAccounts = bankData.accounts || [];
   const totalBankNGN = parseFloat(bankData.total_ngn) || 0;
   const totalBankUSD = parseFloat(bankData.total_usd) || 0;
+  const totalBankGBP = parseFloat(bankData.total_gbp) || 0;
+  const totalBankEUR = parseFloat(bankData.total_eur) || 0;
 
   /* Net position */
   const netPosition = (parseFloat(activeRevEx.total_revenue) || 0)
     - (parseFloat(activeRevEx.total_expenses) || 0);
 
-  const handleDateFilter = () => {
-    setDateFilter(dateFrom, dateTo);
+  /* ── Date filter handlers ── */
+  const handleDateFromChange = (date) => {
+    if (!date) return;
+    setDateFrom(date);
+    // Enforce max 1-year span: if dateTo is more than 366 days after new from, clamp it
+    const maxTo = new Date(date);
+    maxTo.setFullYear(maxTo.getFullYear() + 1);
+    if (dateTo > maxTo) setDateTo(maxTo);
   };
+
+  const handleDateToChange = (date) => {
+    if (!date) return;
+    // Don't allow more than 366 days from dateFrom
+    const maxTo = daysAgo(date, 0); // date itself
+    const minFrom = daysAgo(date, 366);
+    if (dateFrom < minFrom) setDateFrom(minFrom);
+    setDateTo(date);
+  };
+
+  const handleApplyFilter = () => {
+    setDateFilter(toISO(dateFrom), toISO(dateTo));
+  };
+
+  const handleClearFilter = () => {
+    const df = yearStart();
+    const dt = today();
+    setDateFrom(df);
+    setDateTo(dt);
+    setDateFilter(toISO(df), toISO(dt));
+  };
+
+  const isFiltered = toISO(dateFrom) !== toISO(yearStart()) || toISO(dateTo) !== toISO(today());
 
   return (
     <div className={`main-container theme-${theme}`}>
@@ -253,38 +334,53 @@ const Dashboard = () => {
           transition={{ duration: 0.3 }}
         >
           <div className="db-date-filter">
+            {/* From DatePicker */}
             <div className="db-date-input-wrap">
               <i className="fas fa-calendar-alt" />
-              <input
-                type="date"
+              <DatePicker
+                selected={dateFrom}
+                onChange={handleDateFromChange}
+                selectsStart
+                startDate={dateFrom}
+                endDate={dateTo}
+                maxDate={dateTo}
+                dateFormat="yyyy-MM-dd"
                 className="db-date-input"
-                value={dateFrom}
-                onChange={e => setDateFrom(e.target.value)}
-                placeholder="From"
+                wrapperClassName="db-date-picker-wrap"
+                placeholderText="From"
               />
             </div>
             <span className="db-date-sep">—</span>
+            {/* To DatePicker */}
             <div className="db-date-input-wrap">
               <i className="fas fa-calendar-alt" />
-              <input
-                type="date"
+              <DatePicker
+                selected={dateTo}
+                onChange={handleDateToChange}
+                selectsEnd
+                startDate={dateFrom}
+                endDate={dateTo}
+                minDate={dateFrom}
+                maxDate={(() => {
+                  const max = new Date(dateFrom);
+                  max.setFullYear(max.getFullYear() + 1);
+                  return max;
+                })()}
+                dateFormat="yyyy-MM-dd"
                 className="db-date-input"
-                value={dateTo}
-                onChange={e => setDateTo(e.target.value)}
-                placeholder="To"
+                wrapperClassName="db-date-picker-wrap"
+                placeholderText="To"
               />
             </div>
-            <button className="db-filter-btn" onClick={handleDateFilter}>
+            <button className="db-filter-btn" onClick={handleApplyFilter}>
               <i className="fas fa-filter" /> Apply
             </button>
-            {(dateFrom || dateTo) && (
-              <button className="db-filter-clear-btn" onClick={() => {
-                setDateFrom(""); setDateTo("");
-                setDateFilter("", "");
-              }}>
+            {isFiltered && (
+              <button className="db-filter-clear-btn" onClick={handleClearFilter} title="Reset to year-to-date">
                 <i className="fas fa-times" />
               </button>
             )}
+            <span className="db-date-hint">Max 1-year range</span>
           </div>
 
           <CurrencyTabs
@@ -328,7 +424,7 @@ const Dashboard = () => {
                 <div className="db-receiv-total">
                   <span className="db-receiv-label">Total Unpaid</span>
                   <span className="db-receiv-amount">{fmt(
-                    (parseFloat(activeReceiv.total_receivables) || 0), activeCur
+                    parseFloat(activeReceiv.total_receivables) || 0, activeCur
                   )}</span>
                 </div>
                 <div className="db-receiv-split">
@@ -439,7 +535,7 @@ const Dashboard = () => {
           className="db-card-full"
           action={
             <CurrencyTabs
-              options={["NGN", "USD"]}
+              options={["NGN", "USD", "GBP", "EUR"]}
               active={trendCur}
               onChange={setTrendCur}
             />
@@ -448,29 +544,34 @@ const Dashboard = () => {
           {loading ? (
             <Skeleton h={260} />
           ) : trendData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={trendData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={TEAL}  stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={TEAL}  stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradExp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={RED}   stopOpacity={0.2} />
-                    <stop offset="95%" stopColor={RED}   stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={60} />
-                <Tooltip content={<ChartTip />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="Revenue" stroke={TEAL}
-                  strokeWidth={2} fill="url(#gradRev)" dot={{ r: 3 }} />
-                <Area type="monotone" dataKey="Expenses" stroke={RED}
-                  strokeWidth={2} fill="url(#gradExp)" dot={{ r: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            /* Chart scroll wrapper for small screens */
+            <div className="db-chart-scroll">
+              <div className="db-chart-inner" style={{ minWidth: Math.max(trendData.length * 60, 400) }}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={trendData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={TEAL}  stopOpacity={0.25} />
+                        <stop offset="95%" stopColor={TEAL}  stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradExp" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={RED}   stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={RED}   stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={60} />
+                    <Tooltip content={<ChartTip />} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Area type="monotone" dataKey="Revenue" stroke={TEAL}
+                      strokeWidth={2} fill="url(#gradRev)" dot={{ r: 3 }} />
+                    <Area type="monotone" dataKey="Expenses" stroke={RED}
+                      strokeWidth={2} fill="url(#gradExp)" dot={{ r: 3 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           ) : (
             <div className="db-empty-chart">
               <i className="fas fa-chart-area" />
@@ -495,33 +596,38 @@ const Dashboard = () => {
             ) : (
               <>
                 <div className="db-bank-list">
-                  {bankAccounts.slice(0, 6).map((acct, i) => (
-                    <div key={i} className="db-bank-row">
-                      <div className="db-bank-info">
-                        <span className="db-bank-name">{acct.ledger_name || "Account"}</span>
-                        <span className="db-bank-num">{acct.ledger_number}</span>
+                  {bankAccounts.slice(0, 6).map((acct, i) => {
+                    const bal = parseFloat(acct.balance_ngn) || 0;
+                    const isNeg = bal < 0;
+                    return (
+                      <div key={i} className="db-bank-row">
+                        <div className="db-bank-info">
+                          <span className="db-bank-name">{acct.ledger_name || "Account"}</span>
+                          <span className="db-bank-num">{acct.ledger_number}</span>
+                        </div>
+                        <span className={`db-bank-bal ${isNeg ? "neg" : ""}`}>
+                          {isNeg ? "(" : ""}
+                          {Math.abs(bal).toLocaleString("en-US", {
+                            minimumFractionDigits: 2, maximumFractionDigits: 2
+                          })}
+                          {isNeg ? ")" : ""}
+                        </span>
                       </div>
-                      <span className={`db-bank-bal ${parseFloat(acct.balance_ngn) < 0 ? "neg" : ""}`}>
-                        {parseFloat(acct.balance_ngn) < 0 ? "(" : ""}
-                        {Math.abs(parseFloat(acct.balance_ngn) || 0).toLocaleString("en-US", {
-                          minimumFractionDigits: 2, maximumFractionDigits: 2
-                        })}
-                        {parseFloat(acct.balance_ngn) < 0 ? ")" : ""}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="db-bank-totals">
-                  <div className="db-bank-total-row">
-                    <span>Total NGN</span>
-                    <span>{fmt(totalBankNGN, "NGN")}</span>
-                  </div>
-                  {totalBankUSD !== 0 && (
-                    <div className="db-bank-total-row">
-                      <span>Total USD</span>
-                      <span>{fmt(totalBankUSD, "USD")}</span>
+                  {[
+                    { label: "Total NGN", val: totalBankNGN, cur: "NGN" },
+                    { label: "Total USD", val: totalBankUSD, cur: "USD" },
+                    { label: "Total GBP", val: totalBankGBP, cur: "GBP" },
+                    { label: "Total EUR", val: totalBankEUR, cur: "EUR" },
+                  ].filter(x => x.val !== 0).map(({ label, val, cur }) => (
+                    <div key={cur} className="db-bank-total-row">
+                      <span>{label}</span>
+                      <span>{fmt(val, cur)}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
               </>
             )}
@@ -533,23 +639,25 @@ const Dashboard = () => {
               <Skeleton h={240} />
             ) : statusPie.length > 0 ? (
               <div className="db-pie-wrap">
-                <ResponsiveContainer width="55%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={statusPie}
-                      cx="50%" cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      {statusPie.map((entry, i) => (
-                        <Cell key={i} fill={STATUS_COLOR[entry.name] || PIE_COLORS[i % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v) => fmtShort(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="db-chart-scroll" style={{ width: "55%" }}>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={statusPie}
+                        cx="50%" cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {statusPie.map((entry, i) => (
+                          <Cell key={i} fill={STATUS_COLOR[entry.name] || PIE_COLORS[i % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => fmtShort(v)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
                 <div className="db-pie-legend">
                   {statusPie.map((entry, i) => (
                     <div key={i} className="db-pie-leg-row">
@@ -586,17 +694,21 @@ const Dashboard = () => {
           {loading ? (
             <Skeleton h={220} />
           ) : clientBar.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={clientBar} margin={{ top: 5, right: 20, left: 10, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" interval={0} />
-                <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={55} />
-                <Tooltip content={<ChartTip />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Billed" fill={BLUE} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Outstanding" fill={RED} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="db-chart-scroll">
+              <div className="db-chart-inner" style={{ minWidth: Math.max(clientBar.length * 90, 400) }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={clientBar} margin={{ top: 5, right: 20, left: 10, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" interval={0} />
+                    <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={55} />
+                    <Tooltip content={<ChartTip />} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="Billed"      fill={BLUE} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Outstanding" fill={RED}  radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           ) : (
             <div className="db-empty-chart">
               <i className="fas fa-users" />
@@ -605,11 +717,11 @@ const Dashboard = () => {
           )}
         </SectionCard>
 
-        {/* ── JOURNAL SUMMARY + RECENT INVOICES ── */}
+        {/* ── JOURNAL ACTIVITY + RECENT INVOICES ── */}
         <div className="db-row db-row-half">
 
-          {/* Journal Summary */}
-          <SectionCard title="Journal Summary" icon="fa-book-open" delay={0.44}
+          {/* Journal Activity Summary */}
+          <SectionCard title="Transaction Activity" icon="fa-book-open" delay={0.44}
             action={
               <Link to="/journal/home" className="db-section-link">
                 <i className="fas fa-arrow-right" />
@@ -618,19 +730,23 @@ const Dashboard = () => {
           >
             {loading ? (
               <Skeleton h={220} />
-            ) : journalBars.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={journalBars} layout="vertical"
-                  margin={{ top: 0, right: 20, left: 60, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" horizontal={false} />
-                  <XAxis type="number" tickFormatter={fmtShort} tick={{ fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={60} />
-                  <Tooltip content={<ChartTip />} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="Debit"  fill={RED}  radius={[0, 3, 3, 0]} />
-                  <Bar dataKey="Credit" fill={TEAL} radius={[0, 3, 3, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            ) : journalBars.some(j => j.Debit > 0 || j.Credit > 0) ? (
+              <div className="db-chart-scroll">
+                <div className="db-chart-inner" style={{ minWidth: 320 }}>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={journalBars} layout="vertical"
+                      margin={{ top: 0, right: 20, left: 70, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" horizontal={false} />
+                      <XAxis type="number" tickFormatter={fmtShort} tick={{ fontSize: 10 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={70} />
+                      <Tooltip content={<ChartTip />} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="Debit"  fill={RED}  radius={[0, 3, 3, 0]} />
+                      <Bar dataKey="Credit" fill={TEAL} radius={[0, 3, 3, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             ) : (
               <div className="db-empty-chart">
                 <i className="fas fa-book-open" />
@@ -663,7 +779,7 @@ const Dashboard = () => {
                       <i className="fas fa-file-invoice" />
                     </div>
                     <div className="db-recent-info">
-                      <span className="db-recent-num">{inv.invoice_number}</span>
+                      <span className="db-recent-num">#{inv.invoice_number}</span>
                       <span className="db-recent-client">{inv.clients_name}</span>
                     </div>
                     <div className="db-recent-right">
@@ -715,7 +831,7 @@ const Dashboard = () => {
                 <tbody>
                   {topClients.slice(0, 8).map((c, i) => {
                     const billed = parseFloat(c.total_billed) || 0;
-                    const paid   = parseFloat(c.total_paid) || 0;
+                    const paid   = parseFloat(c.total_paid)   || 0;
                     const pct    = billed > 0 ? Math.round((paid / billed) * 100) : 0;
                     return (
                       <tr key={i}>
@@ -758,11 +874,11 @@ const Dashboard = () => {
             <i className="fas fa-bolt" /> Quick Actions
           </span>
           {[
-            { label: "New Invoice",    icon: "fa-file-invoice-dollar", to: "/invoice/create",  color: TEAL  },
-            { label: "New Journal",    icon: "fa-book",                to: "/journal/create",  color: BLUE  },
-            { label: "Add Client",     icon: "fa-user-plus",           to: "/clients/create",  color: PURPLE},
-            { label: "Add Bank",       icon: "fa-building-columns",    to: "/bank/create",     color: AMBER },
-            { label: "Exchange Rates", icon: "fa-money-bill-transfer", to: "/currency/home",   color: RED   },
+            { label: "New Invoice",    icon: "fa-file-invoice-dollar", to: "/invoice/create",  color: TEAL   },
+            { label: "New Journal",    icon: "fa-book",                to: "/journal/create",  color: BLUE   },
+            { label: "Add Client",     icon: "fa-user-plus",           to: "/clients/create",  color: PURPLE },
+            { label: "Add Bank",       icon: "fa-building-columns",    to: "/bank/create",     color: AMBER  },
+            { label: "Exchange Rates", icon: "fa-money-bill-transfer", to: "/currency/home",   color: RED    },
           ].map(({ label, icon, to, color }) => (
             <Link key={label} to={to} className="db-qa-btn" style={{ "--qa-color": color }}>
               <i className={`fas ${icon}`} />

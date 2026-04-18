@@ -33,6 +33,14 @@ import AccountOverview from "./pages/account/AccountOverview";
 import CreateAccount from "./pages/account/CreateAccount";
 import EditAccount from "./pages/account/EditAccount";
 import ViewAccount from "./pages/account/ViewAccount";
+import BankOverview from "./pages/banks/BankOverview";
+import CreateBank from "./pages/banks/CreateBank";
+import EditBank from "./pages/banks/EditBank";
+import ViewBank from "./pages/banks/ViewBank";
+import LedgerOverview from "./pages/ledger/LegderOverview";
+import CreateLedger from "./pages/ledger/CreateLedger";
+import EditLedger from "./pages/ledger/EditLedger";
+import ViewLedger from "./pages/ledger/ViewLedger";
 
 const App = () => {
   
@@ -72,11 +80,18 @@ const App = () => {
           <Route path="/client/view/:clientId" element={<ViewClient />} />
 
 
-          {/* Client */}
+          {/* Project */}
           <Route path="/project/home" element={<ProjectOverview />} />
           <Route path="/project/create" element={<CreateProject />} />
           <Route path="/project/edit/:id" element={<EditProject />} />
           <Route path="/project/view/:projectId" element={<ViewProject />} />
+
+
+          {/* Bank */}
+          <Route path="/banks/home" element={<BankOverview />} />
+          <Route path="/banks/create" element={<CreateBank />} />
+          <Route path="/banks/edit/:id" element={<EditBank />} />
+          <Route path="/banks/view/:id" element={<ViewBank />} />
 
 
           {/* Account */}
@@ -84,6 +99,13 @@ const App = () => {
           <Route path="/account/create" element={<CreateAccount />} />
           <Route path="/account/edit/:id" element={<EditAccount />} />
           <Route path="/account/view/:accountId" element={<ViewAccount />} />
+
+
+          {/* Ledger */}
+          <Route path="/ledger/home" element={<LedgerOverview />} />
+          <Route path="/ledger/create" element={<CreateLedger />} />
+          <Route path="/ledger/edit/:id" element={<EditLedger />} />
+          <Route path="/ledger/view/:id" element={<ViewLedger />} />
           
 
           <Route path="*" element={<NotFound />} />

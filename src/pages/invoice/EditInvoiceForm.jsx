@@ -9,7 +9,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import useToastStore from "../../stores/useToastStore";
 import useRateSearchStore from "../../stores/useRateSearchStore";
 import useRateStore from "../../stores/useRateStore"; // Added for createRate
-import CreateRateModal from "../../components/modals/CreateRateModal"; // Added for Rate Modal
 import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
 import "../inputs-styles/Inputs.css";
@@ -17,6 +16,10 @@ import useClientSearchStore from "../../stores/useClientSearchStore";
 import useProjectSearchStore from "../../stores/useProjectSearchStore";
 import useBankSearchStore from "../../stores/useBankSearchStore";
 import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
+import CreateRateModal from "../../components/modals/CreateRateModal"; // Added for Rate Modal
+import CreateClientsModal from "../../components/modals/CreateClientsModal";
+import CreateProjectModal from "../../components/modals/CreateProjectModal";
+import CreateBankModal from "../../components/modals/CreateBankModal";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -144,6 +147,9 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
   const [submitted, setSubmitted] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showCreateRateModal, setShowCreateRateModal] = useState(false); // State for Rate Modal
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showCreateBankModal, setShowCreateBankModal] = useState(false);
 
   /* ── Delete-line-item modal state ── */
   const [deleteModal, setDeleteModal] = useState({
@@ -196,7 +202,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
       project: invoice.project || "",
       currency: invoice.currency || "NGN",
       tin_number: invoice.tin_number || "No",
-      bank_name: invoice.bank_name || "",
+      bank_name: (invoice.bank_name === "" || invoice.bank_name === "N/A") ? "" : invoice.bank_name,
       account_name: invoice.account_name || "",
       account_number: invoice.account_number || "",
       account_currency: invoice.account_currency || "",
@@ -345,6 +351,34 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
     searchRates(""); // Refresh the dropdown list
   };
 
+    const handleClientCreated = (newClient) => {
+    setShowCreateClientModal(false);
+    searchClients("");
+    if (newClient) {
+      handleDetailChange("clients_name", newClient.clients_name);
+      handleDetailChange("clients_id", String(newClient.clients_id || "")); // Ensuring it matches the string format expected by the edit form
+    }
+  };
+
+  const handleProjectCreated = (newProject) => {
+    setShowCreateProjectModal(false);
+    searchProjects("");
+    if (newProject) {
+      handleDetailChange("project", newProject.project_name);
+    }
+  };
+
+  const handleBankCreated = (newBank) => {
+    setShowCreateBankModal(false);
+    searchBanks("");
+    if (newBank) {
+      handleDetailChange("bank_name", newBank.bank_name);
+      handleDetailChange("account_name", newBank.account_name);
+      handleDetailChange("account_number", newBank.account_number);
+      handleDetailChange("account_currency", newBank.account_currency);
+    }
+  };
+
   /* ─────────────────────────────────────────────
      Submit
   ───────────────────────────────────────────── */
@@ -370,7 +404,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
       due_date: invoiceDetails.due_date instanceof Date ? invoiceDetails.due_date.toISOString().split("T")[0] : invoiceDetails.due_date,
       clients_name: invoiceDetails.clients_name,
       clients_id: invoiceDetails.clients_id,
-      project: invoiceDetails.project || undefined,
+      project: invoiceDetails.project || "",
       currency: invoiceDetails.currency,
       tin_number: invoiceDetails.tin_number,
       bank_name: invoiceDetails.bank_name,
@@ -477,7 +511,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                   </div>
                   {headerErrors.clients_name && <div className="input-error-message">{headerErrors.clients_name}</div>}
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => alert("Open Create Client Modal")} title="Add New Client"><span className="fas fa-plus"></span></button>
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client"><span className="fas fa-plus"></span></button>
               </div>
             </div>
 
@@ -503,7 +537,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                     </div>
                   </div>
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => alert("Open Create Project Modal")} title="Add New Project"><span className="fas fa-plus"></span></button>
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateProjectModal(true)} title="Add New Project"><span className="fas fa-plus"></span></button>
               </div>
             </div>
 
@@ -538,7 +572,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                   </div>
                   {headerErrors.bank_name && <div className="input-error-message">{headerErrors.bank_name}</div>}
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => alert("Open Create Bank Modal")} title="Add New Bank"><span className="fas fa-plus"></span></button>
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateBankModal(true)} title="Add New Bank"><span className="fas fa-plus"></span></button>
               </div>
             </div>
 
@@ -665,6 +699,27 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
             isOpen={showCreateRateModal}
             onClose={() => setShowCreateRateModal(false)}
             onRateCreated={handleRateCreated}
+          />
+        )}
+        {showCreateClientModal && (
+          <CreateClientsModal
+            isOpen={showCreateClientModal}
+            onClose={() => setShowCreateClientModal(false)}
+            onClientCreated={handleClientCreated}
+          />
+        )}
+        {showCreateProjectModal && (
+          <CreateProjectModal
+            isOpen={showCreateProjectModal}
+            onClose={() => setShowCreateProjectModal(false)}
+            onProjectCreated={handleProjectCreated}
+          />
+        )}
+        {showCreateBankModal && (
+          <CreateBankModal
+            isOpen={showCreateBankModal}
+            onClose={() => setShowCreateBankModal(false)}
+            onBankCreated={handleBankCreated}
           />
         )}
       </AnimatePresence>

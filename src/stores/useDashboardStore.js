@@ -8,12 +8,11 @@ const useDashboardStore = create(
   persist(
     (set, get) => ({
       // ── Data (Transient) ────────────────────────────────
-      data: null, // Stores the entire API response
+      data: null,
       loading: false,
       error: null,
 
       // ── Filters (Persistent) ─────────────────────────────
-      // We can persist filters if needed, usually date ranges
       dateFrom: '',
       dateTo: '',
 
@@ -25,10 +24,14 @@ const useDashboardStore = create(
         set({ loading: true, error: null });
 
         try {
-          // You can append date filters here if needed
-          // const { dateFrom, dateTo } = get();
+          // ✅ UNCOMMENTED - Get dates from store
+          const { dateFrom, dateTo } = get();
+          
           const params = new URLSearchParams();
-          // if(dateFrom) params.append('date_from', dateFrom);
+          
+          // ✅ UNCOMMENTED - Append date parameters to request
+          if (dateFrom) params.append('date_from', dateFrom);
+          if (dateTo) params.append('date_to', dateTo);
 
           const response = await api.get(`/reports?${params}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -60,7 +63,6 @@ const useDashboardStore = create(
     {
       name: 'dashboard-storage',
       storage: createJSONStorage(() => localStorage),
-      // Only persist filters, not the heavy data
       partialize: (state) => ({
         dateFrom: state.dateFrom,
         dateTo: state.dateTo,

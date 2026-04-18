@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'https://api.a-zconsultancyltd.com/smartbooks-server/api',
-    // baseURL: 'http://localhost/smartbooks-server/api',
+    // baseURL: 'https://api.a-zconsultancyltd.com/smartbooks-server/api',
+    baseURL: 'http://localhost/smartbooks-server/api',
     headers: {
         'Content-Type': 'application/json',
     },

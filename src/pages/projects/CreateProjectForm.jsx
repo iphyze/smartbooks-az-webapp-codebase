@@ -115,7 +115,7 @@ const CreateProjectForm = () => {
           <div className="invoice-form-flex-box">
             
             {/* Project Code (Read-only) */}
-            <div className="invoice-form invoice-form-three">
+            <div className="invoice-form invoice-form-half">
               <div className="input-form-wrapper">
                 <div className="input-form-group input-disabled">
                   <label className="input-form-label" htmlFor="project_code">
@@ -136,7 +136,7 @@ const CreateProjectForm = () => {
             </div>
 
             {/* Project Name */}
-            <div className="invoice-form invoice-form-three">
+            <div className="invoice-form invoice-form-half">
               <div className="input-form-wrapper">
                 <div className={`input-form-group ${errors.project_name ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${errors.project_name ? "input-label-message" : ""}`} htmlFor="project_name">
