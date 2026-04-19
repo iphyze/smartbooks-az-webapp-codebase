@@ -20,17 +20,21 @@ const LedgerOverview = () => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
 
-  // Consume the Ledger Store
+  // Consume the Ledger Store (Added deleteSingleLedger here)
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy,
     sortOrder, searchQuery, selectedItems, fetchData, setCurrentPage,
     setItemsPerPage, setSearchQuery, setSorting, toggleItemSelection,
-    clearSelection, deleteSelectedItems, exportToExcel, getTotalPages
+    clearSelection, deleteSelectedItems, deleteSingleLedger, exportToExcel, getTotalPages
   } = useLedgerStore();
 
   // Local UI states for modals and actions
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
+  
+  // States to distinguish Single vs Bulk deletes
+  const [isSingleDelete, setIsSingleDelete] = useState(false);
+  const [singleDeleteLedgerNumber, setSingleDeleteLedgerNumber] = useState("");
 
   const links = [
     { label: "Home", to: "/", active: true },
@@ -78,36 +82,59 @@ const LedgerOverview = () => {
     setItemsPerPage(limit);
   };
 
+  // FIX 1: Update handleSelectAll to populate BOTH selectedItems AND selectedItemsData
   const handleSelectAll = () => {
     const currentPageIds = data.map(item => item.id);
     const allSelected = currentPageIds.every(id => selectedItems.includes(id));
 
     if (allSelected) {
       const newSelection = selectedItems.filter(id => !currentPageIds.includes(id));
-      useLedgerStore.setState({ selectedItems: newSelection });
+      const newData = { ...useLedgerStore.getState().selectedItemsData };
+      currentPageIds.forEach(id => delete newData[id]);
+      useLedgerStore.setState({ selectedItems: newSelection, selectedItemsData: newData });
     } else {
       const newSelection = [...new Set([...selectedItems, ...currentPageIds])];
-      useLedgerStore.setState({ selectedItems: newSelection });
+      const newData = { ...useLedgerStore.getState().selectedItemsData };
+      data.forEach(item => {
+        if (!newData[item.id]) {
+          newData[item.id] = item; // Populate the data map so deleteSelectedItems can find the ledger_number
+        }
+      });
+      useLedgerStore.setState({ selectedItems: newSelection, selectedItemsData: newData });
     }
   };
 
   const handleActionChange = (actionId) => {
     setSelectedAction(actionId);
+    setIsSingleDelete(false); // Ensure bulk actions don't trigger single delete
     if (actionId === "delete") {
       setShowDeleteModal(true);
     }
   };
 
+  // FIX 2: Split logic to handle single delete vs bulk delete appropriately
   const handleDelete = async () => {
-    await deleteSelectedItems();
+    if (isSingleDelete) {
+      const success = await deleteSingleLedger(singleDeleteLedgerNumber);
+      if (success) {
+        fetchData();
+      }
+      setIsSingleDelete(false);
+      setSingleDeleteLedgerNumber("");
+    } else {
+      await deleteSelectedItems();
+    }
+    
     setShowDeleteModal(false);
     setSelectedAction("");
     clearSelection();
   };
 
-  const handleDeleteLedger = async (ledgerId) => {
-    if (ledgerId !== "") {
-      useLedgerStore.setState({ selectedItems: [ledgerId] });
+  // FIX 3: Setup direct button to trigger single delete flag instead of faking a bulk selection
+  const handleDeleteLedger = (ledgerNumber) => {
+    if (ledgerNumber !== "") {
+      setIsSingleDelete(true);
+      setSingleDeleteLedgerNumber(ledgerNumber);
       setShowDeleteModal(true);
     }
   };
@@ -195,10 +222,6 @@ const LedgerOverview = () => {
               <span className="fas fa-circle-plus"></span>
               <span>Create Ledger</span>
             </Link>
-            {/* <button className="create-new-invoice-btn export-btn" onClick={handleExport} title="Export to Excel">
-              <span className="fas fa-file-excel"></span>
-              <span>Export</span>
-            </button> */}
           </div>
 
           <div className="main-table-box">
@@ -271,12 +294,6 @@ const LedgerOverview = () => {
                           <th onClick={() => handleSort('ledger_class')} className="sortable">
                             Ledger Class {getSortIcon('ledger_class')}
                           </th>
-                          {/* <th onClick={() => handleSort('ledger_sub_class')} className="sortable">
-                            Sub Class {getSortIcon('ledger_sub_class')}
-                          </th> */}
-                          {/* <th onClick={() => handleSort('ledger_type')} className="sortable">
-                            Ledger Type {getSortIcon('ledger_type')}
-                          </th> */}
                           <th>Actions</th>
                         </tr>
                       </thead>
@@ -298,8 +315,6 @@ const LedgerOverview = () => {
                               </div>
                             </td>
                             <td>{ledger.ledger_class}</td>
-                            {/* <td>{ledger.ledger_sub_class}</td> */}
-                            {/* <td>{ledger.ledger_type}</td> */}
                             <td>
                               <div className="action-buttons">
                                 <button className="btn-view" title="View" onClick={() => handleViewLedger(ledger)}>
@@ -308,9 +323,9 @@ const LedgerOverview = () => {
                                 <button className="btn-edit" title="Edit" onClick={() => handleEditLedger(ledger)}>
                                   <span className="fas fa-pen"></span> 
                                 </button>
-                                {/* <button className="btns-delete" title="Delete" onClick={() => handleDeleteLedger(ledger.ledger_number)}>
+                                <button className="btns-delete" title="Delete" onClick={() => handleDeleteLedger(ledger.ledger_number)}>
                                   <span className="fas fa-trash"></span> 
-                                </button> */}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -381,9 +396,12 @@ const LedgerOverview = () => {
                 setShowDeleteModal(false);
                 setSelectedAction("");
                 clearSelection();
+                setIsSingleDelete(false);
+                setSingleDeleteLedgerNumber("");
               }}
               onConfirm={handleDelete}
-              count={selectedItems.length}
+              // Pass count dynamically: if single delete, show '1'. If bulk, show array length.
+              count={isSingleDelete ? 1 : selectedItems.length}
               page="ledger"
             />
           )}

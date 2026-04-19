@@ -41,6 +41,9 @@ const ViewJournalContent = ({ journal }) => {
     navigate(`/journal/edit/${journal.journal_id}`, { state: { journal } });
   };
 
+  const handleNavigateToLedger = (ledger_number) => {
+    navigate(`/ledger/view/${ledger_number}`);
+  }
 
   return (
     <motion.div 
@@ -132,7 +135,7 @@ const ViewJournalContent = ({ journal }) => {
               return(
                   <div className="vc-table-flexbox vc-table-body" key={id}>
                     <div className="vc-table-data vc-tb-num">{ledger_number || ''}</div>
-                    <div className="vc-table-data vc-tb-name">{ledger_name || ''}</div>
+                    <div className="vc-table-data vc-tb-name" onClick={() => handleNavigateToLedger(ledger_number)} style={{cursor: 'pointer'}}>{ledger_name || ''}</div>
                     <div className="vc-table-data vc-tb-desc">{journal_description || ''}</div>
                     <div className="vc-table-data vc-tb-side vc-boldtext">{sides || ''}</div>
                     <div className="vc-table-data vc-tb-cur">{journal_currency || ''}</div>

@@ -173,8 +173,31 @@ const useLedgerStore = create(
       },
 
       /* ═════════════════════════════════════════════════════════════════════
-         Bulk Delete
+         Single Ledger Operations
       ═════════════════════════════════════════════════════════════════════ */
+      
+      // Delete a single ledger (calls the specific single-delete endpoint)
+      deleteSingleLedger: async (ledgerNumber) => {
+        const token = useAuthStore.getState().token;
+        try {
+          await api.delete('/ledger/delete-single-ledger', {
+            headers: { Authorization: `Bearer ${token}` },
+            data: { ledger_number: ledgerNumber },
+          });
+          useToastStore.getState().showToast('Ledger deleted successfully', 'success');
+          return true;
+        } catch (error) {
+          const message = error.response?.data?.message || 'Failed to delete ledger';
+          useToastStore.getState().showToast(message, 'error');
+          return false;
+        }
+      },
+
+      /* ═════════════════════════════════════════════════════════════════════
+         Bulk Operations
+      ═════════════════════════════════════════════════════════════════════ */
+
+      // Delete multiple selected ledgers
       deleteSelectedItems: async () => {
         const { selectedItems, selectedItemsData } = get();
         const token = useAuthStore.getState().token;
@@ -191,7 +214,6 @@ const useLedgerStore = create(
           });
 
           await get().fetchData();
-          // await get().clearSelection();
           set({ selectedItems: [], selectedItemsData: {} });
           useToastStore.getState().showToast('Ledgers deleted successfully', 'success');
           return true;

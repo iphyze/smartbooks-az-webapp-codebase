@@ -3,7 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
-import Select, { components } from "react-select";
+import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import useToastStore from "../../stores/useToastStore";
@@ -14,30 +14,10 @@ import useAuthStore from "../../stores/useAuthStore";
 import "../inputs-styles/Inputs.css";
 import useClientSearchStore from "../../stores/useClientSearchStore";
 import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
+import CreateClientsModal from "../../components/modals/CreateClientsModal";
+import CreateLedgerModal from "../../components/modals/CreateLedgerModal"; // Import Ledger Modal
+import CreateRateModal from "../../components/modals/CreateRateModal"; // Import Rate Modal
 import { useNavigate } from "react-router-dom";
-
-/* ─────────────────────────────────────────────
-   Custom MenuList with optional "Add New" button
-───────────────────────────────────────────── */
-const CustomMenuList = (props) => (
-  <components.MenuList {...props}>
-    {props.children}
-    {props.selectProps.onAddNew && (
-      <div className="add-new-btn-container">
-        <button
-          type="button"
-          className="add-new-select-btn"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            props.selectProps.onAddNew();
-          }}
-        >
-          {props.selectProps.addNewLabel || "+ Add New"}
-        </button>
-      </div>
-    )}
-  </components.MenuList>
-);
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -185,13 +165,16 @@ const CreateJournalForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   /* ── Remove-row confirmation modal state ── */
-  const [deleteModal, setDeleteModal] = useState({
-    open: false,
-    itemId: null,
-  });
+  const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null });
+
+  /* ── Modals State ── */
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
+  const [showCreateRateModal, setShowCreateRateModal] = useState(false);
+  const [activeRowId, setActiveRowId] = useState(null); // Tracks which row opened the modal
 
   /* ── Header State ── */
   const [journalDetails, setJournalDetails] = useState({
@@ -205,7 +188,6 @@ const CreateJournalForm = () => {
 
   /* ── Row State ── */
   const [journalItems, setJournalItems] = useState([createEmptyItem()]);
-
   const prevJournalItemsRef = useRef(journalItems);
 
   /* ── On mount: fetch rates and ledgers ── */
@@ -237,9 +219,7 @@ const CreateJournalForm = () => {
 
     setJournalItems((items) =>
       items.map((item) =>
-        item.journal_description === prev
-          ? { ...item, journal_description: next }
-          : item
+        item.journal_description === prev ? { ...item, journal_description: next } : item
       )
     );
   }, [journalDetails.main_journal_description]);
@@ -256,9 +236,7 @@ const CreateJournalForm = () => {
         .filter((r) => r[`${curr}_rate`] != null)
         .map((r) => ({
           value: String(r.id),
-          label: `${r.created_at?.slice(0, 10)} | ${item.jcurrency} @ ${
-            r[`${curr}_rate`]
-          }`,
+          label: `${r.created_at?.slice(0, 10)} | ${item.jcurrency} @ ${r[`${curr}_rate`]}`,
         }));
     },
     [rates]
@@ -271,12 +249,9 @@ const CreateJournalForm = () => {
     const e = {};
     if (!journalDetails.journal_date) e.journal_date = "Journal date is required";
     if (!journalDetails.journal_type) e.journal_type = "Journal type is required";
-    if (!journalDetails.journal_currency)
-      e.journal_currency = "Currency is required";
-    if (!journalDetails.transaction_type)
-      e.transaction_type = "Transaction type is required";
-    if (!journalDetails.main_journal_description?.trim())
-      e.main_journal_description = "Description is required";
+    if (!journalDetails.journal_currency) e.journal_currency = "Currency is required";
+    if (!journalDetails.transaction_type) e.transaction_type = "Transaction type is required";
+    if (!journalDetails.main_journal_description?.trim()) e.main_journal_description = "Description is required";
     if (!journalDetails.cost_center) e.cost_center = "Cost center is required";
     return e;
   }, [journalDetails]);
@@ -285,23 +260,17 @@ const CreateJournalForm = () => {
     return journalItems.map((item) => {
       const e = {};
       if (!item.ledger_name) e.ledger_name = "Ledger required";
-      if (!item.journal_description?.trim())
-        e.journal_description = "Description required";
+      if (!item.journal_description?.trim()) e.journal_description = "Description required";
       if (!item.sides) e.sides = "Dr/Cr required";
       if (!item.jcurrency) e.jcurrency = "Currency required";
       if (!item.jrate) e.jrate = "Rate required";
-      if (item.amount === "" || item.amount === null)
-        e.amount = "Amount required";
-      else if (isNaN(parseFloat(item.amount)) || parseFloat(item.amount) <= 0)
-        e.amount = "Invalid amount";
+      if (item.amount === "" || item.amount === null) e.amount = "Amount required";
+      else if (isNaN(parseFloat(item.amount)) || parseFloat(item.amount) <= 0) e.amount = "Invalid amount";
       return e;
     });
   }, [journalItems]);
 
-  const headerErrors = useMemo(
-    () => (submitted ? validateHeader() : {}),
-    [submitted, validateHeader]
-  );
+  const headerErrors = useMemo(() => (submitted ? validateHeader() : {}), [submitted, validateHeader]);
 
   const itemErrorMap = useMemo(() => {
     if (!submitted) return {};
@@ -351,23 +320,12 @@ const CreateJournalForm = () => {
             updated.eur_rate = found.eur_rate;
             updated.gbp_rate = found.gbp_rate;
           } else {
-            updated.currencyRate = "";
-            updated.rate_date = "";
-            updated.ngn_rate = "";
-            updated.usd_rate = "";
-            updated.eur_rate = "";
-            updated.gbp_rate = "";
+            updated.currencyRate = ""; updated.rate_date = ""; updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
           }
         }
 
         if (field === "jcurrency") {
-          updated.jrate = "";
-          updated.currencyRate = "";
-          updated.rate_date = "";
-          updated.ngn_rate = "";
-          updated.usd_rate = "";
-          updated.eur_rate = "";
-          updated.gbp_rate = "";
+          updated.jrate = ""; updated.currencyRate = ""; updated.rate_date = ""; updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
         }
 
         return updated;
@@ -376,24 +334,42 @@ const CreateJournalForm = () => {
   };
 
   const addItem = () => {
-    setJournalItems((prev) => [
-      ...prev,
-      createEmptyItem(journalDetails.main_journal_description),
-    ]);
+    setJournalItems((prev) => [...prev, createEmptyItem(journalDetails.main_journal_description)]);
   };
 
-  /* ── Request remove: open confirmation modal ── */
   const requestRemoveItem = (itemId) => {
     if (journalItems.length === 1) return;
     setDeleteModal({ open: true, itemId });
   };
 
-  /* ── Confirmed: remove from local state (no DB call needed on create) ── */
   const confirmRemoveItem = () => {
-    setJournalItems((prev) =>
-      prev.filter((i) => i.id !== deleteModal.itemId)
-    );
+    setJournalItems((prev) => prev.filter((i) => i.id !== deleteModal.itemId));
     setDeleteModal({ open: false, itemId: null });
+  };
+
+  /* ── Modal Callbacks ── */
+  const handleClientCreated = (newClient) => {
+    setShowCreateClientModal(false);
+    searchClients("");
+    if (newClient) {
+      handleDetailChange("cost_center", newClient.clients_name);
+    }
+  };
+
+  const handleLedgerCreated = (newLedger) => {
+    setShowCreateLedgerModal(false);
+    searchLedgers(""); 
+    // Auto-populate the specific row that triggered the modal
+    if (newLedger && activeRowId) {
+      setTimeout(() => {
+        handleItemChange(activeRowId, "ledger_name", newLedger.ledger_name);
+      }, 500); // slight delay to allow searchLedgers to update state
+    }
+  };
+
+  const handleRateCreated = () => {
+    setShowCreateRateModal(false);
+    searchRates(""); 
   };
 
   /* ─────────────────────────────────────────────
@@ -405,9 +381,7 @@ const CreateJournalForm = () => {
 
     const hErr = validateHeader();
     const iErr = validateItems();
-    const hasFieldErrors =
-      Object.keys(hErr).length > 0 ||
-      iErr.some((rowE) => Object.keys(rowE).length > 0);
+    const hasFieldErrors = Object.keys(hErr).length > 0 || iErr.some((rowE) => Object.keys(rowE).length > 0);
 
     if (hasFieldErrors) {
       showToast("Please fill in all required fields", "error");
@@ -415,10 +389,7 @@ const CreateJournalForm = () => {
     }
 
     if (!isBalanced) {
-      showToast(
-        "Grand total must be equal to zero. Please ensure that your total debit equals your total credit!",
-        "error"
-      );
+      showToast("Grand total must be equal to zero. Please ensure that your total debit equals your total credit!", "error");
       return;
     }
 
@@ -459,36 +430,21 @@ const CreateJournalForm = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if(response.status === 200 || response?.data?.status === "Success"){
-
+      if (response.status === 200 || response?.data?.status === "Success") {
         const journal_id = response?.data?.data?.journal_id;
-
         showToast(response?.data?.message || "Journal created successfully!", "success");
-
         setSubmitted(false);
         setJournalDetails({
-          journal_date: new Date(),
-          journal_type: "",
-          journal_currency: "NGN",
-          transaction_type: "",
-          main_journal_description: "",
-          cost_center: "Overhead",
+          journal_date: new Date(), journal_type: "", journal_currency: "NGN",
+          transaction_type: "", main_journal_description: "", cost_center: "Overhead",
         });
         setJournalItems([createEmptyItem()]);
-
-        // if (journal_id) {
-        //   navigate(`/journal/view/${journal_id}`);
-        // }
-
-      }else{
+        navigate(`/journal/view/${journal_id}`);
+      } else {
         showToast(response?.data?.message || "Failed to create journal", "error");
       }
-
-
-      
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to create journal";
+      const message = error.response?.data?.message || "Failed to create journal";
       showToast(message, "error");
     } finally {
       setIsLoading(false);
@@ -500,341 +456,109 @@ const CreateJournalForm = () => {
   ───────────────────────────────────────────── */
   return (
     <>
-      <motion.div
-        variants={fadeInUp}
-        initial="hidden"
-        animate="show"
-        transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }}
-        className={`invoice-form-box theme-${theme}`}
-      >
-        <form
-          className="invoice-form-f-container"
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          {/* ── HEADER DETAILS ── */}
+      <motion.div variants={fadeInUp} initial="hidden" animate="show" transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }} className={`invoice-form-box theme-${theme}`}>
+        <form className="invoice-form-f-container" onSubmit={handleSubmit} noValidate>
+          
           <div className="invoice-form-header">
             <div className="invoice-form-htxt">Create Journal</div>
-            <div className="invoice-form-sub-htxt">
-              Fill the form below to create a new journal
-            </div>
+            <div className="invoice-form-sub-htxt">Fill the form below to create a new journal</div>
           </div>
 
           <div className="invoice-form-flex-box">
+            
             {/* Journal Date */}
             <div className="invoice-form invoice-form-three">
               <div className="input-form-wrapper">
-                <div
-                  className={`input-form-group ${
-                    headerErrors.journal_date ? "input-form-error" : ""
-                  }`}
-                >
-                  <label
-                    className={`input-form-label ${
-                      headerErrors.journal_date ? "input-label-message" : ""
-                    }`}
-                    htmlFor="journal_date"
-                  >
-                    Journal Date
-                  </label>
+                <div className={`input-form-group ${headerErrors.journal_date ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.journal_date ? "input-label-message" : ""}`} htmlFor="journal_date">Journal Date</label>
                   <div className="form-wrapper">
-                    <DatePicker
-                      selected={journalDetails.journal_date}
-                      onChange={(date) => handleDetailChange("journal_date", date)}
-                      className={`form-input ${
-                        headerErrors.journal_date ? "input-error" : ""
-                      }`}
-                      dateFormat="yyyy-MM-dd"
-                      wrapperClassName="input-date-picker"
-                      id="journal_date"
-                    />
-                    <span
-                      className={`chevron-input-icon fas fa-calendar ${
-                        headerErrors.journal_date ? "input-icon-error" : ""
-                      }`}
-                    />
+                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" />
+                    <span className={`chevron-input-icon fas fa-calendar ${headerErrors.journal_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>
-                {headerErrors.journal_date && (
-                  <div className="input-error-message">
-                    {headerErrors.journal_date}
-                  </div>
-                )}
+                {headerErrors.journal_date && <div className="input-error-message">{headerErrors.journal_date}</div>}
               </div>
             </div>
 
             {/* Journal Type */}
             <div className="invoice-form invoice-form-three">
               <div className="input-form-wrapper">
-                <div
-                  className={`input-form-group ${
-                    headerErrors.journal_type ? "input-form-error" : ""
-                  }`}
-                >
-                  <label
-                    className={`input-form-label ${
-                      headerErrors.journal_type ? "input-label-message" : ""
-                    }`}
-                    htmlFor="journal_type"
-                  >
-                    Journal Type
-                  </label>
+                <div className={`input-form-group ${headerErrors.journal_type ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.journal_type ? "input-label-message" : ""}`} htmlFor="journal_type">Journal Type</label>
                   <div className="form-wrapper">
-                    <Select
-                      options={JOURNAL_TYPE_OPTIONS}
-                      onChange={(opt) =>
-                        handleDetailChange("journal_type", opt?.value || "")
-                      }
-                      value={
-                        JOURNAL_TYPE_OPTIONS.find(
-                          (o) => o.value === journalDetails.journal_type
-                        ) || null
-                      }
-                      placeholder="Select type"
-                      className={`form-input-select ${
-                        headerErrors.journal_type ? "input-error" : ""
-                      }`}
-                      classNamePrefix="form-input-select"
-                      isClearable
-                      inputId="journal_type"
-                      onMenuOpen={() => setOpenMenuId("journal_type")}
-                      onMenuClose={() => setOpenMenuId(null)}
-                      components={{ MenuList: CustomMenuList }}
-                    />
-                    <span
-                      className={[
-                        "chevron-input-icon fas fa-chevron-down",
-                        openMenuId === "journal_type" ? "chevron-rotate" : "",
-                        headerErrors.journal_type ? "input-icon-error" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    />
+                    <Select options={JOURNAL_TYPE_OPTIONS} onChange={(opt) => handleDetailChange("journal_type", opt?.value || "")} value={JOURNAL_TYPE_OPTIONS.find((o) => o.value === journalDetails.journal_type) || null} placeholder="Select type" className={`form-input-select ${headerErrors.journal_type ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="journal_type" onMenuOpen={() => setOpenMenuId("journal_type")} onMenuClose={() => setOpenMenuId(null)} />
+                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "journal_type" ? "chevron-rotate" : "", headerErrors.journal_type ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>
-                {headerErrors.journal_type && (
-                  <div className="input-error-message">
-                    {headerErrors.journal_type}
-                  </div>
-                )}
+                {headerErrors.journal_type && <div className="input-error-message">{headerErrors.journal_type}</div>}
               </div>
             </div>
 
             {/* Journal Currency */}
             <div className="invoice-form invoice-form-three">
               <div className="input-form-wrapper">
-                <div
-                  className={`input-form-group ${
-                    headerErrors.journal_currency ? "input-form-error" : ""
-                  }`}
-                >
-                  <label
-                    className={`input-form-label ${
-                      headerErrors.journal_currency ? "input-label-message" : ""
-                    }`}
-                    htmlFor="journal_currency"
-                  >
-                    Journal Currency
-                  </label>
+                <div className={`input-form-group ${headerErrors.journal_currency ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.journal_currency ? "input-label-message" : ""}`} htmlFor="journal_currency">Journal Currency</label>
                   <div className="form-wrapper">
-                    <Select
-                      options={CURRENCY_OPTIONS}
-                      onChange={(opt) =>
-                        handleDetailChange("journal_currency", opt?.value || "")
-                      }
-                      value={
-                        CURRENCY_OPTIONS.find(
-                          (o) => o.value === journalDetails.journal_currency
-                        ) || null
-                      }
-                      placeholder="Select currency"
-                      className={`form-input-select ${
-                        headerErrors.journal_currency ? "input-error" : ""
-                      }`}
-                      classNamePrefix="form-input-select"
-                      inputId="journal_currency"
-                      onMenuOpen={() => setOpenMenuId("journal_currency")}
-                      onMenuClose={() => setOpenMenuId(null)}
-                      components={{ MenuList: CustomMenuList }}
-                    />
-                    <span
-                      className={[
-                        "chevron-input-icon fas fa-chevron-down",
-                        openMenuId === "journal_currency" ? "chevron-rotate" : "",
-                        headerErrors.journal_currency ? "input-icon-error" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    />
+                    <Select options={CURRENCY_OPTIONS} onChange={(opt) => handleDetailChange("journal_currency", opt?.value || "")} value={CURRENCY_OPTIONS.find((o) => o.value === journalDetails.journal_currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.journal_currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="journal_currency" onMenuOpen={() => setOpenMenuId("journal_currency")} onMenuClose={() => setOpenMenuId(null)} />
+                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "journal_currency" ? "chevron-rotate" : "", headerErrors.journal_currency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>
-                {headerErrors.journal_currency && (
-                  <div className="input-error-message">
-                    {headerErrors.journal_currency}
-                  </div>
-                )}
+                {headerErrors.journal_currency && <div className="input-error-message">{headerErrors.journal_currency}</div>}
               </div>
             </div>
 
             {/* Journal Description */}
             <div className="invoice-form">
               <div className="input-form-wrapper">
-                <div
-                  className={`input-form-group ${
-                    headerErrors.main_journal_description ? "input-form-error" : ""
-                  }`}
-                >
-                  <label
-                    className={`input-form-label ${
-                      headerErrors.main_journal_description
-                        ? "input-label-message"
-                        : ""
-                    }`}
-                    htmlFor="main_journal_description"
-                  >
-                    Journal Description
-                  </label>
+                <div className={`input-form-group ${headerErrors.main_journal_description ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.main_journal_description ? "input-label-message" : ""}`} htmlFor="main_journal_description">Journal Description</label>
                   <div className="form-wrapper">
-                    <textarea
-                      className={`form-input-select form-input-textarea ${
-                        headerErrors.main_journal_description ? "input-error" : ""
-                      }`}
-                      rows="2"
-                      placeholder="Enter description"
-                      value={journalDetails.main_journal_description}
-                      onChange={(e) =>
-                        handleDetailChange("main_journal_description", e.target.value)
-                      }
-                      id="main_journal_description"
-                    />
+                    <textarea className={`form-input-select form-input-textarea ${headerErrors.main_journal_description ? "input-error" : ""}`} rows="2" placeholder="Enter description" value={journalDetails.main_journal_description} onChange={(e) => handleDetailChange("main_journal_description", e.target.value)} id="main_journal_description" />
                   </div>
                 </div>
-                {headerErrors.main_journal_description && (
-                  <div className="input-error-message">
-                    {headerErrors.main_journal_description}
-                  </div>
-                )}
+                {headerErrors.main_journal_description && <div className="input-error-message">{headerErrors.main_journal_description}</div>}
               </div>
             </div>
 
             {/* Transaction Type */}
             <div className="invoice-form invoice-form-three">
               <div className="input-form-wrapper">
-                <div
-                  className={`input-form-group ${
-                    headerErrors.transaction_type ? "input-form-error" : ""
-                  }`}
-                >
-                  <label
-                    className={`input-form-label ${
-                      headerErrors.transaction_type ? "input-label-message" : ""
-                    }`}
-                    htmlFor="transaction_type"
-                  >
-                    Transaction Type
-                  </label>
+                <div className={`input-form-group ${headerErrors.transaction_type ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.transaction_type ? "input-label-message" : ""}`} htmlFor="transaction_type">Transaction Type</label>
                   <div className="form-wrapper">
-                    <Select
-                      options={TRANSACTION_TYPE_OPTIONS}
-                      onChange={(opt) =>
-                        handleDetailChange("transaction_type", opt?.value || "")
-                      }
-                      value={
-                        TRANSACTION_TYPE_OPTIONS.find(
-                          (o) => o.value === journalDetails.transaction_type
-                        ) || null
-                      }
-                      placeholder="Select type"
-                      className={`form-input-select ${
-                        headerErrors.transaction_type ? "input-error" : ""
-                      }`}
-                      classNamePrefix="form-input-select"
-                      isClearable
-                      inputId="transaction_type"
-                      onMenuOpen={() => setOpenMenuId("transaction_type")}
-                      onMenuClose={() => setOpenMenuId(null)}
-                      components={{ MenuList: CustomMenuList }}
-                    />
-                    <span
-                      className={[
-                        "chevron-input-icon fas fa-chevron-down",
-                        openMenuId === "transaction_type" ? "chevron-rotate" : "",
-                        headerErrors.transaction_type ? "input-icon-error" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    />
+                    <Select options={TRANSACTION_TYPE_OPTIONS} onChange={(opt) => handleDetailChange("transaction_type", opt?.value || "")} value={TRANSACTION_TYPE_OPTIONS.find((o) => o.value === journalDetails.transaction_type) || null} placeholder="Select type" className={`form-input-select ${headerErrors.transaction_type ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="transaction_type" onMenuOpen={() => setOpenMenuId("transaction_type")} onMenuClose={() => setOpenMenuId(null)} />
+                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "transaction_type" ? "chevron-rotate" : "", headerErrors.transaction_type ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>
-                {headerErrors.transaction_type && (
-                  <div className="input-error-message">
-                    {headerErrors.transaction_type}
-                  </div>
-                )}
+                {headerErrors.transaction_type && <div className="input-error-message">{headerErrors.transaction_type}</div>}
               </div>
             </div>
 
-            {/* Cost Center */}
+            {/* Cost Center with "+" Button */}
             <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div
-                  className={`input-form-group ${
-                    headerErrors.cost_center ? "input-form-error" : ""
-                  }`}
-                >
-                  <label
-                    className={`input-form-label ${
-                      headerErrors.cost_center ? "input-label-message" : ""
-                    }`}
-                    htmlFor="cost_center"
-                  >
-                    Cost Center
-                  </label>
-                  <div className="form-wrapper">
-                    <Select
-                      options={costCenterOptions}
-                      onChange={(opt) =>
-                        handleDetailChange("cost_center", opt?.value || "")
-                      }
-                      value={
-                        costCenterOptions.find(
-                          (o) => o.value === journalDetails.cost_center
-                        ) || null
-                      }
-                      placeholder="Select cost center"
-                      className={`form-input-select ${
-                        headerErrors.cost_center ? "input-error" : ""
-                      }`}
-                      classNamePrefix="form-input-select"
-                      inputId="cost_center"
-                      onMenuOpen={() => setOpenMenuId("cost_center")}
-                      onMenuClose={() => setOpenMenuId(null)}
-                      components={{ MenuList: CustomMenuList }}
-                    />
-                    <span
-                      className={[
-                        "chevron-input-icon fas fa-chevron-down",
-                        openMenuId === "cost_center" ? "chevron-rotate" : "",
-                        headerErrors.cost_center ? "input-icon-error" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    />
+              <div className="inv-form-flex">
+                <div className="input-form-wrapper inv-form-flex-wrap">
+                  <div className={`input-form-group ${headerErrors.cost_center ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.cost_center ? "input-label-message" : ""}`} htmlFor="cost_center">Cost Center</label>
+                    <div className="form-wrapper">
+                      <Select options={costCenterOptions} onChange={(opt) => handleDetailChange("cost_center", opt?.value || "")} value={costCenterOptions.find((o) => o.value === journalDetails.cost_center) || null} placeholder="Select cost center" className={`form-input-select ${headerErrors.cost_center ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="cost_center" onMenuOpen={() => setOpenMenuId("cost_center")} onMenuClose={() => setOpenMenuId(null)} />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "cost_center" ? "chevron-rotate" : "", headerErrors.cost_center ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                    </div>
                   </div>
+                  {headerErrors.cost_center && <div className="input-error-message">{headerErrors.cost_center}</div>}
                 </div>
-                {headerErrors.cost_center && (
-                  <div className="input-error-message">
-                    {headerErrors.cost_center}
-                  </div>
-                )}
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client">
+                  <span className="fas fa-plus"></span>
+                </button>
               </div>
             </div>
+
           </div>
 
           {/* ── JOURNAL ITEMS TABLE ── */}
           <div className="invoice-form-full">
             <div className="invoice-items-table">
-              {/* Table Head */}
               <div className="invoice-table-header journal-table-header">
                 <div className="invoice-table-cell">Ledger Name</div>
                 <div className="invoice-table-cell">Description</div>
@@ -845,12 +569,10 @@ const CreateJournalForm = () => {
                 <div className="invoice-table-cell cell-action">Action</div>
               </div>
 
-              {/* Rows */}
               {journalItems.map((item) => {
                 const rowErr = itemErrorMap[item.id] || {};
                 const rateOptions = buildRateOptions(item);
-                const selectedRateOpt =
-                  rateOptions.find((o) => o.value === String(item.jrate)) || null;
+                const selectedRateOpt = rateOptions.find((o) => o.value === String(item.jrate)) || null;
 
                 const ledgerId = `ledger_${item.id}`;
                 const sideId = `side_${item.id}`;
@@ -859,359 +581,132 @@ const CreateJournalForm = () => {
 
                 return (
                   <div key={item.id} className="invoice-table-row">
-                    {/* Ledger Name */}
+                    
+                    {/* Ledger Name with "+" Button */}
                     <div className="invoice-table-cell">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div
-                          className={`input-form-group ${
-                            rowErr.ledger_name ? "input-form-error" : ""
-                          }`}
-                        >
-                          <label
-                            className={`input-form-label ${
-                              rowErr.ledger_name ? "input-label-message" : ""
-                            }`}
-                            htmlFor={ledgerId}
-                          >
-                            Ledger
-                          </label>
-                          <div className="form-wrapper">
-                            <Select
-                              options={ledgers.map((l) => ({
-                                value: l.ledger_name,
-                                label: l.ledger_name,
-                              }))}
-                              onInputChange={(val) => {
-                                if (val.length > 1) searchLedgers(val);
-                              }}
-                              onMenuOpen={() =>
-                                setOpenMenuId(`ledger_${item.id}`)
-                              }
-                              onMenuClose={() => {
-                                setOpenMenuId(null);
-                                searchLedgers("");
-                              }}
-                              onChange={(opt) =>
-                                handleItemChange(
-                                  item.id,
-                                  "ledger_name",
-                                  opt ? opt.value : ""
-                                )
-                              }
-                              value={
-                                item.ledger_name
-                                  ? {
-                                      value: item.ledger_name,
-                                      label: item.ledger_name,
-                                    }
-                                  : null
-                              }
-                              placeholder="Search ledger..."
-                              className={`form-input-select ${
-                                rowErr.ledger_name ? "input-error" : ""
-                              }`}
-                              classNamePrefix="form-input-select"
-                              isClearable
-                              inputId={ledgerId}
-                              menuPortalTarget={document.body}
-                              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-                              components={{ MenuList: CustomMenuList }}
-                              addNewLabel="+ Add New Ledger"
-                              onAddNew={() => alert("Open Create Ledger Modal")}
-                            />
-                            <span
-                              className={[
-                                "chevron-input-icon fas fa-chevron-down",
-                                openMenuId === `ledger_${item.id}`
-                                  ? "chevron-rotate"
-                                  : "",
-                                rowErr.ledger_name ? "input-icon-error" : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            />
+                      <div className="inv-form-flex">
+                        <div className="input-form-wrapper inv-form-flex-wrap">
+                          <div className={`input-form-group ${rowErr.ledger_name ? "input-form-error" : ""}`}>
+                            <label className={`input-form-label ${rowErr.ledger_name ? "input-label-message" : ""}`} htmlFor={ledgerId}>Ledger</label>
+                            <div className="form-wrapper">
+                              <Select
+                                options={ledgers.map((l) => ({ value: l.ledger_name, label: l.ledger_name }))}
+                                onInputChange={(val) => { if (val.length > 1) searchLedgers(val); }}
+                                onMenuOpen={() => setOpenMenuId(`ledger_${item.id}`)}
+                                onMenuClose={() => { setOpenMenuId(null); searchLedgers(""); }}
+                                onChange={(opt) => handleItemChange(item.id, "ledger_name", opt ? opt.value : "")}
+                                value={item.ledger_name ? { value: item.ledger_name, label: item.ledger_name } : null}
+                                placeholder="Search ledger..."
+                                className={`form-input-select ${rowErr.ledger_name ? "input-error" : ""}`}
+                                classNamePrefix="form-input-select"
+                                isClearable
+                                inputId={ledgerId}
+                                menuPortalTarget={document.body}
+                                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                              />
+                              <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `ledger_${item.id}` ? "chevron-rotate" : "", rowErr.ledger_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                            </div>
                           </div>
+                          {rowErr.ledger_name && <div className="input-error-message">{rowErr.ledger_name}</div>}
                         </div>
-                        {rowErr.ledger_name && (
-                          <div className="input-error-message">
-                            {rowErr.ledger_name}
-                          </div>
-                        )}
+                        <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateLedgerModal(true); }} title="Add New Ledger">
+                          <span className="fas fa-plus"></span>
+                        </button>
                       </div>
                     </div>
 
                     {/* Description */}
                     <div className="invoice-table-cell">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div
-                          className={`input-form-group ${
-                            rowErr.journal_description ? "input-form-error" : ""
-                          }`}
-                        >
+                        <div className={`input-form-group ${rowErr.journal_description ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">
-                            <input
-                              type="text"
-                              className={`form-input-select form-input-textarea-row ${
-                                rowErr.journal_description ? "input-error" : ""
-                              }`}
-                              value={item.journal_description}
-                              onChange={(e) =>
-                                handleItemChange(
-                                  item.id,
-                                  "journal_description",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Description"
-                            />
+                            <input type="text" className={`form-input-select form-input-textarea-row ${rowErr.journal_description ? "input-error" : ""}`} value={item.journal_description} onChange={(e) => handleItemChange(item.id, "journal_description", e.target.value)} placeholder="Description" />
                           </div>
                         </div>
-                        {rowErr.journal_description && (
-                          <div className="input-error-message">
-                            {rowErr.journal_description}
-                          </div>
-                        )}
+                        {rowErr.journal_description && <div className="input-error-message">{rowErr.journal_description}</div>}
                       </div>
                     </div>
 
                     {/* DR / CR */}
                     <div className="invoice-table-cell cell-small">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div
-                          className={`input-form-group ${
-                            rowErr.sides ? "input-form-error" : ""
-                          }`}
-                        >
-                          <label
-                            className={`input-form-label ${
-                              rowErr.sides ? "input-label-message" : ""
-                            }`}
-                            htmlFor={sideId}
-                          >
-                            Side
-                          </label>
+                        <div className={`input-form-group ${rowErr.sides ? "input-form-error" : ""}`}>
+                          <label className={`input-form-label ${rowErr.sides ? "input-label-message" : ""}`} htmlFor={sideId}>Side</label>
                           <div className="form-wrapper">
-                            <Select
-                              options={SIDE_OPTIONS}
-                              onChange={(opt) =>
-                                handleItemChange(
-                                  item.id,
-                                  "sides",
-                                  opt ? opt.value : ""
-                                )
-                              }
-                              value={
-                                SIDE_OPTIONS.find((o) => o.value === item.sides) ||
-                                null
-                              }
-                              placeholder="Select"
-                              className={`form-input-select ${
-                                rowErr.sides ? "input-error" : ""
-                              }`}
-                              classNamePrefix="form-input-select"
-                              inputId={sideId}
-                              onMenuOpen={() => setOpenMenuId(`sides_${item.id}`)}
-                              onMenuClose={() => setOpenMenuId(null)}
-                              menuPortalTarget={document.body}
-                              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-                              components={{ MenuList: CustomMenuList }}
-                            />
-                            <span
-                              className={[
-                                "chevron-input-icon fas fa-chevron-down",
-                                openMenuId === `sides_${item.id}`
-                                  ? "chevron-rotate"
-                                  : "",
-                                rowErr.sides ? "input-icon-error" : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            />
+                            <Select options={SIDE_OPTIONS} onChange={(opt) => handleItemChange(item.id, "sides", opt ? opt.value : "")} value={SIDE_OPTIONS.find((o) => o.value === item.sides) || null} placeholder="Select" className={`form-input-select ${rowErr.sides ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={sideId} onMenuOpen={() => setOpenMenuId(`sides_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
+                            <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `sides_${item.id}` ? "chevron-rotate" : "", rowErr.sides ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                           </div>
                         </div>
-                        {rowErr.sides && (
-                          <div className="input-error-message">{rowErr.sides}</div>
-                        )}
+                        {rowErr.sides && <div className="input-error-message">{rowErr.sides}</div>}
                       </div>
                     </div>
 
                     {/* Currency */}
                     <div className="invoice-table-cell cell-small">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div
-                          className={`input-form-group ${
-                            rowErr.jcurrency ? "input-form-error" : ""
-                          }`}
-                        >
-                          <label
-                            className={`input-form-label ${
-                              rowErr.jcurrency ? "input-label-message" : ""
-                            }`}
-                            htmlFor={currId}
-                          >
-                            Currency
-                          </label>
+                        <div className={`input-form-group ${rowErr.jcurrency ? "input-form-error" : ""}`}>
+                          <label className={`input-form-label ${rowErr.jcurrency ? "input-label-message" : ""}`} htmlFor={currId}>Currency</label>
                           <div className="form-wrapper">
-                            <Select
-                              options={CURRENCY_OPTIONS}
-                              onChange={(opt) =>
-                                handleItemChange(
-                                  item.id,
-                                  "jcurrency",
-                                  opt ? opt.value : "NGN"
-                                )
-                              }
-                              value={
-                                CURRENCY_OPTIONS.find(
-                                  (o) => o.value === item.jcurrency
-                                ) || null
-                              }
-                              className={`form-input-select ${
-                                rowErr.jcurrency ? "input-error" : ""
-                              }`}
-                              classNamePrefix="form-input-select"
-                              inputId={currId}
-                              onMenuOpen={() =>
-                                setOpenMenuId(`currency_${item.id}`)
-                              }
-                              onMenuClose={() => setOpenMenuId(null)}
-                              menuPortalTarget={document.body}
-                              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-                              components={{ MenuList: CustomMenuList }}
-                            />
-                            <span
-                              className={[
-                                "chevron-input-icon fas fa-chevron-down",
-                                openMenuId === `currency_${item.id}`
-                                  ? "chevron-rotate"
-                                  : "",
-                                rowErr.jcurrency ? "input-icon-error" : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            />
+                            <Select options={CURRENCY_OPTIONS} onChange={(opt) => handleItemChange(item.id, "jcurrency", opt ? opt.value : "NGN")} value={CURRENCY_OPTIONS.find((o) => o.value === item.jcurrency) || null} className={`form-input-select ${rowErr.jcurrency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={currId} onMenuOpen={() => setOpenMenuId(`currency_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
+                            <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `currency_${item.id}` ? "chevron-rotate" : "", rowErr.jcurrency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                           </div>
                         </div>
-                        {rowErr.jcurrency && (
-                          <div className="input-error-message">
-                            {rowErr.jcurrency}
-                          </div>
-                        )}
+                        {rowErr.jcurrency && <div className="input-error-message">{rowErr.jcurrency}</div>}
                       </div>
                     </div>
 
-                    {/* Rate */}
+                    {/* Rate with "+" Button */}
                     <div className="invoice-table-cell">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div
-                          className={`input-form-group ${
-                            rowErr.jrate ? "input-form-error" : ""
-                          }`}
-                        >
-                          <label
-                            className={`input-form-label ${
-                              rowErr.jrate ? "input-label-message" : ""
-                            }`}
-                            htmlFor={rateId}
-                          >
-                            Rate
-                          </label>
-                          <div className="form-wrapper">
-                            <Select
-                              options={rateOptions}
-                              onChange={(opt) =>
-                                handleItemChange(
-                                  item.id,
-                                  "jrate",
-                                  opt ? opt.value : ""
-                                )
-                              }
-                              value={selectedRateOpt}
-                              placeholder="Select rate"
-                              className={`form-input-select ${
-                                rowErr.jrate ? "input-error" : ""
-                              }`}
-                              classNamePrefix="form-input-select"
-                              isClearable
-                              inputId={rateId}
-                              onMenuOpen={() => setOpenMenuId(`rate_${item.id}`)}
-                              onMenuClose={() => setOpenMenuId(null)}
-                              noOptionsMessage={() =>
-                                rates.length === 0
-                                  ? "Loading rates..."
-                                  : `No rates for ${item.jcurrency}`
-                              }
-                              components={{ MenuList: CustomMenuList }}
-                              menuPortalTarget={document.body}
-                              styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-                              addNewLabel="+ Add New Rate"
-                              onAddNew={() => alert("Open Create Rate Modal")}
-                            />
-                            <span
-                              className={[
-                                "chevron-input-icon fas fa-chevron-down",
-                                openMenuId === `rate_${item.id}`
-                                  ? "chevron-rotate"
-                                  : "",
-                                rowErr.jrate ? "input-icon-error" : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                            />
+                      <div className="inv-form-flex">
+                        <div className="input-form-wrapper inv-form-flex-wrap">
+                          <div className={`input-form-group ${rowErr.jrate ? "input-form-error" : ""}`}>
+                            <label className={`input-form-label ${rowErr.jrate ? "input-label-message" : ""}`} htmlFor={rateId}>Rate</label>
+                            <div className="form-wrapper">
+                              <Select
+                                options={rateOptions}
+                                onChange={(opt) => handleItemChange(item.id, "jrate", opt ? opt.value : "")}
+                                value={selectedRateOpt}
+                                placeholder="Select rate"
+                                className={`form-input-select ${rowErr.jrate ? "input-error" : ""}`}
+                                classNamePrefix="form-input-select"
+                                isClearable
+                                inputId={rateId}
+                                onMenuOpen={() => setOpenMenuId(`rate_${item.id}`)}
+                                onMenuClose={() => setOpenMenuId(null)}
+                                noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : `No rates for ${item.jcurrency}`}
+                                menuPortalTarget={document.body}
+                                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                              />
+                              <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `rate_${item.id}` ? "chevron-rotate" : "", rowErr.jrate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                            </div>
                           </div>
+                          {rowErr.jrate && <div className="input-error-message">{rowErr.jrate}</div>}
                         </div>
-                        {rowErr.jrate && (
-                          <div className="input-error-message">
-                            {rowErr.jrate}
-                          </div>
-                        )}
+                        <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate">
+                          <span className="fas fa-plus"></span>
+                        </button>
                       </div>
                     </div>
 
                     {/* Amount */}
                     <div className="invoice-table-cell cell-small">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div
-                          className={`input-form-group ${
-                            rowErr.amount ? "input-form-error" : ""
-                          }`}
-                        >
+                        <div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">
-                            <input
-                              type="number"
-                              className={`form-input form-input-number ${
-                                rowErr.amount ? "input-error" : ""
-                              }`}
-                              value={item.amount}
-                              onChange={(e) =>
-                                handleItemChange(item.id, "amount", e.target.value)
-                              }
-                              step="0.01"
-                              min="0"
-                              placeholder="0.00"
-                            />
+                            <input type="number" className={`form-input form-input-number ${rowErr.amount ? "input-error" : ""}`} value={item.amount} onChange={(e) => handleItemChange(item.id, "amount", e.target.value)} step="0.01" min="0" placeholder="0.00" />
                           </div>
                         </div>
-                        {rowErr.amount && (
-                          <div className="input-error-message">
-                            {rowErr.amount}
-                          </div>
-                        )}
+                        {rowErr.amount && <div className="input-error-message">{rowErr.amount}</div>}
                       </div>
                     </div>
 
                     {/* Remove Row */}
                     <div className="invoice-table-cell cell-action">
-                      <button
-                        type="button"
-                        onClick={() => requestRemoveItem(item.id)}
-                        className="invoice-remove-btn"
-                        disabled={journalItems.length === 1}
-                        title="Remove row"
-                      >
+                      <button type="button" onClick={() => requestRemoveItem(item.id)} className="invoice-remove-btn" disabled={journalItems.length === 1} title="Remove row">
                         <span className="fas fa-trash" />
                       </button>
                     </div>
+
                   </div>
                 );
               })}
@@ -1225,72 +720,27 @@ const CreateJournalForm = () => {
             </button>
 
             <div className="invoice-totals journal-summary-grid">
-              {/* NGN Balance */}
               <div className="journal-summary-col">
                 <div className="invoice-total-row-header">NGN</div>
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">Debit</div>
-                  <div className="invoice-total-value">
-                    {formatNumber(totals.total_debit_ngn)}
-                  </div>
-                </div>
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">Credit</div>
-                  <div className="invoice-total-value">
-                    {formatNumber(totals.total_credit_ngn)}
-                  </div>
-                </div>
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label inv-bold">Balance</div>
-                  <div className="invoice-total-value inv-bold">
-                    {formatNumber(totals.grand_total_ngn)}
-                  </div>
-                </div>
+                <div className="invoice-total-row"><div className="invoice-total-label">Debit</div><div className="invoice-total-value">{formatNumber(totals.total_debit_ngn)}</div></div>
+                <div className="invoice-total-row"><div className="invoice-total-label">Credit</div><div className="invoice-total-value">{formatNumber(totals.total_credit_ngn)}</div></div>
+                <div className="invoice-total-row"><div className="invoice-total-label inv-bold">Balance</div><div className="invoice-total-value inv-bold">{formatNumber(totals.grand_total_ngn)}</div></div>
               </div>
 
-              {/* Other Currency */}
               <div className="journal-summary-col">
                 <div className="invoice-total-row-header">FCY</div>
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">Debit</div>
-                  <div className="invoice-total-value">
-                    {formatNumber(totals.total_debit_usd)}
-                  </div>
-                </div>
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">Credit</div>
-                  <div className="invoice-total-value">
-                    {formatNumber(totals.total_credit_usd)}
-                  </div>
-                </div>
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label inv-bold">Balance</div>
-                  <div className="invoice-total-value inv-bold">
-                    {formatNumber(totals.grand_total_usd)}
-                  </div>
-                </div>
+                <div className="invoice-total-row"><div className="invoice-total-label">Debit</div><div className="invoice-total-value">{formatNumber(totals.total_debit_usd)}</div></div>
+                <div className="invoice-total-row"><div className="invoice-total-label">Credit</div><div className="invoice-total-value">{formatNumber(totals.total_credit_usd)}</div></div>
+                <div className="invoice-total-row"><div className="invoice-total-label inv-bold">Balance</div><div className="invoice-total-value inv-bold">{formatNumber(totals.grand_total_usd)}</div></div>
               </div>
 
-              {/* Grand Total */}
               <div className="journal-summary-col jsc-summary">
-                <div
-                  className={`invoice-total-row invoice-grand-total ${
-                    !isBalanced ? "error-total" : "balanced-total"
-                  }`}
-                >
+                <div className={`invoice-total-row invoice-grand-total ${!isBalanced ? "error-total" : "balanced-total"}`}>
                   <div className="invoice-total-label invoice-diff-text">
                     Difference
-                    {!isBalanced && (
-                      <span style={{
-                        fontSize: "10px", marginLeft: "5px", color: "#f8d9d9"
-                        }}>
-                        (must be 0.00)
-                      </span>
-                    )}
+                    {!isBalanced && (<span style={{ fontSize: "10px", marginLeft: "5px", color: "#f8d9d9" }}>(must be 0.00)</span>)}
                   </div>
-                  <div className="invoice-total-value invoice-diff-text">
-                    {formatNumber(totals.grand_total)}
-                  </div>
+                  <div className="invoice-total-value invoice-diff-text">{formatNumber(totals.grand_total)}</div>
                 </div>
               </div>
             </div>
@@ -1299,32 +749,20 @@ const CreateJournalForm = () => {
           {/* ── SUBMIT ── */}
           <div className="invoice-action-btn">
             <div className="invoice-action-btn-wrapper">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="invoice-submit-btn"
-              >
-                {isLoading ? (
-                  <div className="invoice-loader" />
-                ) : (
-                  <span className="invoice-submit-btn-text">Submit Journal</span>
-                )}
+              <button type="submit" disabled={isLoading} className="invoice-submit-btn">
+                {isLoading ? (<div className="invoice-loader" />) : (<span className="invoice-submit-btn-text">Submit Journal</span>)}
               </button>
             </div>
           </div>
         </form>
       </motion.div>
 
-      {/* ── Remove row confirmation (no DB call — rows not yet saved) ── */}
+      {/* ── MODALS ── */}
       <AnimatePresence>
-        {deleteModal.open && (
-          <DeleteLineItemModal
-            isOpen={deleteModal.open}
-            onClose={() => setDeleteModal({ open: false, itemId: null })}
-            onConfirm={confirmRemoveItem}
-            isNew={true} 
-          />
-        )}
+        {deleteModal.open && (<DeleteLineItemModal isOpen={deleteModal.open} onClose={() => setDeleteModal({ open: false, itemId: null })} onConfirm={confirmRemoveItem} isNew={true} />)}
+        {showCreateClientModal && (<CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />)}
+        {showCreateLedgerModal && (<CreateLedgerModal isOpen={showCreateLedgerModal} onClose={() => setShowCreateLedgerModal(false)} onLedgerCreated={handleLedgerCreated} />)}
+        {showCreateRateModal && (<CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />)}
       </AnimatePresence>
     </>
   );
