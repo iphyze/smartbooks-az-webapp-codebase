@@ -1,111 +1,54 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../stores/useAuthStore";
 import useToastStore from "../../stores/useToastStore";
 import "./Login.css";
-import "../inputs-styles/Inputs.css";
-import Logo from "../../assets/images/smartbooks/logo.png";
-import 'aos/dist/aos.css';
-import AOS from 'aos';
+import Logo from "../../assets/images/smartbooks/smartbooks.png";
+import LogoWhite from "../../assets/images/smartbooks/smartbooks_dark.png";
 import useThemeStore from "../../stores/useThemeStore";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState("");
-  const [errors, setErrors] = useState({
-    email: "",
-    password: "",
-  });
-  const [passwordRequirements, setPasswordRequirements] = useState({
-    minLength: false,
-    hasUpperCase: false,
-    hasSpecialChar: false,
-    hasNumber: false,
-  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
   const { login } = useAuthStore();
   const { showToast } = useToastStore();
   const navigate = useNavigate();
-  const {theme} = useThemeStore();
+  const { theme } = useThemeStore();
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const isDark = theme === "dark";
 
-  // Real-time email validation
+  useEffect(() => {
+    setMounted(true);
+    document.title = "Smartbooks | Login";
+  }, []);
+
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // Real-time email format check only
   useEffect(() => {
     if (!email) {
-      setErrors(prev => ({ ...prev, email: "" }));
+      setErrors((prev) => ({ ...prev, email: "" }));
     } else if (!validateEmail(email)) {
-      setErrors(prev => ({
-        ...prev,
-        email: "Please enter a valid email address"
-      }));
+      setErrors((prev) => ({ ...prev, email: "Please enter a valid email address" }));
     } else {
-      setErrors(prev => ({ ...prev, email: "" }));
+      setErrors((prev) => ({ ...prev, email: "" }));
     }
   }, [email]);
 
-  // Real-time password validation with sequential requirements
+  // No real-time password validation on login — just clear error when user types
   useEffect(() => {
-    if (!password) {
-      setErrors(prev => ({ ...prev, password: "" }));
-      setPasswordRequirements({
-        minLength: false,
-        hasUpperCase: false,
-        hasSpecialChar: false,
-        hasNumber: false,
-      });
-      return;
-    }
-
-    const hasMinLength = password.length >= 6;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>_]/.test(password);
-    const hasNumber = /\d/.test(password);
-
-    setPasswordRequirements({
-      minLength: hasMinLength,
-      hasUpperCase: hasUpperCase,
-      hasSpecialChar: hasSpecialChar,
-      hasNumber: hasNumber,
-    });
-
-    // Sequential password requirement messages
-    if (!hasMinLength) {
-      setErrors(prev => ({
-        ...prev,
-        password: "Password must be at least 6 characters long!"
-      }));
-    } else if (!hasUpperCase) {
-      setErrors(prev => ({
-        ...prev,
-        password: "Password must contain at least one uppercase letter!"
-      }));
-    } else if (!hasSpecialChar) {
-      setErrors(prev => ({
-        ...prev,
-        password: "Password must contain at least one special character!"
-      }));
-    } else if (!hasNumber) {
-      setErrors(prev => ({
-        ...prev,
-        password: "Password must contain at least one number!"
-      }));
-    } else {
-      setErrors(prev => ({ ...prev, password: "" }));
+    if (password) {
+      setErrors((prev) => ({ ...prev, password: "" }));
     }
   }, [password]);
 
-
   const validateForm = () => {
-    const newErrors = {
-      email: "",
-      password: "",
-      bank: ""
-    };
+    const newErrors = { email: "", password: "" };
     let isValid = true;
 
     if (!email) {
@@ -119,33 +62,19 @@ const Login = () => {
     if (!password) {
       newErrors.password = "Password is required!";
       isValid = false;
-    } else if (!passwordRequirements.minLength || 
-               !passwordRequirements.hasUpperCase || 
-               !passwordRequirements.hasSpecialChar ||
-               !passwordRequirements.hasNumber
-              ) {
-      // Use the current sequential error message
-      newErrors.password = errors.password;
-      isValid = false;
     }
 
     setErrors(newErrors);
     return isValid;
   };
 
-
   const handleLogin = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
-
     try {
       const result = await login(email, password);
-      
       if (result.success) {
         showToast("Login successful! Welcome back.", "success");
         navigate("/");
@@ -159,91 +88,149 @@ const Login = () => {
     }
   };
 
-
-  useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      offset: 100,
-      easing: 'ease-in-out',
-      once: true,
-    });
-
-    document.title = "Smartbooks | Login";
-  
-  }, []);
+  const isFormValid = !errors.email && !errors.password && email && password;
 
   return (
-    <div className={`login-container theme-${theme}`}>
-      <div className="login-box-overlay"/>
+    <div className={`sb-login-root ${isDark ? "sb-dark" : "sb-light"} ${mounted ? "sb-mounted" : ""}`}>
+      <div className="sb-bg-grid" />
+      <div className="sb-bg-glow sb-glow-1" />
+      <div className="sb-bg-glow sb-glow-2" />
 
-
-      <div className="login-flexbox">
-
-          <form onSubmit={handleLogin} className="login-form-container" data-aos='fade-up'>
-
-            <div className="animated-circle-container">
-              <div className="animated-circle"/>
-              <div className="animated-circle animated-circle-2"/>
-              <div className="animated-circle animated-circle-3"/>
+      <div className="sb-login-wrapper">
+        {/* Left Panel */}
+        <div className="sb-panel-left">
+          <div className="sb-panel-left-inner">
+            <div className="sb-logo-wrap">
+              <img
+                src={isDark ? LogoWhite : Logo}
+                alt="Smartbooks Accounting"
+                className="sb-logo"
+                onError={(e) => { e.target.src = Logo; }}
+              />
             </div>
-            
-            <div className="login-inner-flexbox-col">
-                <div className="welcome-text" data-aos='fade-right'>
-                  <div className="login-logo-img-box">
-                  <img src={Logo} alt="smartbooks.png" className="smartbooks-logo"/>    
+
+            <div className="sb-tagline">
+              <span className="sb-tagline-main">Smart finances,</span>
+              <span className="sb-tagline-accent">smarter decisions.</span>
+            </div>
+
+            <p className="sb-panel-desc">
+              The all-in-one accounting platform built for modern businesses.
+            </p>
+
+            <div className="sb-features">
+              {[
+                { icon: "fa-file-invoice", label: "Invoice Generation" },
+                { icon: "fa-chart-line", label: "Expense Tracking" },
+                { icon: "fa-coins", label: "Income Management" },
+                { icon: "fa-chart-column", label: "Report Generation" },
+              ].map((f, i) => (
+                <div className="sb-feature-item" key={i} style={{ animationDelay: `${0.1 * i + 0.4}s` }}>
+                  <div className="sb-feature-icon">
+                    <i className={`fas ${f.icon}`} />
                   </div>
-                  <div className="login-welcome">Welcome to SmartBooks Accounting App!</div>
-                  <div className="login-sub-welcome">Manage your finances with ease and precision. Our app provides features such as:</div>
-                  <ul className="feature-list">
-                    <li>Invoice Generation</li>
-                    <li>Expense Tracking</li>
-                    <li>Income Management</li>
-                    <li>Report Generation</li>
-                    <li>And much more!</li>
-                  </ul>
-              </div>
-            </div> 
-
-
-            <div className="login-inner-flexbox-col login-col-form">
-
-            <div className="input-form-wrapper">
-              <div className={`input-form-group ${errors.email ? 'input-form-error' : ''}`}>
-                <label className={`input-form-label ${errors.email ? 'input-label-message' : ''}`} htmlFor="email">Email</label>
-                <div className="form-wrapper">
-                  <input type="email" placeholder="Enter Email" value={email} onChange={(e) => setEmail(e.target.value)} id="email"
-                  className={`form-input ${errors.email ? 'input-error' : ''}`}
-                  />
-                  <span className={`input-icon fas fa-envelope ${errors.email ? 'input-icon-error' : ''}`}></span>
+                  <span>{f.label}</span>
                 </div>
-              </div>
-              {errors.email && <div className="input-error-message" data-aos='fade-in'>{errors.email}</div>}
+              ))}
             </div>
 
-            <div className="input-form-wrapper">
-              <div className={`input-form-group ${errors.password ? 'input-form-error' : ''}`}>
-                <label className={`input-form-label ${errors.password ? 'input-label-message' : ''}`} htmlFor="password">Password</label>
-                <div className="form-wrapper">
-                  <input type={showPassword ? "text" : "password"} placeholder="Enter Password" value={password} 
-                  onChange={(e) => setPassword(e.target.value)} id="password" autoComplete="none"
-                  className={`form-input ${errors.password ? 'input-error' : ''}`}
-                  />
-                  <span className={`input-icon fas fa-lock ${errors.password ? 'input-icon-error' : ''}`}></span>
-                  <button type="button" className={`login-show-btn ${errors.password ? 'input-icon-error' : ''}`} onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button>
-                </div>
-              </div>
-              {errors.password && <div className="input-error-message" data-aos='fade-in'>{errors.password}</div>}
-            </div>
-
-            <button type="submit" disabled={isLoading || errors.email || errors.password} className="login-submit-btn">
-              <div className="login-inner-bg" />
-              {/* <div className="login-loader-loader"></div> */}
-              {isLoading ? (<div className="login-loader-loader"></div>) : (<div className="login-inner-text">Login &nbsp; <span className="fas fa-right-to-bracket"></span></div>)}
-            </button>
-
+            <div className="sb-deco-circle sb-dc-1" />
+            <div className="sb-deco-circle sb-dc-2" />
+            <div className="sb-deco-circle sb-dc-3" />
           </div>
+        </div>
 
-          </form>
+        {/* Right Panel */}
+        <div className="sb-panel-right">
+          <div className="sb-form-card">
+            <div className="sb-form-header">
+              <h1 className="sb-form-title">Welcome back</h1>
+              <p className="sb-form-subtitle">Sign in to your account to continue</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="sb-form" noValidate>
+              {/* Email Field */}
+              <div className={`sb-field ${errors.email ? "sb-field--error" : email && !errors.email ? "sb-field--valid" : ""}`}>
+                <label className="sb-label" htmlFor="email">Email Address</label>
+                <div className="sb-input-wrap">
+                  <i className="sb-input-icon fas fa-envelope" />
+                  <input
+                    type="email"
+                    id="email"
+                    className="sb-input"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                  {email && !errors.email && (
+                    <i className="sb-input-status fas fa-circle-check" />
+                  )}
+                </div>
+                {errors.email && (
+                  <p className="sb-error-msg">
+                    <i className="fas fa-triangle-exclamation" /> {errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Password Field — no strength hints on login */}
+              <div className={`sb-field ${errors.password ? "sb-field--error" : ""}`}>
+                <label className="sb-label" htmlFor="password">Password</label>
+                <div className="sb-input-wrap">
+                  <i className="sb-input-icon fas fa-lock" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    className="sb-input sb-input--password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="sb-toggle-pw"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"}`} />
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="sb-error-msg">
+                    <i className="fas fa-triangle-exclamation" /> {errors.password}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || !isFormValid}
+                className="sb-submit-btn"
+              >
+                {isLoading ? (
+                  <span className="sb-btn-loader">
+                    <span /><span /><span />
+                  </span>
+                ) : (
+                  <span className="sb-btn-content">
+                    Sign In <i className="fas fa-arrow-right" />
+                  </span>
+                )}
+                <div className="sb-btn-shimmer" />
+              </button>
+            </form>
+
+            <div className="sb-form-footer">
+              <div className="sb-divider"><span>Secured with enterprise-grade encryption</span></div>
+              <div className="sb-security-badges">
+                <span><i className="fas fa-shield-halved" /> SSL Protected</span>
+                <span><i className="fas fa-lock" /> 256-bit Encryption</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

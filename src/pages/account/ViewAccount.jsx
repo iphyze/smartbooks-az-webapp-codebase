@@ -17,11 +17,11 @@ const ViewAccount = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useAccountStore
-  const { 
-    singleAccount: accountData, 
-    fetchingSingle: isLoading, 
-    singleAccountError: fetchError, 
-    fetchSingleAccount 
+  const {
+    singleAccount: accountData,
+    fetchingSingle: isLoading,
+    singleAccountError: fetchError,
+    fetchSingleAccount
   } = useAccountStore();
 
   const links = [
@@ -32,7 +32,7 @@ const ViewAccount = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | View Account";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(accountId, 10);
     if (!accountId || isNaN(parsedId) || parsedId <= 0) {
@@ -62,14 +62,19 @@ const ViewAccount = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Accounts" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Account...'} />
-        ) : accountData ? (
-          // Pass the fetched data directly to the child
-          <ViewAccountContent account={accountData} />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Accounts" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Account...'} />
+            ) : accountData ? (
+              // Pass the fetched data directly to the child
+              <ViewAccountContent account={accountData} />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

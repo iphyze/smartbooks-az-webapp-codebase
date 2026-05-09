@@ -1,0 +1,98 @@
+/* ══════════════════════════════════════════
+   PAGE NAV — Title + Breadcrumb
+   Light/dark modes, DM Sans / Sora fonts
+══════════════════════════════════════════ */
+
+.pn-root--light {
+  --pn-title-color:    #0d1f1b;
+  --pn-crumb-color:    #7aada6;
+  --pn-crumb-active:   #00956e;
+  --pn-crumb-link:     #94a7a5;
+  --pn-sep-color:      #b3cec9;
+  --pn-home-color:     #a8c9c3;
+  --pn-border:         #deeee9;
+  --pn-bg:             transparent;
+}
+
+/* REPLACE .pn-root--dark { } */
+.pn-root--dark {
+  --pn-title-color:    #e6edf3;
+  --pn-crumb-color:    #4d6370;
+  --pn-crumb-active:   #00c9aa;
+  --pn-crumb-link:     #65a49b;
+  --pn-sep-color:      #3d4b56;
+  --pn-home-color:     #3d4b56;
+  --pn-border:         #21262d;
+  --pn-bg:             transparent;
+}
+
+.pn-root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--pn-border);
+  margin-bottom: 40px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── Title ── */
+.pn-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pn-title-color);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* ── Breadcrumb ── */
+.pn-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.pn-home-icon {
+  font-size: 11px;
+  color: var(--pn-home-color);
+}
+
+.pn-sep {
+  font-size: 8px;
+  color: var(--pn-sep-color);
+  flex-shrink: 0;
+}
+
+.pn-crumb {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.pn-crumb--plain  { color: var(--pn-crumb-color); }
+.pn-crumb--active {
+  color: var(--pn-crumb-active);
+  font-weight: 600;
+}
+.pn-crumb--link {
+  color: var(--pn-crumb-link);
+}
+.pn-crumb--link:hover {
+  color: var(--pn-crumb-active);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .pn-root  { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .pn-title { font-size: 17px; }
+}

@@ -28,8 +28,12 @@ const CreateProject = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Create Project' links={links} />
-        <CreateProjectForm />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Create Project' links={links} />
+            <CreateProjectForm />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import NavBar from "../NavBar";
 import Header from "../Header";
 import useThemeStore from "../../stores/useThemeStore";
 import { Link, NavLink } from "react-router-dom";
-import { motion} from "framer-motion";
+import { motion } from "framer-motion";
 import { fadeIn, fadeInUp, fadeInDown } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import CreateInvoiceForm from "./CreateInvoiceForm";
@@ -31,10 +31,15 @@ const CreateInvoice = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Invoice' links={links} />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Invoice' links={links} />
 
-        <CreateInvoiceForm />
-        
+            <CreateInvoiceForm />
+
+          </div>
+        </div>
+
       </div>
     </div>
   );

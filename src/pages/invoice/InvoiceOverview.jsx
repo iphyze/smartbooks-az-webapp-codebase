@@ -216,6 +216,9 @@ const InvoiceOverview = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+        
         <PageNav pageTitle='Invoice Overview' links={links} />
 
         <motion.div variants={fadeInUp} initial="hidden" animate="show"
@@ -449,7 +452,13 @@ const InvoiceOverview = () => {
             />
           )}
         </AnimatePresence>
+        
+        
+          </div>
+          </div>
       </div>
+
+      
     </div>
   );
 };

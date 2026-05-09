@@ -1,0 +1,221 @@
+/* ══════════════════════════════════════════
+   CHARTS CSS
+══════════════════════════════════════════ */
+
+/* ── Metric toggle buttons (Top Clients) ── */
+.db-metric-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--db-border);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--db-text-3);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.db-metric-btn.active {
+  background: var(--db-brand-dim);
+  color: var(--db-brand);
+  border-color: rgba(0,177,150,0.3);
+  font-weight: 600;
+}
+.db-metric-btn:hover:not(.active) {
+  background: var(--db-surface-3);
+  color: var(--db-text-2);
+}
+
+/* ── Invoice Status Breakdown ── */
+.db-status-total-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--db-text-3);
+  background: var(--db-surface-3);
+  border: 1px solid var(--db-border);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+/* Segmented bar */
+.db-seg-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  gap: 2px;
+  margin-bottom: 20px;
+  background: var(--db-surface-3);
+}
+.db-seg-bar__fill {
+  height: 100%;
+  border-radius: 0;
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  min-width: 3px;
+}
+.db-seg-bar__fill:first-child { border-radius: 10px 0 0 10px; }
+.db-seg-bar__fill:last-child  { border-radius: 0 10px 10px 0; }
+
+/* Status rows */
+.db-status-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.db-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.db-status-row__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.db-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.db-status-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--db-text-2);
+  white-space: nowrap;
+}
+
+.db-status-row__bar-wrap {
+  flex: 1;
+}
+
+.db-status-row__bar {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--db-surface-3);
+  overflow: hidden;
+}
+
+.db-status-row__fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  min-width: 4px;
+}
+
+.db-status-row__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 130px;
+  justify-content: flex-end;
+}
+
+.db-status-count {
+  font-size: 11px;
+  color: var(--db-text-4);
+  background: var(--db-surface-3);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
+}
+
+.db-status-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--db-text-1);
+  font-family: 'Sora', sans-serif;
+  min-width: 48px;
+  text-align: right;
+}
+
+.db-status-pct {
+  font-size: 11px;
+  color: var(--db-text-3);
+  min-width: 36px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.db-status-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--db-border-light);
+}
+
+.db-status-footer__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--db-text-3);
+}
+
+.db-status-footer__val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--db-text-1);
+  font-family: 'Sora', sans-serif;
+}
+
+/* ── Pie / old wrapper (still used for pie area) ── */
+.db-pie-wrap {
+  display: flex;
+  align-items: center;
+}
+.db-pie-chart-area { flex: 0 0 180px; }
+.db-pie-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 14px;
+}
+.db-pie-leg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.db-pie-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.db-pie-name  { flex: 1; color: var(--db-text-2); font-weight: 500; }
+.db-pie-count {
+  font-size: 11px;
+  color: var(--db-text-4);
+  background: var(--db-surface-3);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.db-pie-val {
+  font-weight: 700;
+  color: var(--db-text-1);
+  font-family: 'Sora', sans-serif;
+  font-size: 12px;
+  min-width: 40px;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .db-status-row__right { min-width: 100px; gap: 6px; }
+  .db-status-pct        { display: none; }
+  .db-metric-btn        { font-size: 10.5px; padding: 3px 7px; }
+  .db-card__action      { flex-wrap: wrap; gap: 4px; }
+}

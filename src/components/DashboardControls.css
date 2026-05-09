@@ -1,0 +1,289 @@
+/* ══════════════════════════════════════════════
+   DASHBOARD CONTROLS — Date picker + Currency
+══════════════════════════════════════════════ */
+
+.db-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: var(--db-radius);
+  box-shadow: var(--db-shadow-sm);
+}
+
+.db-controls__dates {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.db-controls__sep {
+  color: var(--db-text-4);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.db-controls__hint {
+  font-size: 11.5px;
+  color: var(--db-text-4);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+}
+.db-controls__hint i { color: var(--db-brand); }
+
+.db-controls__apply {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: var(--db-brand);
+  color: white;
+  border: none;
+  border-radius: var(--db-radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+.db-controls__apply:hover { opacity: 0.88; transform: translateY(-1px); }
+.db-controls__apply:active { transform: translateY(0); }
+
+.db-controls__clear {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--db-border);
+  border-radius: var(--db-radius-sm);
+  background: transparent;
+  color: var(--db-text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+.db-controls__clear:hover {
+  background: var(--db-red-dim);
+  color: var(--db-red);
+  border-color: var(--db-red);
+}
+
+/* ── Date input button ── */
+.db-date-input {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.db-date-input__btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--db-surface-3);
+  border: 1.5px solid var(--db-border);
+  border-radius: var(--db-radius-sm);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  min-width: 160px;
+}
+.db-date-input__btn:hover,
+.db-date-input__btn:focus-within {
+  border-color: var(--db-brand);
+  background: var(--db-surface);
+  box-shadow: 0 0 0 3px var(--db-brand-dim);
+}
+
+.db-date-input__icon {
+  font-size: 12px;
+  color: var(--db-brand);
+  flex-shrink: 0;
+}
+
+.db-date-input__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--db-text-3);
+  flex-shrink: 0;
+}
+
+.db-date-input__val {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--db-text-1);
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.db-date-input__val--empty { color: var(--db-text-4); }
+
+.db-date-input__chevron {
+  font-size: 9px;
+  color: var(--db-text-3);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.db-date-input__chevron.open { transform: rotate(180deg); color: var(--db-brand); }
+
+/* ── Calendar popup ── */
+.db-date-input__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 500;
+  animation: db-cal-drop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes db-cal-drop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.db-cal {
+  background: var(--db-surface);
+  border: 1.5px solid var(--db-border);
+  border-radius: var(--db-radius);
+  box-shadow: var(--db-shadow-lg);
+  padding: 12px;
+  min-width: 240px;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.db-cal__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.db-cal__arrow {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--db-border);
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--db-text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.db-cal__arrow:hover { background: var(--db-brand-dim); color: var(--db-brand); }
+
+.db-cal__heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--db-text-1);
+  font-family: 'Sora', sans-serif;
+}
+
+.db-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.db-cal__dow {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--db-text-4);
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.db-cal__day {
+  width: 100%;
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--db-text-2);
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.12s ease, color 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.db-cal__day:hover:not(.db-cal__day--dis):not(.db-cal__day--empty) {
+  background: var(--db-brand-dim);
+  color: var(--db-brand);
+}
+.db-cal__day--sel {
+  background: var(--db-brand) !important;
+  color: white !important;
+  font-weight: 700;
+}
+.db-cal__day--today:not(.db-cal__day--sel) {
+  color: var(--db-brand);
+  font-weight: 700;
+  border: 1.5px solid var(--db-brand);
+}
+.db-cal__day--dis {
+  color: var(--db-text-4);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.db-cal__day--empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.db-cal__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--db-border-light);
+}
+.db-cal__today-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--db-brand);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--db-brand);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.db-cal__today-btn:hover { background: var(--db-brand); color: white; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .db-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .db-controls__dates { flex-wrap: wrap; }
+  .db-controls__cur   { justify-content: center; }
+  .db-controls__hint  { display: none; }
+  .db-date-input__btn { min-width: 140px; }
+}
+@media (max-width: 480px) {
+  .db-date-input__pop { left: 50%; transform: translateX(-50%); }
+  @keyframes db-cal-drop {
+    from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+}

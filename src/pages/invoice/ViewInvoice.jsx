@@ -51,7 +51,7 @@ const ViewInvoice = () => {
         `/invoice/fetch-single-invoice?invoice_number=${parsedId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Check if data actually exists in response
       if (response.data && response.data.data) {
         setinvoiceData(response.data.data);
@@ -81,14 +81,19 @@ const ViewInvoice = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Invoice" links={links} />
 
-        {pageState === "checking" ? (
-          <EditLoaderComponent text={'Loading Invoice...'} />
-        ) : (
-          // Pass the fetched data directly to the child
-          <ViewInvoiceContent invoice={invoiceData} />
-        )}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Invoice" links={links} />
+
+            {pageState === "checking" ? (
+              <EditLoaderComponent text={'Loading Invoice...'} />
+            ) : (
+              // Pass the fetched data directly to the child
+              <ViewInvoiceContent invoice={invoiceData} />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

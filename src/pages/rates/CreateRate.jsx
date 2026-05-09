@@ -28,8 +28,12 @@ const CreateRate = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Create Rate' links={links} />
-        <CreateRateForm />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Create Rate' links={links} />
+            <CreateRateForm />
+          </div>
+        </div>
       </div>
     </div>
   );

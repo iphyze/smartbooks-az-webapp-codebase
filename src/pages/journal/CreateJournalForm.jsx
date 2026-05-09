@@ -472,7 +472,11 @@ const CreateJournalForm = () => {
                 <div className={`input-form-group ${headerErrors.journal_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.journal_date ? "input-label-message" : ""}`} htmlFor="journal_date">Journal Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" />
+                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" 
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"  
+                    />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.journal_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>
@@ -760,8 +764,14 @@ const CreateJournalForm = () => {
       {/* ── MODALS ── */}
       <AnimatePresence>
         {deleteModal.open && (<DeleteLineItemModal isOpen={deleteModal.open} onClose={() => setDeleteModal({ open: false, itemId: null })} onConfirm={confirmRemoveItem} isNew={true} />)}
+      </AnimatePresence>
+      <AnimatePresence>
         {showCreateClientModal && (<CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />)}
+      </AnimatePresence>
+      <AnimatePresence>
         {showCreateLedgerModal && (<CreateLedgerModal isOpen={showCreateLedgerModal} onClose={() => setShowCreateLedgerModal(false)} onLedgerCreated={handleLedgerCreated} />)}
+      </AnimatePresence>
+      <AnimatePresence>
         {showCreateRateModal && (<CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />)}
       </AnimatePresence>
     </>

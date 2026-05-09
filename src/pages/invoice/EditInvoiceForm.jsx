@@ -462,7 +462,11 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                 <div className={`input-form-group ${headerErrors.invoice_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.invoice_date ? "input-label-message" : ""}`} htmlFor="invoice_date">Invoice Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={invoiceDetails.invoice_date} onChange={(date) => handleDetailChange("invoice_date", date)} className={`form-input ${headerErrors.invoice_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="invoice_date" />
+                    <DatePicker selected={invoiceDetails.invoice_date} onChange={(date) => handleDetailChange("invoice_date", date)} className={`form-input ${headerErrors.invoice_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="invoice_date" 
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"  
+                    />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.invoice_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>
@@ -476,7 +480,11 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                 <div className={`input-form-group ${headerErrors.due_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.due_date ? "input-label-message" : ""}`} htmlFor="due_date">Due Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={invoiceDetails.due_date} onChange={(date) => handleDetailChange("due_date", date)} className={`form-input ${headerErrors.due_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="due_date" />
+                    <DatePicker selected={invoiceDetails.due_date} onChange={(date) => handleDetailChange("due_date", date)} className={`form-input ${headerErrors.due_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="due_date" 
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"  
+                    />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.due_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>

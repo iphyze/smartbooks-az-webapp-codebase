@@ -50,7 +50,7 @@ const BankOverview = () => {
   // Fetch data whenever relevant store states change
   useEffect(() => {
     fetchData();
-  }, [currentPage, itemsPerPage, sortBy, sortOrder]); 
+  }, [currentPage, itemsPerPage, sortBy, sortOrder]);
 
   const totalPages = getTotalPages();
 
@@ -58,7 +58,7 @@ const BankOverview = () => {
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    if (!query) fetchData(); 
+    if (!query) fetchData();
   };
 
   const handleSearchSubmit = (e) => {
@@ -157,20 +157,20 @@ const BankOverview = () => {
   const getPageNumbers = () => {
     const maxVisiblePages = 5;
     const pages = [];
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
       const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
+
       if (startPage > 1) {
         pages.push(1);
         if (startPage > 2) pages.push('...');
       }
-      
+
       for (let i = startPage; i <= endPage; i++) pages.push(i);
-      
+
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) pages.push('...');
         pages.push(totalPages);
@@ -185,222 +185,227 @@ const BankOverview = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Bank Accounts' links={links} />
 
-        <motion.div variants={fadeInUp} initial="hidden" animate="show"
-          transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
-          className={`invoice-section theme-${theme}`}
-        >
-          <div className="top-action-wrapper">
-            <Link to='/banks/create' className="create-new-invoice-btn">
-              <span className="fas fa-circle-plus"></span>
-              <span>Add Bank</span>
-            </Link>
-            {/* <button className="create-new-invoice-btn export-btn" onClick={handleExport} title="Export to Excel">
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Bank Accounts' links={links} />
+
+            <motion.div variants={fadeInUp} initial="hidden" animate="show"
+              transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
+              className={`invoice-section theme-${theme}`}
+            >
+              <div className="top-action-wrapper">
+                <Link to='/banks/create' className="create-new-invoice-btn">
+                  <span className="fas fa-circle-plus"></span>
+                  <span>Add Bank</span>
+                </Link>
+                {/* <button className="create-new-invoice-btn export-btn" onClick={handleExport} title="Export to Excel">
               <span className="fas fa-file-excel"></span>
               <span>Export</span>
             </button> */}
-          </div>
+              </div>
 
-          <div className="main-table-box">
-            {loading ? (
-              <TableLoaderComponent />
-            ) : (
-              <>
-                <div className="table-controls">
-                  <div className="table-search-box">
-                    <input 
-                      type="text" 
-                      placeholder="Search by account name, number, or bank..."
-                      value={searchQuery} 
-                      onChange={handleSearchChange} 
-                      onKeyDown={handleSearchSubmit}
-                      className="table-search-input"
-                    />
-                    <span 
-                      className="fas fa-search table-search-icon" 
-                      onClick={handleSearchClick} 
-                      style={{ cursor: 'pointer' }}
-                    />
-                  </div>
-
-                  <div className="filters-box">
-                    <div className="filter-wrapper">
-                      <label className="filter-wrapper-label">Page limit</label>
-                      <ChartSearchableSelect
-                        options={pageLimitOptions}
-                        value={itemsPerPage}
-                        onChange={handlePageLimitChange}
-                        className="box-filter-limit"
-                      />
-                    </div>
-                    
-                    {selectedItems.length > 0 && (
-                      <div className="filter-wrapper bulk-actions">
-                        <label className="filter-wrapper-label">Select Action</label>
-                        <ChartSearchableSelect
-                          options={actionOptions}
-                          value={selectedAction}
-                          onChange={handleActionChange}
-                          className="box-filter-action"
+              <div className="main-table-box">
+                {loading ? (
+                  <TableLoaderComponent />
+                ) : (
+                  <>
+                    <div className="table-controls">
+                      <div className="table-search-box">
+                        <input
+                          type="text"
+                          placeholder="Search by account name, number, or bank..."
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          onKeyDown={handleSearchSubmit}
+                          className="table-search-input"
+                        />
+                        <span
+                          className="fas fa-search table-search-icon"
+                          onClick={handleSearchClick}
+                          style={{ cursor: 'pointer' }}
                         />
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="table-box">
-                  <div className="table-wrapper">
-                    <table className="data-table invoice-table">
-                      <thead>
-                        <tr>
-                          <th className="checkbox-cell">
-                            <input
-                              type="checkbox"
-                              checked={data.length > 0 && selectedItems.length === data.length}
-                              onChange={handleSelectAll}
-                              className={`table-checkbox fas fa-check 
-                            ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
+                      <div className="filters-box">
+                        <div className="filter-wrapper">
+                          <label className="filter-wrapper-label">Page limit</label>
+                          <ChartSearchableSelect
+                            options={pageLimitOptions}
+                            value={itemsPerPage}
+                            onChange={handlePageLimitChange}
+                            className="box-filter-limit"
+                          />
+                        </div>
+
+                        {selectedItems.length > 0 && (
+                          <div className="filter-wrapper bulk-actions">
+                            <label className="filter-wrapper-label">Select Action</label>
+                            <ChartSearchableSelect
+                              options={actionOptions}
+                              value={selectedAction}
+                              onChange={handleActionChange}
+                              className="box-filter-action"
                             />
-                          </th>
-                          <th onClick={() => handleSort('account_name')} className="sortable">
-                            Account Name {getSortIcon('account_name')}
-                          </th>
-                          <th onClick={() => handleSort('account_number')} className="sortable">
-                            Account Number {getSortIcon('account_number')}
-                          </th>
-                          <th onClick={() => handleSort('bank_name')} className="sortable">
-                            Bank Name {getSortIcon('bank_name')}
-                          </th>
-                          <th onClick={() => handleSort('account_currency')} className="sortable">
-                            Currency {getSortIcon('account_currency')}
-                          </th>
-                          <th onClick={() => handleSort('created_at')} className="sortable">
-                            Created At {getSortIcon('created_at')}
-                          </th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((bank) => (
-                          <tr key={bank.id} className={selectedItems.includes(bank.id) ? 'selected' : ''}>
-                            <td className="checkbox-cell">
-                              <input
-                                type="checkbox"
-                                className={`table-checkbox fas fa-check ${selectedItems.includes(bank.id) && 'selected-checkbox'}`}
-                                checked={selectedItems.includes(bank.id)}
-                                onChange={() => toggleItemSelection(bank.id)}
-                              />
-                            </td>
-                            <td>
-                              <div className="table-flex-box">
-                                <span className="table-customer-text">{bank.account_name}</span>
-                              </div>
-                            </td>
-                            <td className="number-tab">{bank.account_number}</td>
-                            <td className="number-tab">{bank.bank_name}</td>
-                            <td className="number-tab">{bank.account_currency}</td>
-                            <td className="number-tab">{new Date(bank.created_at).toLocaleDateString('en-GB')}</td>
-                            <td>
-                              <div className="action-buttons">
-                                <button className="btn-view" title="View" onClick={() => handleViewBank(bank)}>
-                                  <span className="fas fa-file"></span> 
-                                </button>
-                                <button className="btn-edit" title="Edit" onClick={() => handleEditBank(bank)}>
-                                  <span className="fas fa-pen"></span> 
-                                </button>
-                                <button className="btns-delete" title="Delete" onClick={() => handleDeleteBank(bank.id)}>
-                                  <span className="fas fa-trash"></span> 
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="pagination-container">
-                    <div className="pagination-info">
-                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="pagination-controls">
-                      <button 
-                        className="pagination-btn" 
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <span>Previous</span>
-                      </button>
-                      
-                      {getPageNumbers().map((page, index) => (
-                        page === '...' ? (
-                          <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
-                        ) : (
+
+                    <div className="table-box">
+                      <div className="table-wrapper">
+                        <table className="data-table invoice-table">
+                          <thead>
+                            <tr>
+                              <th className="checkbox-cell">
+                                <input
+                                  type="checkbox"
+                                  checked={data.length > 0 && selectedItems.length === data.length}
+                                  onChange={handleSelectAll}
+                                  className={`table-checkbox fas fa-check 
+                            ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
+                                />
+                              </th>
+                              <th onClick={() => handleSort('account_name')} className="sortable">
+                                Account Name {getSortIcon('account_name')}
+                              </th>
+                              <th onClick={() => handleSort('account_number')} className="sortable">
+                                Account Number {getSortIcon('account_number')}
+                              </th>
+                              <th onClick={() => handleSort('bank_name')} className="sortable">
+                                Bank Name {getSortIcon('bank_name')}
+                              </th>
+                              <th onClick={() => handleSort('account_currency')} className="sortable">
+                                Currency {getSortIcon('account_currency')}
+                              </th>
+                              <th onClick={() => handleSort('created_at')} className="sortable">
+                                Created At {getSortIcon('created_at')}
+                              </th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.map((bank) => (
+                              <tr key={bank.id} className={selectedItems.includes(bank.id) ? 'selected' : ''}>
+                                <td className="checkbox-cell">
+                                  <input
+                                    type="checkbox"
+                                    className={`table-checkbox fas fa-check ${selectedItems.includes(bank.id) && 'selected-checkbox'}`}
+                                    checked={selectedItems.includes(bank.id)}
+                                    onChange={() => toggleItemSelection(bank.id)}
+                                  />
+                                </td>
+                                <td>
+                                  <div className="table-flex-box">
+                                    <span className="table-customer-text">{bank.account_name}</span>
+                                  </div>
+                                </td>
+                                <td className="number-tab">{bank.account_number}</td>
+                                <td className="number-tab">{bank.bank_name}</td>
+                                <td className="number-tab">{bank.account_currency}</td>
+                                <td className="number-tab">{new Date(bank.created_at).toLocaleDateString('en-GB')}</td>
+                                <td>
+                                  <div className="action-buttons">
+                                    <button className="btn-view" title="View" onClick={() => handleViewBank(bank)}>
+                                      <span className="fas fa-file"></span>
+                                    </button>
+                                    <button className="btn-edit" title="Edit" onClick={() => handleEditBank(bank)}>
+                                      <span className="fas fa-pen"></span>
+                                    </button>
+                                    <button className="btns-delete" title="Delete" onClick={() => handleDeleteBank(bank.id)}>
+                                      <span className="fas fa-trash"></span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="pagination-container">
+                        <div className="pagination-info">
+                          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries
+                        </div>
+                        <div className="pagination-controls">
                           <button
-                            key={page}
-                            className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
-                            onClick={() => goToPage(page)}
+                            className="pagination-btn"
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
                           >
-                            {page}
+                            <span>Previous</span>
                           </button>
-                        )
-                      ))}
-                      
-                      <button 
-                        className="pagination-btn" 
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <span>Next</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
 
-                {data.length === 0 && (
-                  <EmptyTable
-                    icon="fas fa-university" 
-                    message="No bank accounts found matching your criteria"
-                    link="/bank/create"
-                  />
+                          {getPageNumbers().map((page, index) => (
+                            page === '...' ? (
+                              <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                            ) : (
+                              <button
+                                key={page}
+                                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                                onClick={() => goToPage(page)}
+                              >
+                                {page}
+                              </button>
+                            )
+                          ))}
+
+                          <button
+                            className="pagination-btn"
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                          >
+                            <span>Next</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {data.length === 0 && (
+                      <EmptyTable
+                        icon="fas fa-university"
+                        message="No bank accounts found matching your criteria"
+                        link="/bank/create"
+                      />
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </div>
+            </motion.div>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+              {showDeleteModal && (
+                <DeleteConfirmationModal
+                  isOpen={showDeleteModal}
+                  onClose={() => {
+                    setShowDeleteModal(false);
+                    setSelectedAction("");
+                    clearSelection();
+                  }}
+                  onConfirm={handleDelete}
+                  count={selectedItems.length}
+                  page="bank account"
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Error Modal Integration */}
+            <AnimatePresence>
+              {error && (
+                <ErrorModal
+                  isOpen={!!error}
+                  onClose={handleCloseErrorModal}
+                  onRetry={fetchData}
+                  message={error}
+                />
+              )}
+            </AnimatePresence>
           </div>
-        </motion.div>
-
-        {/* Delete Confirmation Modal */}
-        <AnimatePresence>
-          {showDeleteModal && (
-            <DeleteConfirmationModal
-              isOpen={showDeleteModal}
-              onClose={() => {
-                setShowDeleteModal(false);
-                setSelectedAction("");
-                clearSelection();
-              }}
-              onConfirm={handleDelete}
-              count={selectedItems.length}
-              page="bank account"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Error Modal Integration */}
-        <AnimatePresence>
-          {error && (
-            <ErrorModal
-              isOpen={!!error}
-              onClose={handleCloseErrorModal}
-              onRetry={fetchData}
-              message={error}
-            />
-          )}
-        </AnimatePresence>
+        </div>
       </div>
     </div>
   );

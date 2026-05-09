@@ -17,11 +17,11 @@ const EditAccount = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useAccountStore
-  const { 
-    singleAccount: accountData, 
-    fetchingSingle: isLoading, 
-    singleAccountError: fetchError, 
-    fetchSingleAccount 
+  const {
+    singleAccount: accountData,
+    fetchingSingle: isLoading,
+    singleAccountError: fetchError,
+    fetchSingleAccount
   } = useAccountStore();
 
   const links = [
@@ -32,7 +32,7 @@ const EditAccount = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Edit Account";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -66,18 +66,23 @@ const EditAccount = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Accounts" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Account...'} />
-        ) : accountData ? (
-          // Pass the fetched data directly to the child
-          <EditAccountForm
-            accountId={accountData.id}
-            account={accountData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Accounts" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Account...'} />
+            ) : accountData ? (
+              // Pass the fetched data directly to the child
+              <EditAccountForm
+                accountId={accountData.id}
+                account={accountData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

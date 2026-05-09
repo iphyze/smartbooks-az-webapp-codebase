@@ -19,11 +19,11 @@ const ViewClient = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useClientStore
-  const { 
-    singleClient: clientData, 
-    fetchingSingle: isLoading, 
-    singleClientError: fetchError, 
-    fetchSingleClient 
+  const {
+    singleClient: clientData,
+    fetchingSingle: isLoading,
+    singleClientError: fetchError,
+    fetchSingleClient
   } = useClientStore();
 
   const links = [
@@ -34,7 +34,7 @@ const ViewClient = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | View Client";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(clientId, 10);
     if (!clientId || isNaN(parsedId) || parsedId <= 0) {
@@ -64,14 +64,19 @@ const ViewClient = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Clients" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Client...'} />
-        ) : clientData ? (
-          // Pass the fetched data directly to the child
-          <ViewClientContent client={clientData} />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Clients" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Client...'} />
+            ) : clientData ? (
+              // Pass the fetched data directly to the child
+              <ViewClientContent client={clientData} />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

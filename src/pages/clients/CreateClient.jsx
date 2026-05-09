@@ -28,8 +28,12 @@ const CreateClient = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Create Client' links={links} />
-        <CreateClientForm />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Create Client' links={links} />
+            <CreateClientForm />
+          </div>
+        </div>
       </div>
     </div>
   );

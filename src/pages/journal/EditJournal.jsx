@@ -80,18 +80,23 @@ const EditJournal = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Journal" links={links} />
 
-        {pageState === "checking" ? (
-          <EditLoaderComponent text={'Loading Journal...'} />
-        ) : (
-          // Pass the fetched data directly to the child
-          <EditJournalForm
-            journalId={parseInt(journal_id, 10)}
-            journal={journalData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        )}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Journal" links={links} />
+
+            {pageState === "checking" ? (
+              <EditLoaderComponent text={'Loading Journal...'} />
+            ) : (
+              // Pass the fetched data directly to the child
+              <EditJournalForm
+                journalId={parseInt(journal_id, 10)}
+                journal={journalData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

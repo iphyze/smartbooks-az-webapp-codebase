@@ -28,8 +28,12 @@ const CreateBank = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Create Bank Account' links={links} />
-        <CreateBankForm />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Create Bank Account' links={links} />
+            <CreateBankForm />
+          </div>
+        </div>
       </div>
     </div>
   );

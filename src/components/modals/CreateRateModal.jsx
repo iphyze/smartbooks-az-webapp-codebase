@@ -6,8 +6,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import useToastStore from "../../stores/useToastStore";
 import useRateStore from "../../stores/useRateStore"; // Added for createRate
-import "../../pages/inputs-styles/Inputs.css";
-import "./CreateModal.css";
 
 /* ─────────────────────────────────────────────
    Create Rate Modal (Scrollable Inner Box)
@@ -127,7 +125,7 @@ const CreateRateModal = ({ isOpen, onClose, onRateCreated }) => {
           </div>
           
           
-          <div className="invoice-form-flex-box">
+          <div className="invoice-form-flex-box modal-form-1col">
             {/* Date */}
             <div className="invoice-form">
               <div className="input-form-wrapper">

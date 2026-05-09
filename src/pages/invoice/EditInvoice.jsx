@@ -80,18 +80,23 @@ const EditInvoice = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Invoice" links={links} />
-
-        {pageState === "checking" ? (
-          <EditLoaderComponent text={'Loading Invoice...'} />
-        ) : (
-          // Pass the fetched data directly to the child
-          <EditInvoiceForm
-            invoiceNumber={parseInt(invoice_number, 10)}
-            invoice={invoiceData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        )}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+          <PageNav pageTitle="Invoice" links={links} />
+        
+          {pageState === "checking" ? (
+            <EditLoaderComponent text={'Loading Invoice...'} />
+          ) : (
+            // Pass the fetched data directly to the child
+            <EditInvoiceForm
+              invoiceNumber={parseInt(invoice_number, 10)}
+              invoice={invoiceData}
+              onSaveSuccess={handleSaveSuccess}
+            />
+          )}
+          
+        </div>
+        </div>
       </div>
     </div>
   );

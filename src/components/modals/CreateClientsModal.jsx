@@ -5,8 +5,6 @@ import { motion } from "framer-motion";
 import useToastStore from "../../stores/useToastStore";
 import useClientStore from "../../stores/useClientStore";
 import Select from "react-select";
-import "../../pages/inputs-styles/Inputs.css";
-import "./CreateModal.css";
 
 /* ─────────────────────────────────────────────
    Options

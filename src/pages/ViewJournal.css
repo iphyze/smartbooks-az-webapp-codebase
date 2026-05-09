@@ -13,8 +13,8 @@
   border: 1px solid #eaedf1; 
 }
 .theme-dark .view-content-box{
-  background-color: #262d34;
-  border: 1px solid #2f3944;
+  background-color: #161b22;
+  border: 1px solid rgb(55, 64, 74);
   box-shadow: 0 3px 4px #00000008;
 }
 .company-logo{
@@ -60,6 +60,7 @@
   font-family: Montserrat-Medium;
   line-height: 1.8;
   font-size: 12px;
+  text-transform: capitalize;
   color: black;
   transition: all 0.5s linear;
 }

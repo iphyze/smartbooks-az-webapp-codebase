@@ -17,11 +17,11 @@ const EditRate = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useRateStore instead of local state
-  const { 
-    singleRate: rateData, 
-    fetchingSingle: isLoading, 
-    singleRateError: fetchError, 
-    fetchSingleRate 
+  const {
+    singleRate: rateData,
+    fetchingSingle: isLoading,
+    singleRateError: fetchError,
+    fetchSingleRate
   } = useRateStore();
 
   const links = [
@@ -32,7 +32,7 @@ const EditRate = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Edit Rate";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -66,18 +66,23 @@ const EditRate = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Rates" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Rate...'} />
-        ) : rateData ? (
-          // Pass the fetched data directly to the child
-          <EditRateForm
-            rateId={parseInt(id, 10)}
-            rate={rateData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Rates" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Rate...'} />
+            ) : rateData ? (
+              // Pass the fetched data directly to the child
+              <EditRateForm
+                rateId={parseInt(id, 10)}
+                rate={rateData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

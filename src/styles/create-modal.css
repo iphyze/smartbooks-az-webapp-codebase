@@ -1,0 +1,388 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMARTBOOKS — CreateModal.css
+   Covers all "Create" modals: Client, Ledger, Rate, Bank,
+   Project, Staff — any modal using .modal-content-scrollable
+   with a form inside .modal-body-scrollable
+═══════════════════════════════════════════════════════════════ */
+
+/* REPLACE .modal-body-scrollable .invoice-form-flex-box */
+.modal-body-scrollable .invoice-form-flex-box {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* default: 2 columns */
+  gap: 0 16px;
+  margin-top: 16px;
+}
+
+/* Each field takes 1 column by default */
+.modal-body-scrollable .invoice-form {
+  grid-column: span 1;
+  width: 100%;
+}
+
+/* ── Layout modifier classes — add to the .invoice-form-flex-box ── */
+
+/* 1-column layout: <div className="invoice-form-flex-box modal-form-1col"> */
+.modal-body-scrollable .modal-form-1col {
+  grid-template-columns: 1fr;
+}
+
+/* 2-column layout (default): <div className="invoice-form-flex-box modal-form-2col"> */
+.modal-body-scrollable .modal-form-2col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Full-width field override — span both columns */
+/* Use: <div className="invoice-form modal-form-full"> */
+.modal-body-scrollable .modal-form-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Responsive: collapse to 1 col on small screens ── */
+@media (max-width: 540px) {
+
+  .modal-body-scrollable .invoice-form-flex-box,
+  .modal-body-scrollable .modal-form-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-body-scrollable .modal-form-full {
+    grid-column: span 1;
+  }
+}
+
+/* ── Inputs inherit form styles but need modal context ── */
+.modal-body-scrollable .input-form-wrapper {
+  margin-bottom: 14px;
+}
+
+.modal-body-scrollable .form-input,
+.modal-body-scrollable .form-input-no-padding {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--f-input-bg, #ffffff);
+  border: 1.5px solid var(--f-border, #daeee9);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--f-text, #0d1f1b);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.modal-body-scrollable .form-input::placeholder,
+.modal-body-scrollable .form-input-no-padding::placeholder {
+  color: var(--f-placeholder, #a8c9c3);
+}
+
+.modal-body-scrollable .form-input:focus,
+.modal-body-scrollable .form-input-no-padding:focus {
+  border-color: var(--f-border-focus, #00b196);
+  box-shadow: 0 0 0 3px rgba(0, 177, 150, 0.1);
+}
+
+.modal-body-scrollable .form-input.input-error,
+.modal-body-scrollable .form-input-no-padding.input-error {
+  border-color: var(--f-error, #dc2626);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+}
+
+.modal-body-scrollable .form-input:disabled,
+.modal-body-scrollable .form-input-no-padding:disabled {
+  background: var(--f-disabled-bg, #f4faf9);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ── Labels ── */
+.modal-body-scrollable .input-form-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--f-label, #3d5752);
+  margin-bottom: 6px;
+  display: block;
+  transition: color 0.2s ease;
+}
+
+.modal-body-scrollable .input-label-message {
+  color: var(--f-label-err, #dc2626) !important;
+}
+
+/* ── Error messages ── */
+.modal-body-scrollable .input-error-message {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--f-error, #dc2626);
+  font-weight: 500;
+  margin-top: 4px;
+  animation: sb-err-in 0.2s ease;
+}
+
+/* ── React-Select inside modal ── */
+.modal-body-scrollable .form-input-select {
+  width: 100%;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__control {
+  min-height: 42px;
+  border: 1.5px solid var(--f-border, #daeee9) !important;
+  border-radius: 9px !important;
+  background: var(--f-input-bg, #ffffff) !important;
+  box-shadow: none !important;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  padding-right: 28px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__control:hover {
+  border-color: var(--f-border-focus, #00b196) !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__control--is-focused {
+  border-color: var(--f-border-focus, #00b196) !important;
+  box-shadow: 0 0 0 3px rgba(0, 177, 150, 0.1) !important;
+}
+
+.modal-body-scrollable .form-input-select.input-error .form-input-select__control {
+  border-color: var(--f-error, #dc2626) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08) !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__value-container {
+  padding: 0 12px !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__placeholder {
+  color: var(--f-placeholder, #a8c9c3) !important;
+  font-size: 13px !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__single-value {
+  color: var(--f-text, #0d1f1b) !important;
+  font-size: 13px !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__indicator-separator,
+.modal-body-scrollable .form-input-select .form-input-select__dropdown-indicator,
+.modal-body-scrollable .form-input-select .form-input-select__clear-indicator {
+  display: none !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__menu {
+  background: var(--f-bg, #ffffff) !important;
+  border: 1.5px solid var(--f-border, #daeee9) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12) !important;
+  z-index: 99999 !important;
+  animation: sb-menu-drop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__menu-list {
+  padding: 6px !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__option {
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  color: var(--f-text-2, #3d5752) !important;
+  padding: 9px 12px !important;
+  cursor: pointer !important;
+  transition: background 0.12s ease !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__option--is-focused {
+  background: var(--f-brand-dim, rgba(0, 177, 150, 0.08)) !important;
+  color: var(--f-brand, #00b196) !important;
+}
+
+.modal-body-scrollable .form-input-select .form-input-select__option--is-selected {
+  background: var(--f-brand, #00b196) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Chevron icon inside modal form-wrapper */
+.modal-body-scrollable .chevron-input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--f-text-muted, #7aada6);
+  pointer-events: none;
+  transition: transform 0.25s ease, color 0.2s ease;
+}
+
+.modal-body-scrollable .chevron-rotate {
+  transform: translateY(-50%) rotate(180deg);
+  color: var(--f-brand, #00b196);
+}
+
+.modal-body-scrollable .input-icon-error {
+  color: var(--f-error, #dc2626) !important;
+}
+
+/* ── Modal icon + intro text ── */
+.modal-body-scrollable .modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--f-brand-dim, rgba(0, 177, 150, 0.1));
+  color: var(--f-brand, #00b196);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin: 0 auto 8px;
+}
+
+.modal-body-scrollable .modal-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--f-text-muted, #7aada6);
+  margin-bottom: 4px;
+}
+
+/* ── DatePicker inside modal ── */
+.modal-body-scrollable .input-date-picker,
+.modal-body-scrollable .input-date-picker .react-datepicker-wrapper,
+.modal-body-scrollable .input-date-picker .react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}
+
+.modal-body-scrollable .input-date-picker .react-datepicker__input-container input {
+  width: 100%;
+  height: 42px;
+  padding: 0 40px 0 14px;
+  background: var(--f-input-bg, #ffffff);
+  border: 1.5px solid var(--f-border, #daeee9);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--f-text, #0d1f1b);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-body-scrollable .input-date-picker .react-datepicker__input-container input:focus {
+  border-color: var(--f-border-focus, #00b196);
+  box-shadow: 0 0 0 3px rgba(0, 177, 150, 0.1);
+}
+
+/* ── Dark mode overrides ── */
+.theme-dark .modal-body-scrollable .form-input,
+.theme-dark .modal-body-scrollable .form-input-no-padding {
+  background: var(--f-input-bg, #111e1a);
+  border-color: var(--f-border, #1e3530);
+  color: var(--f-text, #e0f0ec);
+}
+
+.theme-dark .modal-body-scrollable .form-input:disabled {
+  background: var(--f-disabled-bg, #0c1a16);
+}
+
+.theme-dark .modal-body-scrollable .input-form-label {
+  color: var(--f-label, #7ab8ae);
+}
+
+/* WITH */
+.theme-dark .modal-body-scrollable .form-input-select .form-input-select__control {
+  background: var(--f-input-bg, #0e1117) !important;
+  border-color: var(--f-border, #30363d) !important;
+}
+
+/* ADD — dark mode error border for select inside modal */
+.theme-dark .modal-body-scrollable .form-input-select.input-error .form-input-select__control {
+  border-color: var(--f-error, #f87171) !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.08) !important;
+}
+
+/* ADD — dark mode error border for regular inputs inside modal */
+.theme-dark .modal-body-scrollable .form-input.input-error,
+.theme-dark .modal-body-scrollable .form-input-no-padding.input-error {
+  border-color: var(--f-error, #f87171) !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.08) !important;
+}
+
+.theme-dark .modal-body-scrollable .form-input-select .form-input-select__single-value {
+  color: var(--f-text, #e0f0ec) !important;
+}
+
+.theme-dark .modal-body-scrollable .form-input-select .form-input-select__menu {
+  background: var(--f-bg, #0f1c18) !important;
+  border-color: var(--f-border, #1e3530) !important;
+}
+
+.theme-dark .modal-body-scrollable .form-input-select .form-input-select__option {
+  color: var(--f-text-2, #8ec4bb) !important;
+}
+
+.theme-dark .modal-body-scrollable .input-date-picker .react-datepicker__input-container input {
+  background: var(--f-input-bg, #111e1a);
+  border-color: var(--f-border, #1e3530);
+  color: var(--f-text, #e0f0ec);
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .modal-body-scrollable {
+    padding: 14px;
+  }
+
+  .modal-body-scrollable .invoice-form-flex-box {
+    gap: 0;
+  }
+
+  .modal-body-scrollable .input-form-wrapper {
+    margin-bottom: 12px;
+  }
+}
+
+
+/* ADD at bottom of CreateModal.css */
+
+/* inv-form-flex inside modals: pin button to input top */
+.modal-body-scrollable .inv-form-flex {
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.modal-body-scrollable .inv-form-flex-btn {
+  margin-top: 28px;
+  /* clears the label height */
+  align-self: flex-start;
+  flex-shrink: 0;
+  height: 42px;
+  width: 36px;
+  border: 1.5px solid var(--f-border, #daeee9);
+  border-radius: 9px;
+  background: var(--f-surface, #f8fcfb);
+  color: var(--f-brand, #00b196);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.modal-body-scrollable .inv-form-flex-btn:hover {
+  background: var(--f-brand-dim, rgba(0, 177, 150, 0.08));
+  border-color: rgba(0, 177, 150, 0.3);
+}
+
+/* When there's an error below, button stays pinned — error goes below */
+.modal-body-scrollable .inv-form-flex .input-form-wrapper {
+  margin-bottom: 0;
+}

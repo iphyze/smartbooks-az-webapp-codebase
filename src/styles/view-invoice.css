@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMARTBOOKS — VIEW CONTENT (Invoice / Journal)
+   Covers: .view-content-box, .vcc-*, .company-logo,
+           .vcc-button-box, invoice detail layout
+═══════════════════════════════════════════════════════════════ */
+
+.vc-view-content-box {
+  margin: 0 24px 40px;
+  background: var(--f-bg, #ffffff);
+  border: 1px solid var(--f-border, #daeee9);
+  border-radius: 16px;
+  padding: 32px 36px;
+  box-shadow: 0 4px 20px rgba(0,177,150,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  transition: background 0.3s ease, border-color 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.company-logo {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 20px;
+  display: block;
+}
+
+/* ── Action buttons ── */
+.vcc-button-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.vcc-edit-btn,
+.vcc-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.18s ease, transform 0.15s ease;
+}
+.vcc-edit-btn   { background: rgba(37,99,235,0.1);  color: #2563eb; }
+.vcc-export-btn { background: rgba(5,150,105,0.1);  color: #059669; }
+.vcc-edit-btn:hover, .vcc-export-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+
+.theme-dark .vcc-edit-btn   { background: rgba(96,165,250,0.1); color: #60a5fa; }
+.theme-dark .vcc-export-btn { background: rgba(52,211,153,0.1); color: #34d399; }
+
+/* ── Header flexbox ── */
+.vcc-header-flexbox {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.vcc-header-col { flex: 1; min-width: 200px; }
+.vcc-header-col-two {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.vcc-header-group { margin-bottom: 10px; }
+
+.vcc-header-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--f-text-muted, #7aada6);
+  margin-bottom: 2px;
+}
+.vcc-header-title-tcolor { color: var(--f-brand, #00b196) !important; }
+
+.vcc-header-text {
+  font-size: 13px;
+  color: var(--f-text-2, #3d5752);
+  font-weight: 500;
+}
+
+.vcc-voucher-type {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--f-text-muted, #7aada6);
+}
+.vcc-inv-type { color: var(--f-brand, #00b196) !important; }
+
+.vcc-voucher-type-number {
+  font-family: 'Sora', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--f-text, #0d1f1b);
+  letter-spacing: -0.02em;
+}
+
+.vcc-inv-tin {
+  font-size: 12px;
+  color: var(--f-text-2, #3d5752);
+}
+
+/* ── Invoice table ── */
+.vcc-table { margin-bottom: 20px; overflow-x: auto; }
+.vcc-table-wrapper { min-width: 500px; }
+
+.vcc-table-flexbox {
+  display: flex;
+  align-items: stretch;
+}
+.vcc-table-header {
+  background: var(--f-surface, #f8fcfb);
+  border-bottom: 1.5px solid var(--f-border, #daeee9);
+  border-top: 1px solid var(--f-border, #daeee9);
+}
+.vcc-table-body {
+  border-bottom: 1px solid var(--f-border-light, #edf6f3);
+  transition: background 0.12s ease;
+}
+.vcc-table-body:hover  { background: var(--f-brand-dim, rgba(0,177,150,0.04)); }
+.vcc-table-body:last-child { border-bottom: none; }
+
+.vcc-table-data {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--f-text-2, #3d5752);
+}
+.vcc-table-header .vcc-table-data {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--f-text-muted, #7aada6);
+}
+.vcc-boldtext { font-weight: 700; color: var(--f-text, #0d1f1b); }
+
+/* Column widths */
+.vcc-inv-table .vcc-tb-inv-sn   { flex: 0 0 50px;  }
+.vcc-inv-table .vcc-tb-inv-desc { flex: 1; }
+.vcc-inv-table .vcc-tb-inv-disc { flex: 0 0 110px; text-align: right; }
+.vcc-inv-table .vcc-tb-inv-vat  { flex: 0 0 90px;  text-align: right; }
+.vcc-inv-table .vcc-tb-inv-amt  { flex: 0 0 130px; text-align: right; }
+
+/* ── Summary ── */
+.vcc-summary-table {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.vcc-summary-col { flex: 1; }
+.invoice-summary-grid { min-width: 280px; }
+
+/* ── Payment details ── */
+.vcc-payment-details-box {
+  background: var(--f-surface, #f8fcfb);
+  border: 1px solid var(--f-border, #daeee9);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.vcc-payment-heading {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--f-brand, #00b196);
+  margin-bottom: 12px;
+}
+.vcc-payment-group { display: flex; gap: 12px; margin-bottom: 6px; }
+.vcc-payment-title { font-size: 12px; font-weight: 700; color: var(--f-text-muted, #7aada6); min-width: 130px; }
+.vcc-payment-text  { font-size: 12.5px; color: var(--f-text-2, #3d5752); font-weight: 500; }
+
+/* ── Signatures ── */
+.vcc-signature-box {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 36px;
+  margin-bottom: 24px;
+  padding-top: 24px;
+  border-top: 1px dashed var(--f-border, #daeee9);
+}
+.vcc-signature-group { display: flex; flex-direction: column; gap: 4px; }
+.vcc-signature-group-right { align-items: flex-end; }
+.vcc-signature-line { color: var(--f-border, #daeee9); font-size: 13px; }
+.vcc-signature-text { font-size: 11.5px; color: var(--f-text-muted, #7aada6); font-weight: 600; }
+
+.vcc-thanks-text {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--f-text-muted, #7aada6);
+  font-style: italic;
+}
+
+/* ── Dark overrides ── */
+.theme-dark .view-content-box  { background: #0f1c18; border-color: #1e3530; }
+.theme-dark .vcc-table-header   { background: #131f1b; border-color: #1e3530; }
+.theme-dark .vcc-payment-details-box { background: #131f1b; border-color: #1e3530; }
+
+@media (max-width: 640px) {
+  .view-content-box  { margin: 0 12px 28px; padding: 20px 16px; }
+  .vcc-header-flexbox { flex-direction: column; }
+  .vcc-header-col-two { align-items: flex-start; }
+}

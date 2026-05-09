@@ -28,8 +28,12 @@ const CreateAccount = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Create Account' links={links} />
-        <CreateAccountForm />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Create Account' links={links} />
+            <CreateAccountForm />
+          </div>
+        </div>
       </div>
     </div>
   );

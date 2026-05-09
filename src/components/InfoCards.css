@@ -1,0 +1,220 @@
+/* ══════════════════════════════════════════
+   INFO CARDS — Receivables / RevEx / Rates
+══════════════════════════════════════════ */
+
+.db-skel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Receivables ── */
+.db-recv__total-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--db-text-3);
+  margin-bottom: 4px;
+}
+
+.db-recv__total-val {
+  font-family: 'Sora', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--db-text-1);
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.db-recv__progress-wrap { margin-bottom: 14px; }
+.db-recv__progress-bar {
+  height: 6px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--db-surface-3);
+  display: flex;
+}
+.db-recv__progress-fill {
+  height: 100%;
+  background: var(--db-brand);
+  transition: width 0.6s ease;
+}
+.db-recv__progress-fill--over { background: var(--db-red); }
+
+.db-recv__split {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 14px;
+}
+.db-recv__divider {
+  width: 1px;
+  background: var(--db-border);
+  margin: 0 14px;
+  flex-shrink: 0;
+}
+.db-recv__col {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.db-recv__col-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.db-recv__col-dot--cur  { background: var(--db-brand); }
+.db-recv__col-dot--over { background: var(--db-red); }
+
+.db-recv__col-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--db-text-3);
+  margin-bottom: 2px;
+}
+.db-recv__col-val {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--db-text-1);
+}
+.db-recv__col-val--over { color: var(--db-red); }
+
+.db-recv__chips {
+  display: flex;
+  gap: 8px;
+}
+.db-recv__chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border-radius: 9px;
+  border: 1px solid var(--db-border);
+  gap: 3px;
+}
+.db-recv__chip--paid    { background: var(--db-green-dim);  border-color: rgba(5,150,105,0.15); }
+.db-recv__chip--unpaid  { background: var(--db-red-dim);    border-color: rgba(220,38,38,0.15); }
+.db-recv__chip--partial { background: var(--db-purple-dim); border-color: rgba(124,58,237,0.15); }
+
+.db-recv__chip-num {
+  font-family: 'Sora', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--db-text-1);
+  line-height: 1;
+}
+.db-recv__chip--paid    .db-recv__chip-num { color: var(--db-green); }
+.db-recv__chip--unpaid  .db-recv__chip-num { color: var(--db-red); }
+.db-recv__chip--partial .db-recv__chip-num { color: var(--db-purple); }
+
+.db-recv__chip-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--db-text-3);
+}
+
+/* ── Revenue & Expenses ── */
+.db-revex__bar-wrap { margin-bottom: 16px; }
+.db-revex__bar {
+  height: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  background: var(--db-surface-3);
+}
+.db-revex__bar-rev { background: var(--db-brand); transition: width 0.6s ease; }
+.db-revex__bar-exp { background: var(--db-red); opacity: 0.7; transition: width 0.6s ease; }
+
+.db-revex__rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+
+.db-revex__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--db-surface-2);
+  border: 1px solid var(--db-border-light);
+}
+.db-revex__row-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.db-revex__row-icon--rev { background: var(--db-brand-dim); color: var(--db-brand); }
+.db-revex__row-icon--exp { background: var(--db-red-dim);   color: var(--db-red); }
+
+.db-revex__row-body { flex: 1; display: flex; align-items: center; justify-content: space-between; }
+.db-revex__row-label { font-size: 12.5px; font-weight: 500; color: var(--db-text-2); }
+.db-revex__row-val   { font-size: 13.5px; font-weight: 700; color: var(--db-text-1); font-family: 'Sora', sans-serif; }
+
+.db-revex__net {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.db-revex__net i { font-size: 14px; flex-shrink: 0; }
+.db-revex__net strong { font-weight: 700; }
+.db-revex__net--pos { background: var(--db-brand-dim); color: var(--db-brand-mid); }
+.db-revex__net--neg { background: var(--db-red-dim);   color: var(--db-red); }
+
+/* ── Exchange Rates ── */
+.db-rates { display: flex; flex-direction: column; gap: 8px; }
+
+.db-rate-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  background: var(--db-surface-2);
+  border: 1px solid var(--db-border-light);
+  transition: transform 0.15s ease;
+}
+.db-rate-row:hover { transform: translateX(3px); }
+
+.db-rate-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.db-rate-row--usd .db-rate-icon-wrap { background: var(--db-green-dim);  color: var(--db-green); }
+.db-rate-row--gbp .db-rate-icon-wrap { background: var(--db-blue-dim);   color: var(--db-blue); }
+.db-rate-row--eur .db-rate-icon-wrap { background: var(--db-purple-dim); color: var(--db-purple); }
+
+.db-rate-pair { flex: 1; font-size: 13px; font-weight: 500; color: var(--db-text-2); }
+.db-rate-val  { font-size: 14px; font-weight: 700; color: var(--db-text-1); font-family: 'Sora', sans-serif; }
+
+.db-rates__updated {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--db-text-4);
+  padding: 4px 2px 0;
+}
+.db-rates__updated i { color: var(--db-brand); }

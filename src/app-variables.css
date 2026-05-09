@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════
+   ADD THIS BLOCK TO THE BOTTOM OF App.css
+   Global CSS variable bridge for all shared components
+   (tables, forms, modals, view pages all read these)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Light mode global tokens ── */
+.theme-light,
+.main-container.theme-light,
+.content-container.theme-light {
+  --sb-bg:           #f0f7f5;
+  --sb-surface:      #ffffff;
+  --sb-surface-2:    #f8fcfb;
+  --sb-border:       #deeee9;
+  --sb-border-light: #edf6f3;
+  --sb-text-1:       #0d1f1b;
+  --sb-text-2:       #3d5752;
+  --sb-text-3:       #7aada6;
+  --sb-text-4:       #a8c9c3;
+  --sb-brand:        #00b196;
+  --sb-brand-dim:    rgba(0,177,150,0.08);
+  --sb-brand-mid:    #00956e;
+}
+
+/* ── Dark mode global tokens ── */
+.theme-dark,
+.main-container.theme-dark,
+.content-container.theme-dark {
+  --sb-bg:           #091210;
+  --sb-surface:      #0f1c18;
+  --sb-surface-2:    #131f1b;
+  --sb-border:       #1e3530;
+  --sb-border-light: #182e28;
+  --sb-text-1:       #e0f0ec;
+  --sb-text-2:       #8ec4bb;
+  --sb-text-3:       #4d7a72;
+  --sb-text-4:       #2a4f46;
+  --sb-brand:        #00c9aa;
+  --sb-brand-dim:    rgba(0,201,170,0.1);
+  --sb-brand-mid:    #00b196;
+}
+
+/* ── Import all sub-stylesheets ── */
+/* Add these @import lines at the top of App.css (after the Google Fonts import): */
+/* 
+  @import './tables.css';
+  @import './forms.css';
+  @import './modals.css';
+  @import './skeletons.css';
+  @import './view-invoice.css';
+*/

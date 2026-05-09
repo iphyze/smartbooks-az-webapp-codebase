@@ -17,11 +17,11 @@ const EditProject = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useProjectStore
-  const { 
-    singleProject: projectData, 
-    fetchingSingle: isLoading, 
-    singleProjectError: fetchError, 
-    fetchSingleProject 
+  const {
+    singleProject: projectData,
+    fetchingSingle: isLoading,
+    singleProjectError: fetchError,
+    fetchSingleProject
   } = useProjectStore();
 
   const links = [
@@ -32,7 +32,7 @@ const EditProject = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Edit Project";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -66,18 +66,22 @@ const EditProject = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Projects" links={links} />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Projects" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Project...'} />
-        ) : projectData ? (
-          // Pass the fetched data directly to the child
-          <EditProjectForm
-            projectId={projectData.id}
-            project={projectData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        ) : null}
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Project...'} />
+            ) : projectData ? (
+              // Pass the fetched data directly to the child
+              <EditProjectForm
+                projectId={projectData.id}
+                project={projectData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

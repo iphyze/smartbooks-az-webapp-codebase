@@ -19,11 +19,11 @@ const ViewProject = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useProjectStore
-  const { 
-    singleProject: projectData, 
-    fetchingSingle: isLoading, 
-    singleProjectError: fetchError, 
-    fetchSingleProject 
+  const {
+    singleProject: projectData,
+    fetchingSingle: isLoading,
+    singleProjectError: fetchError,
+    fetchSingleProject
   } = useProjectStore();
 
   const links = [
@@ -34,7 +34,7 @@ const ViewProject = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | View Project";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(projectId, 10);
     if (!projectId || isNaN(parsedId) || parsedId <= 0) {
@@ -64,14 +64,19 @@ const ViewProject = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Projects" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Project...'} />
-        ) : projectData ? (
-          // Pass the fetched data directly to the child
-          <ViewProjectContent project={projectData} />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Projects" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Project...'} />
+            ) : projectData ? (
+              // Pass the fetched data directly to the child
+              <ViewProjectContent project={projectData} />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

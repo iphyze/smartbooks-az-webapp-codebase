@@ -1,66 +1,93 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleCheck, faCircleInfo, faCircleExclamation, faXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCircleCheck,
+  faCircleInfo,
+  faTriangleExclamation,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import useToastStore from '../stores/useToastStore';
 import './Toast.css';
 
-const Toast = () => {
-  const { toasts, hideToast } = useToastStore();
-  const [closingToasts, setClosingToasts] = useState(new Set());
+const TOAST_DURATION = 5000;   // ms before auto-dismiss
+const CLOSE_ANIMATION = 350;   // ms — must match CSS
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return faCircleCheck;
-      case 'error':
-        return faCircleExclamation;
-      case 'info':
-      default:
-        return faCircleInfo;
-    }
+const CONFIGS = {
+  success: {
+    icon: faCircleCheck,
+    label: 'Success',
+  },
+  error: {
+    icon: faTriangleExclamation,
+    label: 'Error',
+  },
+  info: {
+    icon: faCircleInfo,
+    label: 'Info',
+  },
+};
+
+const ToastItem = ({ toast, onClose }) => {
+  const [closing, setClosing] = useState(false);
+  const timerRef = useRef(null);
+  const config = CONFIGS[toast.type] ?? CONFIGS.info;
+
+  const startClose = () => {
+    if (closing) return;
+    setClosing(true);
+    setTimeout(() => onClose(toast.id), CLOSE_ANIMATION);
   };
 
-
-  const handleClose = (id) => {
-    // Add the toast to closing set
-    setClosingToasts(prev => new Set([...prev, id]));
-    
-    // Wait for animation to complete before removing
-    setTimeout(() => {
-      hideToast(id);
-      setClosingToasts(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-    }, 300); // Match this with CSS animation duration
-  };
-
-
-  // Listen for auto-remove events
   useEffect(() => {
-    const handleAutoRemove = (event) => {
-      const { id } = event.detail;
-      handleClose(id);
-    };
-
-    window.addEventListener('hideToast', handleAutoRemove);
-    
-    return () => {
-      window.removeEventListener('hideToast', handleAutoRemove);
-    };
+    timerRef.current = setTimeout(startClose, TOAST_DURATION);
+    return () => clearTimeout(timerRef.current);
   }, []);
 
   return (
-    <div className="toast-container">
+    <div
+      className={`sb-toast sb-toast--${toast.type} ${closing ? 'sb-toast--out' : 'sb-toast--in'}`}
+      role="alert"
+      aria-live="polite"
+    >
+      {/* Accent strip */}
+      <div className="sb-toast__strip" />
+
+      {/* Icon */}
+      <div className="sb-toast__icon">
+        <FontAwesomeIcon icon={config.icon} />
+      </div>
+
+      {/* Body */}
+      <div className="sb-toast__body">
+        <span className="sb-toast__label">{config.label}</span>
+        <span className="sb-toast__message">{toast.message}</span>
+      </div>
+
+      {/* Close */}
+      <button
+        className="sb-toast__close"
+        onClick={startClose}
+        aria-label="Dismiss notification"
+      >
+        <FontAwesomeIcon icon={faXmark} />
+      </button>
+
+      {/* Progress bar */}
+      <div
+        className="sb-toast__progress"
+        style={{ animationDuration: `${TOAST_DURATION}ms` }}
+      />
+    </div>
+  );
+};
+
+const Toast = () => {
+  const { toasts, hideToast } = useToastStore();
+
+  return (
+    <div className="sb-toast-container" aria-label="Notifications">
       {toasts.map((toast) => (
-        <div key={toast.id} className={`toast-item toast-${toast.type} ${closingToasts.has(toast.id) ? 'toast-closing' : ''}`}>
-          <div className="toast-icon"><FontAwesomeIcon icon={getIcon(toast.type)} /></div>
-          <div className="toast-message">{toast.message}</div>
-          <button className="toast-close" onClick={() => handleClose(toast.id)}>
-            <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
+        <ToastItem key={toast.id} toast={toast} onClose={hideToast} />
       ))}
     </div>
   );

@@ -51,7 +51,7 @@ const ViewJournal = () => {
         `/journal/fetch-single-journal?journal_id=${parsedId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Check if data actually exists in response
       if (response.data && response.data.data) {
         setJournalData(response.data.data);
@@ -81,14 +81,20 @@ const ViewJournal = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Journal" links={links} />
 
-        {pageState === "checking" ? (
-          <EditLoaderComponent text={'Loading Journal...'} />
-        ) : (
-          // Pass the fetched data directly to the child
-          <ViewJournalContent journal={journalData} />
-        )}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Journal" links={links} />
+
+            {pageState === "checking" ? (
+              <EditLoaderComponent text={'Loading Journal...'} />
+            ) : (
+              // Pass the fetched data directly to the child
+              <ViewJournalContent journal={journalData} />
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );

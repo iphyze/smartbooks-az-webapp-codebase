@@ -1,0 +1,167 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMARTBOOKS — ChartSearchableSelect
+   Used for: page limit, bulk actions, status select in modals
+   Classes: .chart-select-wrapper, .chart-select-display,
+            .chart-select-dropdown, .chart-select-option,
+            .chart-select-icon
+═══════════════════════════════════════════════════════════════ */
+
+.chart-select-wrapper {
+  position: relative;
+  display: inline-block;
+  min-width: 90px;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── Trigger button ── */
+.chart-select-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 36px;
+  padding: 0 11px;
+  background: var(--sb-surface, #ffffff);
+  border: 1.5px solid var(--sb-border, #deeee9);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sb-text-1, #0d1f1b);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.chart-select-display:hover {
+  border-color: var(--sb-brand, #00b196);
+  background: var(--sb-surface-2, #f8fcfb);
+}
+.chart-select-wrapper:focus .chart-select-display,
+.chart-select-wrapper:focus-within .chart-select-display {
+  border-color: var(--sb-brand, #00b196);
+  box-shadow: 0 0 0 3px var(--sb-brand-dim, rgba(0,177,150,0.1));
+}
+
+/* Chevron icon */
+.chart-select-icon {
+  font-size: 11px;
+  color: var(--sb-text-3, #7aada6);
+  flex-shrink: 0;
+  transition: transform 0.22s ease, color 0.18s ease;
+}
+.chart-select-wrapper:hover .chart-select-icon,
+.chart-select-wrapper:focus .chart-select-icon { color: var(--sb-brand, #00b196); }
+
+/* Animated chevron flip handled by fa-angle-up/down class change in JSX */
+
+/* ── Dropdown panel ── */
+.chart-select-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 100%;
+  background: var(--sb-surface, #ffffff);
+  border: 1.5px solid var(--sb-border, #deeee9);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  z-index: 9000;
+  padding: 5px;
+  animation: sb-select-drop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sb-select-drop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)  scale(1); }
+}
+
+/* ── Options ── */
+.chart-select-option {
+  padding: 8px 11px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--sb-text-2, #3d5752);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.chart-select-option:hover,
+.chart-select-option.highlight-option {
+  background: var(--sb-brand-dim, rgba(0,177,150,0.08));
+  color: var(--sb-brand, #00b196);
+}
+/* REPLACE existing .chart-select-option.active-option */
+.chart-select-option.active-option {
+  background: var(--sb-brand, #00b196);
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.chart-select-option.active-option:hover {
+  background: var(--sb-brand-mid, #00956e);
+  color: #ffffff !important;
+}
+
+/* Dark mode active — same fix */
+.theme-dark .chart-select-option.active-option {
+  background: var(--sb-brand, #00c9aa);
+  color: #0a120f !important; /* dark bg needs dark text for contrast */
+  font-weight: 600;
+}
+.theme-dark .chart-select-option.active-option:hover {
+  background: var(--sb-brand-mid, #00b196);
+  color: #0a120f !important;
+}
+
+/* ── Size variants ── */
+/* Wider for bulk-action / status selects */
+.box-filter-action .chart-select-wrapper,
+.status-update-select-box .chart-select-wrapper {
+  min-width: 160px;
+}
+.box-filter-action .chart-select-display,
+.status-update-select-box .chart-select-display {
+  min-width: 160px;
+}
+
+/* Narrow for page-limit */
+.box-filter-limit .chart-select-wrapper { min-width: 72px; }
+.box-filter-limit .chart-select-display  { min-width: 72px; }
+
+/* ── Dark mode ── */
+.theme-dark .chart-select-display {
+  background: var(--sb-surface, #0f1c18);
+  border-color: var(--sb-border, #1e3530);
+  color: var(--sb-text-1, #e0f0ec);
+}
+.theme-dark .chart-select-display:hover {
+  background: var(--sb-surface-2, #131f1b);
+  border-color: var(--sb-brand, #00c9aa);
+}
+.theme-dark .chart-select-dropdown {
+  background: var(--sb-surface, #0f1c18);
+  border-color: var(--sb-border, #1e3530);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3);
+}
+.theme-dark .chart-select-option {
+  color: var(--sb-text-2, #8ec4bb);
+}
+.theme-dark .chart-select-option:hover,
+.theme-dark .chart-select-option.highlight-option {
+  background: var(--sb-brand-dim, rgba(0,201,170,0.1));
+  color: var(--sb-brand, #00c9aa);
+}
+
+/* ── Disabled state ── */
+.chart-select-wrapper[aria-disabled="true"] .chart-select-display,
+.chart-select-wrapper.disabled .chart-select-display {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .chart-select-dropdown { position: fixed; left: 12px; right: 12px; width: auto; min-width: unset; }
+}

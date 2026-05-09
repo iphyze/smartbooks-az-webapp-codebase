@@ -46,7 +46,7 @@ const JournalOverview = () => {
   // Fetch data whenever relevant store states change
   useEffect(() => {
     fetchData();
-  }, [currentPage, itemsPerPage, sortBy, sortOrder]); 
+  }, [currentPage, itemsPerPage, sortBy, sortOrder]);
 
   const totalPages = getTotalPages();
 
@@ -54,7 +54,7 @@ const JournalOverview = () => {
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    if (!query) fetchData(); 
+    if (!query) fetchData();
   };
 
   const handleSearchSubmit = (e) => {
@@ -102,7 +102,7 @@ const JournalOverview = () => {
   };
 
   const handleDeleteJournal = async (journal_id) => {
-    if(journal_id !== ""){
+    if (journal_id !== "") {
       useJournalStore.setState({ selectedItems: [journal_id] });
       setShowDeleteModal(true);
     }
@@ -154,20 +154,20 @@ const JournalOverview = () => {
   const getPageNumbers = () => {
     const maxVisiblePages = 5;
     const pages = [];
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
       const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
+
       if (startPage > 1) {
         pages.push(1);
         if (startPage > 2) pages.push('...');
       }
-      
+
       for (let i = startPage; i <= endPage; i++) pages.push(i);
-      
+
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) pages.push('...');
         pages.push(totalPages);
@@ -177,10 +177,10 @@ const JournalOverview = () => {
   };
 
 
-  
+
 
   const voucherType = (type) => {
-    switch (type){
+    switch (type) {
       case 'Sales': return 'success';
       case 'Payment': return 'danger';
       case 'Receipt': return 'success';
@@ -195,218 +195,224 @@ const JournalOverview = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Journal Overview' links={links} />
 
-        <motion.div variants={fadeInUp} initial="hidden" animate="show"
-          transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
-          className={`invoice-section theme-${theme}`}
-        >
-          <div className="top-action-wrapper">
-            <Link to='/journal/create' className="create-new-invoice-btn">
-              <span className="fas fa-circle-plus"></span>
-              <span className="create-new-invoice-btn-text">Create Journal</span>
-            </Link>
-          </div>
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Journal Overview' links={links} />
 
-          <div className="main-table-box">
-            {loading ? (
-              <TableLoaderComponent />
-            ) : (
-              <>
-                <div className="table-controls">
-                  <div className="table-search-box">
-                    <input 
-                      type="text" 
-                      placeholder="Search..."
-                      value={searchQuery} 
-                      onChange={handleSearchChange} 
-                      onKeyDown={handleSearchSubmit}
-                      className="table-search-input"
-                    />
-                    <span 
-                      className="fas fa-search table-search-icon" 
-                      onClick={handleSearchClick} 
-                      style={{ cursor: 'pointer' }}
-                    />
-                  </div>
+            <motion.div variants={fadeInUp} initial="hidden" animate="show"
+              transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
+              className={`invoice-section theme-${theme}`}
+            >
+              <div className="top-action-wrapper">
+                <Link to='/journal/create' className="create-new-invoice-btn">
+                  <span className="fas fa-circle-plus"></span>
+                  <span className="create-new-invoice-btn-text">Create Journal</span>
+                </Link>
+              </div>
 
-                  <div className="filters-box">
-                    <div className="filter-wrapper">
-                      <label className="filter-wrapper-label">Page limit</label>
-                      <ChartSearchableSelect
-                        options={pageLimitOptions}
-                        value={itemsPerPage}
-                        onChange={handlePageLimitChange}
-                        className="box-filter-limit"
-                      />
-                    </div>
-                    
-                    {selectedItems.length > 0 && (
-                      <div className="filter-wrapper bulk-actions">
-                        <label className="filter-wrapper-label">Select Action</label>
-                        <ChartSearchableSelect
-                          options={actionOptions}
-                          value={selectedAction}
-                          onChange={handleActionChange}
-                          className="box-filter-action"
+              <div className="main-table-box">
+                {loading ? (
+                  <TableLoaderComponent />
+                ) : (
+                  <>
+                    <div className="table-controls">
+                      <div className="table-search-box">
+                        <input
+                          type="text"
+                          placeholder="Search..."
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          onKeyDown={handleSearchSubmit}
+                          className="table-search-input"
+                        />
+                        <span
+                          className="fas fa-search table-search-icon"
+                          onClick={handleSearchClick}
+                          style={{ cursor: 'pointer' }}
                         />
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="table-box">
-                  <div className="table-wrapper">
-                    <table className="data-table invoice-table">
-                      <thead>
-                        <tr>
-                          <th className="checkbox-cell">
-                            <input
-                              type="checkbox"
-                              checked={data.length > 0 && selectedItems.length === data.length}
-                              onChange={handleSelectAll}
-                              className={`table-checkbox fas fa-check 
-                            ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
+                      <div className="filters-box">
+                        <div className="filter-wrapper">
+                          <label className="filter-wrapper-label">Page limit</label>
+                          <ChartSearchableSelect
+                            options={pageLimitOptions}
+                            value={itemsPerPage}
+                            onChange={handlePageLimitChange}
+                            className="box-filter-limit"
+                          />
+                        </div>
+
+                        {selectedItems.length > 0 && (
+                          <div className="filter-wrapper bulk-actions">
+                            <label className="filter-wrapper-label">Select Action</label>
+                            <ChartSearchableSelect
+                              options={actionOptions}
+                              value={selectedAction}
+                              onChange={handleActionChange}
+                              className="box-filter-action"
                             />
-                          </th>
-                          <th onClick={() => handleSort('journal_id')} className="sortable">
-                            ID {getSortIcon('journal_id')}
-                          </th>
-                          <th onClick={() => handleSort('journal_date')} className="sortable">
-                            Date {getSortIcon('journal_date')}
-                          </th>
-                          <th>Description</th>
-                          <th onClick={() => handleSort('journal_type')} className="sortable">
-                            Type {getSortIcon('journal_type')}
-                          </th>
-                          <th>Amt</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((journal, index) => (
-                          <tr key={journal.journal_id} className={selectedItems.includes(journal.journal_id) ? 'selected' : ''}>
-                            <td className="checkbox-cell">
-                              <input
-                                type="checkbox"
-                                className={`table-checkbox fas fa-check ${selectedItems.includes(journal.journal_id) && 'selected-checkbox'}`}
-                                checked={selectedItems.includes(journal.journal_id)}
-                                onChange={() => toggleItemSelection(journal.journal_id)}
-                              />
-                            </td>
-                            <td className="number-tab">{journal.journal_id}</td>
-                            <td>{new Date(journal.journal_date).toLocaleDateString('en-GB')}</td>
-                            <td>
-                              <div className="table-flex-box">
-                                <span className="table-customer-text table-desc-text">{journal.journal_description}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <span className={`badge badge-${voucherType(journal.journal_type)}`}>
-                                <span className={`badge-circle badge-circle-${voucherType(journal.journal_type)}`}/> {journal.journal_type}
-                              </span>
-                            </td>
-                            <td className="data-table-bold-text">{formatCurrencyDecimals(journal.debit, journal.journal_currency)}</td>
-                            <td>
-                              <div className="action-buttons">
-                                <button className="btn-edit" title="Edit" onClick={() => handleEditJournal(journal)}>
-                                  <span className="fas fa-pen"></span> 
-                                </button>
-                                <button className="btn-view" title="View" onClick={() => handleViewJournal(journal)}>
-                                  <span className="fas fa-file"></span> 
-                                </button>
-                                <button className="btns-delete" title="Delete" onClick={() => handleDeleteJournal(journal.journal_id)}>
-                                  <span className="fas fa-trash"></span> 
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="pagination-container">
-                    <div className="pagination-info">
-                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="pagination-controls">
-                      <button 
-                        className="pagination-btn" 
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <span>Previous</span>
-                      </button>
-                      
-                      {getPageNumbers().map((page, index) => (
-                        page === '...' ? (
-                          <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
-                        ) : (
+
+                    <div className="table-box">
+                      <div className="table-wrapper">
+                        <table className="data-table invoice-table">
+                          <thead>
+                            <tr>
+                              <th className="checkbox-cell">
+                                <input
+                                  type="checkbox"
+                                  checked={data.length > 0 && selectedItems.length === data.length}
+                                  onChange={handleSelectAll}
+                                  className={`table-checkbox fas fa-check 
+                            ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
+                                />
+                              </th>
+                              <th onClick={() => handleSort('journal_id')} className="sortable">
+                                ID {getSortIcon('journal_id')}
+                              </th>
+                              <th onClick={() => handleSort('journal_date')} className="sortable">
+                                Date {getSortIcon('journal_date')}
+                              </th>
+                              <th>Description</th>
+                              <th onClick={() => handleSort('journal_type')} className="sortable">
+                                Type {getSortIcon('journal_type')}
+                              </th>
+                              <th>Amt</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.map((journal, index) => (
+                              <tr key={journal.journal_id} className={selectedItems.includes(journal.journal_id) ? 'selected' : ''}>
+                                <td className="checkbox-cell">
+                                  <input
+                                    type="checkbox"
+                                    className={`table-checkbox fas fa-check ${selectedItems.includes(journal.journal_id) && 'selected-checkbox'}`}
+                                    checked={selectedItems.includes(journal.journal_id)}
+                                    onChange={() => toggleItemSelection(journal.journal_id)}
+                                  />
+                                </td>
+                                <td className="number-tab">{journal.journal_id}</td>
+                                <td>{new Date(journal.journal_date).toLocaleDateString('en-GB')}</td>
+                                <td>
+                                  <div className="table-flex-box">
+                                    <span className="table-customer-text table-desc-text">{journal.journal_description}</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span className={`badge badge-${voucherType(journal.journal_type)}`}>
+                                    <span className={`badge-circle badge-circle-${voucherType(journal.journal_type)}`} /> {journal.journal_type}
+                                  </span>
+                                </td>
+                                <td className="data-table-bold-text">{formatCurrencyDecimals(journal.debit, journal.journal_currency)}</td>
+                                <td>
+                                  <div className="action-buttons">
+                                    <button className="btn-edit" title="Edit" onClick={() => handleEditJournal(journal)}>
+                                      <span className="fas fa-pen"></span>
+                                    </button>
+                                    <button className="btn-view" title="View" onClick={() => handleViewJournal(journal)}>
+                                      <span className="fas fa-file"></span>
+                                    </button>
+                                    <button className="btns-delete" title="Delete" onClick={() => handleDeleteJournal(journal.journal_id)}>
+                                      <span className="fas fa-trash"></span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="pagination-container">
+                        <div className="pagination-info">
+                          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries
+                        </div>
+                        <div className="pagination-controls">
                           <button
-                            key={page}
-                            className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
-                            onClick={() => goToPage(page)}
+                            className="pagination-btn"
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
                           >
-                            {page}
+                            <span>Previous</span>
                           </button>
-                        )
-                      ))}
-                      
-                      <button 
-                        className="pagination-btn" 
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <span>Next</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
 
-                {data.length === 0 && (
-                  <EmptyTable
-                    icon="fas fa-book-open" 
-                    message="No journals found matching your criteria"
-                    link="/journal/create"
-                  />
+                          {getPageNumbers().map((page, index) => (
+                            page === '...' ? (
+                              <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                            ) : (
+                              <button
+                                key={page}
+                                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                                onClick={() => goToPage(page)}
+                              >
+                                {page}
+                              </button>
+                            )
+                          ))}
+
+                          <button
+                            className="pagination-btn"
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                          >
+                            <span>Next</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {data.length === 0 && (
+                      <EmptyTable
+                        icon="fas fa-book-open"
+                        message="No journals found matching your criteria"
+                        link="/journal/create"
+                      />
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </div>
+            </motion.div>
+
+            {/* Delete Confirmation Modal */}
+            <AnimatePresence>
+              {showDeleteModal && (
+                <DeleteConfirmationModal
+                  isOpen={showDeleteModal}
+                  onClose={() => {
+                    setShowDeleteModal(false);
+                    setSelectedAction("");
+                    clearSelection();
+                  }}
+                  onConfirm={handleDelete}
+                  count={selectedItems.length}
+                  page="journal"
+                />
+              )}
+            </AnimatePresence>
+
+            {/* 4. Error Modal Integration */}
+            <AnimatePresence>
+              {error && (
+                <ErrorModal
+                  isOpen={!!error}
+                  onClose={handleCloseErrorModal}
+                  onRetry={fetchData} // Pass fetchData directly as the retry function
+                  message={error}
+                />
+              )}
+            </AnimatePresence>
+
           </div>
-        </motion.div>
-
-        {/* Delete Confirmation Modal */}
-        <AnimatePresence>
-          {showDeleteModal && (
-            <DeleteConfirmationModal
-              isOpen={showDeleteModal}
-              onClose={() => {
-                setShowDeleteModal(false);
-                setSelectedAction("");
-                clearSelection();
-              }}
-              onConfirm={handleDelete}
-              count={selectedItems.length}
-              page="journal"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* 4. Error Modal Integration */}
-        <AnimatePresence>
-          {error && (
-            <ErrorModal
-              isOpen={!!error}
-              onClose={handleCloseErrorModal}
-              onRetry={fetchData} // Pass fetchData directly as the retry function
-              message={error}
-            />
-          )}
-        </AnimatePresence>
+        </div>
       </div>
     </div>
   );

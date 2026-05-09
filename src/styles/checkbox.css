@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMARTBOOKS — CHECKBOX FIX
+   Add this to the bottom of tables.css
+   (or paste at the end of App.css)
+
+   Problem: checkboxes have `fas fa-check` class applied, which
+   makes them render as FontAwesome icons and look pre-checked.
+   Solution: hide the native input, render a custom box using
+   ::before / ::after so the check is perfectly centered and
+   themed — no JS changes needed.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Reset native checkbox completely ── */
+.table-checkbox {
+  /* Remove all previous conflicting rules */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* Size & shape */
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--sb-border, #daeee9);
+  background: var(--sb-surface, #ffffff);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  vertical-align: middle;
+
+  /* Kill any FontAwesome pseudo-content that leaked in */
+  font-family: inherit !important;
+  font-weight: 400 !important;
+
+  transition: border-color 0.18s ease,
+              background   0.18s ease,
+              box-shadow   0.18s ease;
+}
+
+/* Remove FontAwesome pseudo-element content */
+.table-checkbox::before {
+  content: none !important;
+}
+
+/* Checkmark via ::after */
+.table-checkbox::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Draw the checkmark as a rotated L */
+  width: 9px;
+  height: 5px;
+  border-left:  2px solid transparent;
+  border-bottom: 2px solid transparent;
+  transform: rotate(-45deg) translate(1px, -1px);
+  margin: auto;
+  left: 0; right: 0; top: 0; bottom: 1px;
+  transition: border-color 0.15s ease;
+}
+
+/* Hover state */
+.table-checkbox:hover {
+  border-color: var(--sb-brand, #00b196);
+  box-shadow: 0 0 0 3px var(--sb-brand-dim, rgba(0,177,150,0.1));
+}
+
+/* Checked state */
+.table-checkbox:checked,
+.table-checkbox.selected-checkbox {
+  background: var(--sb-brand, #00b196);
+  border-color: var(--sb-brand, #00b196);
+  box-shadow: 0 0 0 3px var(--sb-brand-dim, rgba(0,177,150,0.12));
+}
+
+.table-checkbox:checked::after,
+.table-checkbox.selected-checkbox::after {
+  border-left-color:   white;
+  border-bottom-color: white;
+}
+
+/* Focus ring (accessibility) */
+.table-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sb-brand-dim, rgba(0,177,150,0.2));
+  border-color: var(--sb-brand, #00b196);
+}
+
+/* Dark mode */
+.theme-dark .table-checkbox {
+  border-color: var(--sb-border, #1e3530);
+  background: var(--sb-surface-2, #131f1b);
+}
+.theme-dark .table-checkbox:hover {
+  border-color: var(--sb-brand, #00c9aa);
+  box-shadow: 0 0 0 3px rgba(0,201,170,0.12);
+}
+.theme-dark .table-checkbox:checked,
+.theme-dark .table-checkbox.selected-checkbox {
+  background: var(--sb-brand, #00c9aa);
+  border-color: var(--sb-brand, #00c9aa);
+  box-shadow: 0 0 0 3px rgba(0,201,170,0.15);
+}
+
+/* Indeterminate state (select-all when partial) */
+.table-checkbox:indeterminate {
+  background: var(--sb-brand, #00b196);
+  border-color: var(--sb-brand, #00b196);
+}
+.table-checkbox:indeterminate::after {
+  width: 8px;
+  height: 0;
+  border-left: none;
+  border-bottom: 2px solid white;
+  transform: none;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  bottom: auto;
+}

@@ -147,6 +147,9 @@ const CreateRateForm = () => {
                       dateFormat="yyyy-MM-dd"
                       wrapperClassName="input-date-picker"
                       id="created_at"
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
                     />
                     <span className={`chevron-input-icon fas fa-calendar ${errors.created_at ? "input-icon-error" : ""}`} />
                   </div>

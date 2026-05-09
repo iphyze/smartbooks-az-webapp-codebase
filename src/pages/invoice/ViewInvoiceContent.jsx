@@ -2,7 +2,6 @@ import React from "react";
 import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
-import "../inputs-styles/Inputs.css";
 import "../ViewJournal.css";
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
 import { formatCurrencyDecimals, formatDateLong, formatWithDecimals } from "../../utils/helper";
@@ -159,38 +158,35 @@ const ViewInvoiceContent = ({ invoice }) => {
           
           <div className="vc-summary-col" />
 
-          <div className="invoice-totals invoice-summary-grid vc-summary-grid">
-              
-              <div className="invoice-totals">
+          <div className="vc-invoice-totals">
+
               
               {total_vat > 0 && total_discount > 0 &&
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">Subtotal</div>
-                  <div className="invoice-total-value">{formatWithDecimals(total_amount)}</div>
+                <div className="vc-invoice-total-row">
+                  <div className="vc-invoice-total-label">Subtotal</div>
+                  <div className="vc-invoice-total-value">{formatWithDecimals(total_amount)}</div>
                 </div>
               }
 
               {total_discount > 0 &&
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">Discount</div>
-                  <div className="invoice-total-value">{formatWithDecimals(total_discount)}</div>
+                <div className="vc-invoice-total-row">
+                  <div className="vc-invoice-total-label">Discount</div>
+                  <div className="vc-invoice-total-value">{formatWithDecimals(total_discount)}</div>
                 </div>
               }
 
               {total_vat > 0 &&
-                <div className="invoice-total-row">
-                  <div className="invoice-total-label">VAT (7.5%)</div>
-                  <div className="invoice-total-value">{formatWithDecimals(total_vat)}</div>
+                <div className="vc-invoice-total-row">
+                  <div className="vc-invoice-total-label">VAT (7.5%)</div>
+                  <div className="vc-invoice-total-value">{formatWithDecimals(total_vat)}</div>
                 </div>
               }
 
 
-              <div className="invoice-total-row invoice-grand-total">
-                <div className="invoice-total-label inv-bold large-text">Total</div>
-                <div className="invoice-total-value inv-bold large-text">{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</div>
+              <div className="vc-invoice-total-row invoice-grand-total">
+                <div className="vc-invoice-total-label inv-bold large-text">Total</div>
+                <div className="vc-invoice-total-value inv-bold large-text">{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</div>
               </div>
-            </div>
-
             </div>
 
       </div>

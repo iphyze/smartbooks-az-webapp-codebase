@@ -17,11 +17,11 @@ const EditLedger = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useLedgerStore
-  const { 
-    singleLedger: ledgerData, 
-    fetchingSingle: isLoading, 
-    singleLedgerError: fetchError, 
-    fetchSingleLedger 
+  const {
+    singleLedger: ledgerData,
+    fetchingSingle: isLoading,
+    singleLedgerError: fetchError,
+    fetchSingleLedger
   } = useLedgerStore();
 
   const links = [
@@ -32,7 +32,7 @@ const EditLedger = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Edit Ledger";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -66,18 +66,23 @@ const EditLedger = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Ledgers" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Ledger...'} />
-        ) : ledgerData ? (
-          // Pass the fetched data directly to the child
-          <EditLedgerForm
-            ledgerNumber={ledgerData.ledger_number}
-            ledger={ledgerData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Ledgers" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Ledger...'} />
+            ) : ledgerData ? (
+              // Pass the fetched data directly to the child
+              <EditLedgerForm
+                ledgerNumber={ledgerData.ledger_number}
+                ledger={ledgerData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

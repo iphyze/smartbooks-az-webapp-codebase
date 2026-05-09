@@ -30,7 +30,7 @@ const ViewLedger = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | View Ledger";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -47,9 +47,9 @@ const ViewLedger = () => {
         const response = await api.get(`/ledger/fetch-single-ledger?ledger_number=${parsedId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         // Store the entire data object containing ledger, journal_entries, and summary
-        setViewData(response.data.data); 
+        setViewData(response.data.data);
       } catch (error) {
         const message = error.response?.data?.message || "Failed to fetch ledger details";
         showToast(message, "error");
@@ -79,18 +79,23 @@ const ViewLedger = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Ledgers" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Ledger...'} />
-        ) : viewData ? (
-          // Pass the isolated data directly to the child
-          <ViewLedgerContent 
-            ledger={viewData.ledger} 
-            journalEntries={viewData.journal_entries || []} 
-            summary={viewData.summary || {}} 
-          />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Ledgers" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Ledger...'} />
+            ) : viewData ? (
+              // Pass the isolated data directly to the child
+              <ViewLedgerContent
+                ledger={viewData.ledger}
+                journalEntries={viewData.journal_entries || []}
+                summary={viewData.summary || {}}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

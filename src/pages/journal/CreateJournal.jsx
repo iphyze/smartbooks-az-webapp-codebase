@@ -31,10 +31,12 @@ const CreateJournal = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
         <PageNav pageTitle='Journal' links={links} />
-
-        <CreateJournalForm />
-        
+          <CreateJournalForm />
+        </div>
+        </div>
       </div>
     </div>
   );

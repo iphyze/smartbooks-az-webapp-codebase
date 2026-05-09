@@ -2,31 +2,22 @@ import { create } from 'zustand';
 
 const useToastStore = create((set) => ({
   toasts: [],
-  showToast: (message, type = 'info') => {
-    const id = Math.random().toString(36).substr(2, 9);
-    set((state) => ({
-      toasts: [
-        ...state.toasts,
-        {
-          id,
-          message,
-          type,
-          createdAt: new Date()
-        }
-      ]
-    }));
 
-    // Auto remove after 10 seconds
-    setTimeout(() => {
-      // Dispatch a custom event to trigger the animation
-      window.dispatchEvent(new CustomEvent('hideToast', { detail: { id } }));
-    }, 10000);
+  showToast: (message, type = 'info') => {
+    const id = crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2, 11);
+
+    set((state) => ({
+      toasts: [...state.toasts, { id, message, type }],
+    }));
   },
+
   hideToast: (id) => {
     set((state) => ({
-      toasts: state.toasts.filter((toast) => toast.id !== id)
+      toasts: state.toasts.filter((t) => t.id !== id),
     }));
-  }
+  },
 }));
 
 export default useToastStore;

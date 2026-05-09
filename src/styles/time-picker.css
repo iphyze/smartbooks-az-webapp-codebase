@@ -1,0 +1,74 @@
+/* ─────────────────────────────────────────────
+   TimePicker overrides (react-datepicker time-only)
+   Matches the DatePicker styling provided
+───────────────────────────────────────────── */
+
+/* Container for time-only picker */
+.react-datepicker--time-only {
+  width: 100% !important;
+}
+
+.react-datepicker--time-only .react-datepicker__time-container {
+  border-left: none !important;
+  width: 100% !important;
+}
+
+/* Time Header Caption (The "Time" text) - FIX FOR DARK MODE */
+.react-datepicker-time__header {
+  color: var(--f-text) !important; /* Uses theme text color (Light in dark mode, Dark in light mode) */
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+/* Time list container */
+.react-datepicker__time-container .react-datepicker__time {
+  background: var(--f-bg) !important;
+  position: relative !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time-list {
+  height: 250px !important; /* Fixed height for scroll */
+  scrollbar-width: thin;
+  scrollbar-color: var(--f-border) transparent;
+}
+
+.react-datepicker__time-container .react-datepicker__time-list::-webkit-scrollbar {
+  width: 6px;
+}
+.react-datepicker__time-container .react-datepicker__time-list::-webkit-scrollbar-thumb {
+  background: var(--f-border);
+  border-radius: 3px;
+}
+
+/* Individual time items */
+.react-datepicker__time-list-item {
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--f-text-2) !important;
+  cursor: pointer !important;
+  transition: background 0.12s ease !important;
+  border-radius: 0 !important; /* Reset radius for list items */
+  margin: 0 !important;
+}
+
+.react-datepicker__time-list-item:hover {
+  background: var(--f-brand-dim) !important;
+  color: var(--f-brand) !important;
+}
+
+.react-datepicker__time-list-item--selected {
+  background: var(--f-brand) !important;
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.react-datepicker__time-list-item--disabled {
+  color: var(--f-placeholder) !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.react-datepicker__time-list-item--disabled:hover {
+  background: transparent !important;
+}

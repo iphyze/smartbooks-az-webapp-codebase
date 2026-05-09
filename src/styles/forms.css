@@ -1,0 +1,931 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMARTBOOKS — FORMS & INPUTS
+   Covers: .invoice-form-box, .input-form-*, .form-input,
+           .form-input-select (react-select), invoice item table,
+           totals, submit btn, DatePicker overrides
+═══════════════════════════════════════════════════════════════ */
+
+/* ── CSS Variables scoped to light/dark ── */
+.theme-light {
+  --f-bg:          #ffffff;
+  --f-surface:     #f8fcfb;
+  --f-border:      #daeee9;
+  --f-border-focus:#00b196;
+  --f-text:        #0d1f1b;
+  --f-text-2:      #3d5752;
+  --f-text-muted:  #7aada6;
+  --f-placeholder: #a8c9c3;
+  --f-error:       #dc2626;
+  --f-error-bg:    rgba(220,38,38,0.05);
+  --f-brand:       #00b196;
+  --f-brand-dim:   rgba(0,177,150,0.08);
+  --f-label:       #3d5752;
+  --f-label-err:   #dc2626;
+  --f-input-bg:    #ffffff;
+  --f-disabled-bg: #f4faf9;
+  --f-shadow:      0 4px 20px rgba(0,177,150,0.08), 0 1px 4px rgba(0,0,0,0.04);
+}
+.theme-dark {
+  --f-bg:          #161b22;
+  --f-surface:     #1c2128;
+  --f-border:      #30363d;
+  --f-border-focus:#00c9aa;
+  --f-text:        #e6edf3;
+  --f-text-2:      #8b949e;
+  --f-text-muted:  #4d7a72;
+  --f-placeholder: #3d4b56;
+  --f-error:       #f87171;
+  --f-error-bg:    rgba(248,113,113,0.06);
+  --f-brand:       #00c9aa;
+  --f-brand-dim:   rgba(0,201,170,0.1);
+  --f-label:       #7ab8ae;
+  --f-label-err:   #f87171;
+  --f-input-bg:    #0e1117;
+  --f-disabled-bg: #161b22;
+  --f-shadow:      0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.25);
+}
+
+/* ── Form page wrapper ── */
+.invoice-form-box {
+  background: var(--f-bg);
+  border: 1px solid var(--f-border);
+  border-radius: 16px;
+  box-shadow: var(--f-shadow);
+  margin: 24px 0px;
+  overflow: visible;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.invoice-form-f-container { padding: 28px 28px 0; overflow: visible; }
+
+/* ── Form header ── */
+.invoice-form-header { margin-bottom: 24px; }
+.invoice-form-htxt {
+  font-family: 'Sora', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--f-text);
+  margin-bottom: 4px;
+}
+.invoice-form-sub-htxt {
+  font-size: 12.5px;
+  color: var(--f-text-muted);
+}
+
+/* ── Form grid ── */
+.invoice-form-flex-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0 20px;
+}
+.invoice-form-three { grid-column: span 1; }
+.invoice-form-full  { grid-column: span 3; margin-top: 8px; }
+
+/* ── Input wrapper & group ── */
+.input-form-wrapper {
+  margin-bottom: 16px;
+}
+
+.input-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-form-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--f-label);
+  transition: color 0.2s ease;
+}
+.input-label-message { color: var(--f-label-err) !important; }
+
+.input-form-error .input-form-label { color: var(--f-label-err); }
+
+/* ── form-wrapper (input + icon container) ── */
+.form-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ADD after .form-wrapper { } block */
+.form-wrapper .form-input-select {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ── Base input ── */
+.form-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 40px 0 14px;
+  background: var(--f-input-bg);
+  border: 1.5px solid var(--f-border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--f-text);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-input::placeholder { color: var(--f-placeholder); }
+.form-input:focus {
+  border-color: var(--f-border-focus);
+  box-shadow: 0 0 0 3px rgba(0,177,150,0.1);
+}
+.form-input.input-error {
+  border-color: var(--f-error);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
+}
+.form-input:disabled,
+.form-input[readonly] {
+  background: var(--f-disabled-bg);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-input-no-padding { padding: 0 14px; }
+.form-input-number     { padding: 0 12px; text-align: right; }
+
+/* ADD after .form-input-number rule */
+
+/* Hide browser spin buttons */
+.form-input-number::-webkit-inner-spin-button,
+.form-input-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.form-input-number[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ADD — prevents scroll from changing number values */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ── Chevron / calendar icon ── */
+.chevron-input-icon,
+.input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--f-text-muted);
+  pointer-events: none;
+  transition: transform 0.25s ease, color 0.2s ease;
+}
+.chevron-rotate { transform: translateY(-50%) rotate(180deg); color: var(--f-brand); }
+.input-icon-error { color: var(--f-error) !important; }
+
+/* ── Error message ── */
+.input-error-message {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--f-error);
+  font-weight: 500;
+  animation: sb-err-in 0.2s ease;
+}
+@keyframes sb-err-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── DatePicker overrides (react-datepicker) ── */
+.input-date-picker,
+.input-date-picker .react-datepicker-wrapper,
+.input-date-picker .react-datepicker__input-container {
+  width: 100%;
+  display: block;
+}
+.input-date-picker .react-datepicker__input-container input {
+  width: 100%;
+  height: 42px;
+  padding: 0 40px 0 14px;
+  background: var(--f-input-bg);
+  border: 1.5px solid var(--f-border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--f-text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input-date-picker .react-datepicker__input-container input:focus {
+  border-color: var(--f-border-focus);
+  box-shadow: 0 0 0 3px rgba(0,177,150,0.1);
+}
+.react-datepicker-popper { z-index: 9999 !important; }
+.react-datepicker {
+  font-family: 'DM Sans', sans-serif !important;
+  border: 1.5px solid var(--f-border) !important;
+  border-radius: 12px !important;
+  background: var(--f-bg) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+  overflow: hidden;
+}
+.react-datepicker__header {
+  background: var(--f-surface) !important;
+  border-bottom: 1px solid var(--f-border) !important;
+  padding-top: 12px !important;
+}
+.react-datepicker__current-month { color: var(--f-text) !important; font-weight: 700 !important; font-size: 13px !important; }
+.react-datepicker__day-name { color: var(--f-text-muted) !important; font-size: 11px !important; font-weight: 600 !important; }
+.react-datepicker__day  { color: var(--f-text-2) !important; border-radius: 7px !important; transition: background 0.12s ease !important; }
+.react-datepicker__day:hover { background: var(--f-brand-dim) !important; color: var(--f-brand) !important; }
+.react-datepicker__day--selected { background: var(--f-brand) !important; color: white !important; font-weight: 700 !important; }
+.react-datepicker__day--today:not(.react-datepicker__day--selected) { color: var(--f-brand) !important; font-weight: 700 !important; border: 1.5px solid var(--f-brand) !important; }
+.react-datepicker__navigation-icon::before { border-color: var(--f-text-muted) !important; }
+.react-datepicker__navigation:hover *::before { border-color: var(--f-brand) !important; }
+
+/* ── React-Select overrides ── */
+.form-input-select .form-input-select__control {
+  min-height: 42px;
+  border: 1.5px solid var(--f-border) !important;
+  border-radius: 9px !important;
+  background: var(--f-input-bg) !important;
+  box-shadow: none !important;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  padding-right: 28px; /* space for custom chevron */
+}
+.form-input-select .form-input-select__control:hover {
+  border-color: var(--f-border-focus) !important;
+}
+.form-input-select .form-input-select__control--is-focused {
+  border-color: var(--f-border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(0,177,150,0.1) !important;
+}
+.form-input-select.input-error .form-input-select__control {
+  border-color: var(--f-error) !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.08) !important;
+}
+.form-input-select .form-input-select__value-container { padding: 0 12px !important; }
+.form-input-select .form-input-select__placeholder      { color: var(--f-placeholder) !important; font-size: 13px !important; }
+.form-input-select .form-input-select__single-value     { color: var(--f-text) !important; font-size: 13px !important; }
+.form-input-select .form-input-select__input-container  { color: var(--f-text) !important; }
+.form-input-select .form-input-select__indicator-separator { display: none !important; }
+.form-input-select .form-input-select__dropdown-indicator,
+.form-input-select .form-input-select__clear-indicator  { display: none !important; } /* using custom chevron */
+.form-input-select .form-input-select__menu {
+  background: var(--f-bg) !important;
+  border: 1.5px solid var(--f-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.12) !important;
+  overflow: hidden;
+  z-index: 9999 !important;
+  animation: sb-menu-drop 0.18s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes sb-menu-drop {
+  from { opacity:0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+.form-input-select .form-input-select__menu-list        { padding: 6px !important; }
+.form-input-select .form-input-select__option {
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  color: var(--f-text-2) !important;
+  padding: 9px 12px !important;
+  cursor: pointer !important;
+  transition: background 0.12s ease !important;
+}
+.form-input-select .form-input-select__option--is-focused {
+  background: var(--f-brand-dim) !important;
+  color: var(--f-brand) !important;
+}
+.form-input-select .form-input-select__option--is-selected {
+  background: var(--f-brand) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+.form-input-select .form-input-select__loading-indicator span { background: var(--f-brand) !important; }
+.form-input-select .form-input-select__no-options-message    { color: var(--f-text-muted) !important; font-size: 12.5px !important; padding: 16px !important; text-align: center; }
+
+/* ── inv-form-flex: select + add button row ── */
+.inv-form-flex {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.inv-form-flex-wrap { flex: 1; min-width: 0; }
+.inv-form-flex-btn {
+  width: 36px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--f-border);
+  border-radius: 9px;
+  background: var(--f-surface);
+  color: var(--f-brand);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  /* Remove margin-bottom — align to the input, not the wrapper bottom */
+  align-self: flex-start;
+  margin-top: 22px; /* clears the label height so it aligns with the input */
+}
+.inv-form-flex-btn:hover {
+  background: var(--f-brand-dim);
+  border-color: rgba(0,177,150,0.3);
+}
+
+/* ── Invoice items table ── */
+.invoice-items-table {
+  border: 1px solid var(--f-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.invoice-table-header,
+.journal-table-header {
+  display: flex;
+  align-items: center;
+  background: var(--f-surface);
+  border-bottom: 1px solid var(--f-border);
+  padding: 0;
+}
+
+.invoice-table-cell {
+  padding: 10px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--f-text-muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.invoice-table-row {
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--f-border);
+  transition: background 0.12s ease;
+}
+.invoice-table-row:last-child { border-bottom: none; }
+.invoice-table-row:hover { background: var(--f-brand-dim); }
+.invoice-table-row .invoice-table-cell {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--f-text-2);
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 8px 10px;
+}
+
+.cell-sn     { flex: 0 0 52px; min-width: 52px; display: flex; align-items: center; }
+.cell-small { flex: 0 0 130px; min-width: 130px; }
+.cell-action { flex: 0 0 56px; min-width: 56px; display: flex; align-items: center; justify-content: center; }
+
+.invoice-sn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--f-brand-dim);
+  color: var(--f-brand);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+}
+
+/* REPLACE the existing .form-input-textarea-row rule */
+.form-input-textarea-row {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--f-input-bg);
+  border: 1.5px solid var(--f-border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--f-text);
+  outline: none;
+  resize: none;
+  display: flex;
+  align-items: center;
+  line-height: 42px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-input-textarea-row::placeholder { color: var(--f-placeholder); }
+.form-input-textarea-row:focus {
+  border-color: var(--f-border-focus);
+  box-shadow: 0 0 0 3px rgba(0,177,150,0.1);
+}
+.form-input-textarea-row.input-error {
+  border-color: var(--f-error);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
+}
+
+/* ADD after .form-input-textarea-row rule */
+.form-input-textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 14px;
+  background: var(--f-input-bg);
+  border: 1.5px solid var(--f-border);
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--f-text);
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-input-textarea::placeholder { color: var(--f-placeholder); }
+.form-input-textarea:focus {
+  border-color: var(--f-border-focus);
+  box-shadow: 0 0 0 3px rgba(0,177,150,0.1);
+}
+.form-input-textarea.input-error {
+  border-color: var(--f-error);
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
+}
+
+
+.invoice-subtotal-field { background: var(--f-surface) !important; font-weight: 600; color: var(--f-brand) !important; }
+
+.invoice-remove-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: rgba(220,38,38,0.08);
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.invoice-remove-btn:hover { background: rgba(220,38,38,0.16); transform: scale(1.08); }
+.invoice-remove-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+/* ── Summary row ── */
+.invoice-form-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 0;
+  border-top: 1px solid var(--f-border);
+  margin-top: 0;
+}
+
+.invoice-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border: 1.5px dashed var(--f-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--f-brand);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.invoice-add-btn:hover { border-color: var(--f-brand); background: var(--f-brand-dim); }
+
+.invoice-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 300px;
+  background: var(--f-brand-dim);
+  border: 1.5px solid rgba(0,177,150,0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.invoice-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(0,177,150,0.12);
+}
+.invoice-total-row:last-child { border-bottom: none; }
+
+.invoice-total-label {
+  color: var(--f-text-muted);
+  font-weight: 500;
+}
+.invoice-total-value {
+  font-weight: 600;
+  color: var(--f-text);
+  font-family: 'Sora', sans-serif;
+}
+
+.invoice-grand-total {
+  background: var(--f-brand);
+  padding: 14px 16px;
+  border-top: none;
+  margin-top: 0;
+}
+.invoice-grand-total .invoice-total-label {
+  color: rgba(255,255,255,0.85) !important;
+  font-weight: 700 !important;
+}
+.invoice-grand-total .invoice-total-value {
+  color: #ffffff !important;
+  font-size: 18px !important;
+}
+.inv-bold  { font-weight: 700 !important; }
+.large-text { font-size: 16px !important; }
+.invoice-grand-total .invoice-total-value { color: var(--f-brand); font-size: 16px; }
+
+/* ── Submit button area ── */
+.invoice-action-btn { padding: 20px 0 28px; }
+.invoice-action-btn-wrapper { display: flex; justify-content: flex-end; }
+
+.invoice-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 180px;
+  height: 46px;
+  padding: 0 28px;
+  background: var(--f-brand);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 14px rgba(0,177,150,0.3);
+}
+.invoice-submit-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,177,150,0.35);
+}
+.invoice-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.invoice-submit-btn-text { display: flex; align-items: center; gap: 8px; }
+
+/* Submit loader (3-dot) */
+.invoice-loader {
+  width: 32px;
+  aspect-ratio: 2;
+  --_g: no-repeat radial-gradient(circle closest-side, rgba(255,255,255,0.9) 90%, transparent);
+  background: var(--_g) 0% 50%, var(--_g) 50% 50%, var(--_g) 100% 50%;
+  background-size: calc(100%/3) 50%;
+  animation: sb-loader 0.8s infinite linear;
+}
+@keyframes sb-loader {
+  20%  { background-position: 0%   0%, 50%  50%, 100% 50% }
+  40%  { background-position: 0% 100%, 50%   0%, 100% 50% }
+  60%  { background-position: 0%  50%, 50% 100%, 100%  0% }
+  80%  { background-position: 0%  50%, 50%  50%, 100% 100% }
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .invoice-form-flex-box { grid-template-columns: repeat(2, 1fr); }
+  .invoice-form-three    { grid-column: span 1; }
+  .invoice-form-full     { grid-column: span 2; }
+}
+@media (max-width: 640px) {
+  .invoice-form-box        { margin: 0 12px 28px; }
+  .invoice-form-f-container { padding: 20px 16px 0; }
+  .invoice-form-flex-box   { grid-template-columns: 1fr; }
+  .invoice-form-three,
+  .invoice-form-full       { grid-column: span 1; }
+  .invoice-totals          { min-width: 100%; }
+  .invoice-form-summary    { flex-direction: column; }
+  .cell-small              { flex: 0 0 90px; min-width: 90px; }
+}
+
+/* ADD at the very bottom of forms.css */
+
+/* ── Remove number input spin buttons — all browsers ── */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  margin: 0 !important;
+  display: none !important;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+/* Extra specificity catch for .form-input-number */
+.form-input-number[type="number"]::-webkit-outer-spin-button,
+.form-input-number[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  display: none !important;
+}
+
+.form-input-number[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
+/* ── DatePicker month/year dropdowns ── */
+.react-datepicker__month-dropdown-container,
+.react-datepicker__year-dropdown-container {
+  margin: 0 4px !important;
+}
+
+.react-datepicker__month-select,
+.react-datepicker__year-select {
+  height: 28px;
+  padding: 0 6px;
+  background: var(--f-input-bg) !important;
+  border: 1.5px solid var(--f-border) !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 600 !important;
+  color: var(--f-text) !important;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.react-datepicker__month-select:focus,
+.react-datepicker__year-select:focus {
+  border-color: var(--f-border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(0,177,150,0.1) !important;
+}
+
+.react-datepicker__month-select:hover,
+.react-datepicker__year-select:hover {
+  border-color: var(--f-border-focus) !important;
+}
+
+/* Keep header compact with dropdowns */
+.react-datepicker__current-month {
+  display: none !important; /* hidden — replaced by the two dropdowns */
+}
+
+.react-datepicker__header__dropdown {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 6px 0 8px !important;
+}
+
+/* ADD at bottom of forms.css */
+
+/* Journal table: hide redundant sub-labels inside row cells
+   since the header already shows column names */
+.invoice-table-row .input-form-label {
+  display: none;
+}
+
+/* Ensure all row cells align to center vertically */
+.invoice-table-row .invoice-table-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* Input wrappers inside row cells: no bottom margin */
+.invoice-table-row .input-form-wrapper {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+/* inv-form-flex inside table rows: align to center */
+.invoice-table-row .inv-form-flex {
+  align-items: center;
+  width: 100%;
+}
+
+/* The + button inside table rows: no top margin offset */
+.invoice-table-row .inv-form-flex-btn {
+  margin-top: 0;
+  align-self: flex-start;
+  flex-shrink: 0;
+  /* Pin it to align with the top of the input, not the whole flex column */
+  position: relative;
+  top: 0;
+}
+
+/* ADD at bottom of forms.css */
+
+/* React-select menu portalled to body — re-apply theme tokens */
+.form-input-select__menu-portal .form-input-select__menu {
+  background: var(--sb-surface, #0f1c18) !important;
+  border: 1.5px solid var(--sb-border, #1e3530) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  z-index: 9999 !important;
+}
+.form-input-select__menu-portal .form-input-select__menu-list {
+  padding: 6px !important;
+}
+.form-input-select__menu-portal .form-input-select__option {
+  border-radius: 7px !important;
+  font-size: 13px !important;
+  color: var(--sb-text-2, #8ec4bb) !important;
+  padding: 9px 12px !important;
+  cursor: pointer !important;
+}
+.form-input-select__menu-portal .form-input-select__option--is-focused {
+  background: var(--sb-brand-dim, rgba(0,201,170,0.1)) !important;
+  color: var(--sb-brand, #00c9aa) !important;
+}
+.form-input-select__menu-portal .form-input-select__option--is-selected {
+  background: var(--sb-brand, #00c9aa) !important;
+  color: #0a120f !important;
+  font-weight: 600 !important;
+}
+
+
+/* ADD at bottom of forms.css */
+
+/* More breathing room in journal table rows */
+.invoice-table-row {
+  padding: 10px 0;
+  min-height: 64px;
+}
+
+/* Extra bottom margin on the table itself */
+.invoice-items-table {
+  margin-bottom: 20px;
+}
+
+/* Cells inside rows: vertical padding */
+.invoice-table-row .invoice-table-cell {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* ADD at bottom of forms.css */
+
+/* Summary grid — side by side columns */
+.journal-summary-grid {
+  display: flex;
+  gap: 0;
+  min-width: 480px;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.journal-summary-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--f-border);
+  margin: 0 4px;
+}
+
+.jsc-summary {
+  flex: 0 0 auto;
+  min-width: 200px;
+}
+
+/* NGN / FCY column header */
+.invoice-total-row-header {
+  padding: 9px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--f-brand-dim);
+  color: var(--f-brand);
+  border-bottom: 1px solid rgba(0,177,150,0.15);
+}
+
+/* Rows inside journal summary */
+.journal-summary-col .invoice-total-row {
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--f-border);
+  background: var(--f-surface);
+}
+.journal-summary-col .invoice-total-row:last-child {
+  border-bottom: none;
+}
+
+/* Balance row — slightly emphasized */
+.journal-summary-col .invoice-total-row:last-child .invoice-total-label,
+.journal-summary-col .invoice-total-row:last-child .invoice-total-value {
+  color: var(--f-text) !important;
+  font-weight: 700 !important;
+}
+
+/* Difference row */
+.balanced-total {
+  background: var(--f-brand) !important;
+  border-radius: 0 0 12px 12px;
+}
+.balanced-total .invoice-total-label,
+.balanced-total .invoice-total-value {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.error-total {
+  background: #dc2626 !important;
+  border-radius: 0 0 12px 12px;
+}
+.error-total .invoice-total-label,
+.error-total .invoice-total-value {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.invoice-diff-text { font-size: 13.5px; }
+
+.invoice-table-row .inv-form-flex {
+  align-items: flex-start;
+}
+
+.invoice-table-row .inv-form-flex-btn {
+  margin-top: 0 !important;
+  align-self: flex-start;
+  flex-shrink: 0;
+  /* 42px = input height, button is also 42px — perfect alignment */
+  height: 42px;
+}
+
+/* The input-form-wrapper inside a table row flex should not grow
+   its button-affecting height past the input itself */
+.invoice-table-row .inv-form-flex .input-form-wrapper {
+  margin-bottom: 0;
+}
+
+/* Error message sits below without affecting button position */
+.invoice-table-row .input-error-message {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  white-space: nowrap;
+}
+
+/* Make the input-form-group position: relative so error anchors to it */
+.invoice-table-row .input-form-group {
+  position: relative;
+  padding-bottom: 0;
+}
+
+/* Add bottom padding to the row itself to give error messages space */
+.invoice-table-row {
+  padding-bottom: 22px;
+}
+
+/* Journal/Invoice items table — horizontal scroll on small screens */
+.invoice-form-full {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--f-border) transparent;
+}
+.invoice-form-full::-webkit-scrollbar       { height: 5px; }
+.invoice-form-full::-webkit-scrollbar-thumb { background: var(--f-border); border-radius: 4px; }
+
+/* Set a minimum width so the table never crushes below this */
+.invoice-items-table {
+  min-width: 1300px; /* adjust to match your total column widths */
+}
+.timesheet-items-table{
+  min-width: 150%; /* adjust to match your total column widths */
+}

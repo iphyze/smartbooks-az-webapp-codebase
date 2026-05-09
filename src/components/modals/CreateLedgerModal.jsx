@@ -24,31 +24,37 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
   const [submitted, setSubmitted] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
-  
+
   const [ledgerDetails, setLedgerDetails] = useState({
     ledger_name: "",
     account_type: "",
   });
 
+  // REPLACE the handleClickOutside useEffect
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isCreating) return;
+      // Don't close if the nested account modal is open
+      if (showCreateAccountModal) return;
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         onClose();
       }
     };
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onClose, isCreating]);
+  }, [isOpen, onClose, isCreating, showCreateAccountModal]); // ADD showCreateAccountModal to deps
 
+  // REPLACE the handleEscapeKey useEffect
   useEffect(() => {
     const handleEscapeKey = (event) => {
       if (isCreating) return;
+      // Don't close parent if nested modal is open — let nested handle it
+      if (showCreateAccountModal) return;
       if (event.key === "Escape" && isOpen) onClose();
     };
     document.addEventListener("keydown", handleEscapeKey);
     return () => document.removeEventListener("keydown", handleEscapeKey);
-  }, [isOpen, onClose, isCreating]);
+  }, [isOpen, onClose, isCreating, showCreateAccountModal]); // ADD showCreateAccountModal to deps
 
   useEffect(() => {
     if (isOpen) {
@@ -65,9 +71,9 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
 
   const validateForm = () => {
     const e = {};
-    if (!ledgerDetails.ledger_name || ledgerDetails.ledger_name.trim() === "") 
+    if (!ledgerDetails.ledger_name || ledgerDetails.ledger_name.trim() === "")
       e.ledger_name = "Ledger name is required";
-    if (!ledgerDetails.account_type) 
+    if (!ledgerDetails.account_type)
       e.account_type = "Account type is required";
     return e;
   };
@@ -109,8 +115,8 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
   return (
     <>
       <div className={`modal-overlay theme-${theme}`}>
-        <motion.div 
-          className="modal-content-scrollable" 
+        <motion.div
+          className="modal-content-scrollable"
           ref={modalRef}
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -129,15 +135,15 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
               <div className="modal-icon"><i className="fas fa-book"></i></div>
               <p className="modal-text">Fill the form below to add a new ledger</p>
             </div>
-            
-            <div className="invoice-form-flex-box">
+
+            <div className="invoice-form-flex-box modal-form-1col">
               {/* Ledger Name */}
               <div className="invoice-form">
                 <div className="input-form-wrapper">
                   <div className={`input-form-group ${errors.ledger_name ? "input-form-error" : ""}`}>
                     <label className={`input-form-label ${errors.ledger_name ? "input-label-message" : ""}`}>Ledger Name</label>
                     <div className="form-wrapper">
-                      <input type="text" className={`form-input form-input-no-padding ${errors.ledger_name ? "input-error" : ""}`} value={ledgerDetails.ledger_name} onChange={(e) => handleDetailChange("ledger_name", e.target.value)} placeholder="e.g. Office Refreshments" disabled={isCreating}/>
+                      <input type="text" className={`form-input form-input-no-padding ${errors.ledger_name ? "input-error" : ""}`} value={ledgerDetails.ledger_name} onChange={(e) => handleDetailChange("ledger_name", e.target.value)} placeholder="e.g. Office Refreshments" disabled={isCreating} />
                     </div>
                   </div>
                   {errors.ledger_name && <div className="input-error-message">{errors.ledger_name}</div>}
@@ -151,13 +157,13 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
                     <div className={`input-form-group ${errors.account_type ? "input-form-error" : ""}`}>
                       <label className={`input-form-label ${errors.account_type ? "input-label-message" : ""}`}>Account Type</label>
                       <div className="form-wrapper">
-                        <Select 
-                          options={accountOptions} 
-                          onChange={(opt) => handleDetailChange("account_type", opt?.value || "")} 
-                          value={accountOptions.find((o) => o.value === ledgerDetails.account_type) || null} 
-                          placeholder="Search account type..." 
-                          className={`form-input-select ${errors.account_type ? "input-error" : ""}`} 
-                          classNamePrefix="form-input-select" 
+                        <Select
+                          options={accountOptions}
+                          onChange={(opt) => handleDetailChange("account_type", opt?.value || "")}
+                          value={accountOptions.find((o) => o.value === ledgerDetails.account_type) || null}
+                          placeholder="Search account type..."
+                          className={`form-input-select ${errors.account_type ? "input-error" : ""}`}
+                          classNamePrefix="form-input-select"
                           isDisabled={isCreating}
                           onMenuOpen={() => setOpenMenuId("modal_account_type")}
                           onMenuClose={() => setOpenMenuId(null)}
@@ -187,10 +193,10 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
       {/* Nested Account Modal */}
       <AnimatePresence>
         {showCreateAccountModal && (
-          <CreateAccountModal 
-            isOpen={showCreateAccountModal} 
-            onClose={() => setShowCreateAccountModal(false)} 
-            onAccountCreated={handleAccountCreated} 
+          <CreateAccountModal
+            isOpen={showCreateAccountModal}
+            onClose={() => setShowCreateAccountModal(false)}
+            onAccountCreated={handleAccountCreated}
           />
         )}
       </AnimatePresence>

@@ -95,3 +95,52 @@ const getOrdinalSuffix = (num) => {
   }
   return 'th';
 };
+
+
+// ADD after imports, before createEmptyItem
+export const HOURS = Array.from({ length: 24 }, (_, i) => ({
+  id: String(i).padStart(2, "0"),
+  label: String(i).padStart(2, "0"),
+}));
+
+export const MINUTES = Array.from({ length: 60 }, (_, i) => ({
+  id: String(i).padStart(2, "0"),
+  label: String(i).padStart(2, "0"),
+}));
+
+export const parseTime = (val) => {
+  if (!val) return { h: "", m: "" };
+  const [h = "", m = ""] = val.split(":");
+  return { h, m };
+};
+
+export const buildTime = (h, m) => (h && m ? `${h}:${m}` : "");
+
+
+export const fmt = (n) => {
+  const num = Number(n || 0);
+  const abs = Math.abs(num).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return num < 0 ? `(${abs})` : abs;
+};
+
+export const toLocalISO = (d) => {
+  if (!d) return "";
+  const yyyy = d.getFullYear();
+  const mm   = String(d.getMonth() + 1).padStart(2, "0");
+  const dd   = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+export const fmtDate = (d) => {
+  if (!d) return "—";
+  const date = typeof d === "string" ? new Date(`${d}T00:00:00`) : d;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+export const fmtDatetime = (d) => {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};

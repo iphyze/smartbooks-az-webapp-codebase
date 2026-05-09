@@ -5,88 +5,76 @@ import api from '../services/api';
 
 const useAuthStore = create(
   persist(
-    (set) => ({
-      // Initial state
+    (set, get) => ({
       token: null,
       user: null,
 
-      // Login action
+      /**
+       * Login action — calls /auth/login and stores token + user.
+       * Returns { success: true } or { success: false, error: string }.
+       */
       login: async (email, password) => {
         try {
           const response = await api.post('/auth/login', { email, password });
-          
+
           if (response.data.status === 'Success') {
             const { token, ...userData } = response.data.data;
-            
-            // Store token and user data in localStorage
-            localStorage.setItem("token", token);
-            localStorage.setItem("user", JSON.stringify(userData));
-            
-            // Update state
-            set({ 
-              token: token,
-              user: userData
-            });
+
+            set({ token, user: userData });
 
             return { success: true };
           }
+
           return { success: false, error: 'Invalid credentials' };
         } catch (error) {
           console.error('Login error:', error);
-          return { 
-            success: false, 
-            error: error.response?.data?.message || 'Login failed' 
+          return {
+            success: false,
+            error: error.response?.data?.message || 'Login failed. Please try again.',
           };
         }
       },
 
-      // Logout action
+      /**
+       * Logout action — wipes state and persisted storage.
+       */
       logout: () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
         set({ token: null, user: null });
       },
 
-      // Initialize state from localStorage with token validation
+      /**
+       * init — validates the persisted token on app start.
+       * Called once after the store is created.
+       * If the token is expired it clears state; otherwise it's a no-op
+       * because zustand/persist already rehydrated the values.
+       */
       init: () => {
-        const savedToken = localStorage.getItem("token");
-        const savedUser = localStorage.getItem("user");
-        
-        if (savedToken && !isTokenExpired(savedToken)) {
-          set({ 
-            token: savedToken,
-            user: savedUser ? JSON.parse(savedUser) : null
-          });
-        } else if (savedToken) {
-          // If token exists but is expired, clear everything
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
+        const { token } = get();
+        if (token && isTokenExpired(token)) {
           set({ token: null, user: null });
         }
-      }
+      },
+
+      /**
+       * isAuthenticated helper — returns true when there is a valid, unexpired token.
+       */
+      isAuthenticated: () => {
+        const { token } = get();
+        return !!token && !isTokenExpired(token);
+      },
     }),
     {
-      name: "auth-storage",
-      storage: {
-        getItem: (name) => {
-          const str = localStorage.getItem(name);
-          return str ? JSON.parse(str) : { 
-            state: { 
-              token: null,
-              user: null
-            } 
-          };
-        },
-        setItem: (name, value) => {
-          localStorage.setItem(name, JSON.stringify(value));
-        },
-        removeItem: (name) => localStorage.removeItem(name),
-      },
+      name: 'auth-storage',
+      // Persist only the minimal state needed; functions are re-created on hydration.
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+      }),
     }
   )
 );
 
-// Initialize the auth state when the store is created
+// Run token validation once after the store is created (e.g. on page load).
 useAuthStore.getState().init();
 
 export default useAuthStore;

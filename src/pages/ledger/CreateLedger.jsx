@@ -28,8 +28,13 @@ const CreateLedger = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle='Create Ledger' links={links} />
-        <CreateLedgerForm />
+
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle='Create Ledger' links={links} />
+            <CreateLedgerForm />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,92 @@
+/* ── Stat Cards ── */
+.db-stat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 18px 18px 20px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: var(--db-radius);
+  box-shadow: var(--db-shadow);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: default;
+}
+.db-stat:hover {
+  box-shadow: var(--db-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Accent bar — left edge */
+.db-stat__bar {
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--stat-accent, var(--db-brand));
+}
+
+/* Glow behind bar */
+.db-stat::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  background: linear-gradient(90deg, rgba(var(--stat-accent-rgb, 0,177,150), 0.06), transparent);
+  pointer-events: none;
+}
+
+.db-stat__icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--stat-accent, var(--db-brand)) 12%, transparent);
+  color: var(--stat-accent, var(--db-brand));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.db-stat:hover .db-stat__icon-wrap { transform: scale(1.08); }
+
+.db-stat__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.db-stat__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--db-text-3);
+}
+
+.db-stat__value {
+  font-family: 'Sora', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--db-text-1);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.db-stat__sub {
+  font-size: 11.5px;
+  color: var(--db-text-4);
+}
+
+@media (max-width: 480px) {
+  .db-stat { padding: 14px 14px 14px 18px; }
+  .db-stat__value { font-size: 22px; }
+  .db-stat__icon-wrap { width: 38px; height: 38px; font-size: 15px; }
+}

@@ -30,7 +30,7 @@ const EditBank = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Edit Bank";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -47,9 +47,9 @@ const EditBank = () => {
         const response = await api.get(`/bank/fetch-single-bank?bankId=${parsedId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         // Correctly extract the bank object from the nested response
-        setBankData(response.data.data.bank); 
+        setBankData(response.data.data.bank);
       } catch (error) {
         const message = error.response?.data?.message || "Failed to fetch bank details";
         showToast(message, "error");
@@ -83,17 +83,21 @@ const EditBank = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Edit Bank" links={links} />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Edit Bank" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading bank details...'} />
-        ) : bankData ? (
-          <EditBankForm
-            bankId={bankData.id}
-            bank={bankData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        ) : null}
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading bank details...'} />
+            ) : bankData ? (
+              <EditBankForm
+                bankId={bankData.id}
+                bank={bankData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

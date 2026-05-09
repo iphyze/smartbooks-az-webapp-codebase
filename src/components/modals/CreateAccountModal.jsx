@@ -170,7 +170,7 @@ const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
             <p className="modal-text">Fill the form below to add a new account type</p>
           </div>
           
-          <div className="invoice-form-flex-box">
+          <div className="invoice-form-flex-box modal-form-1col">
             {/* Account Type Name */}
             <div className="invoice-form invoice-form-full">
               <div className="input-form-wrapper">

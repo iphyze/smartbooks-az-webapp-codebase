@@ -17,11 +17,11 @@ const EditClient = () => {
   const [nav, setNav] = useState(false);
 
   // Consume states from useClientStore
-  const { 
-    singleClient: clientData, 
-    fetchingSingle: isLoading, 
-    singleClientError: fetchError, 
-    fetchSingleClient 
+  const {
+    singleClient: clientData,
+    fetchingSingle: isLoading,
+    singleClientError: fetchError,
+    fetchSingleClient
   } = useClientStore();
 
   const links = [
@@ -32,7 +32,7 @@ const EditClient = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Edit Client";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -66,18 +66,23 @@ const EditClient = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Clients" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Client...'} />
-        ) : clientData ? (
-          // Pass the fetched data directly to the child
-          <EditClientForm
-            clientId={parseInt(id, 10)}
-            client={clientData}
-            onSaveSuccess={handleSaveSuccess}
-          />
-        ) : null}
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Clients" links={links} />
+
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Client...'} />
+            ) : clientData ? (
+              // Pass the fetched data directly to the child
+              <EditClientForm
+                clientId={parseInt(id, 10)}
+                client={clientData}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

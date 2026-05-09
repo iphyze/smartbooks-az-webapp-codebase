@@ -32,7 +32,7 @@ const ViewBank = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | View Bank Account";
-    
+
     // 1. Basic format check
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
@@ -49,9 +49,9 @@ const ViewBank = () => {
         const response = await api.get(`/bank/fetch-single-bank?bankId=${parsedId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         // Store the entire data object containing bank, invoices, and summary
-        setViewData(response.data.data); 
+        setViewData(response.data.data);
       } catch (error) {
         const message = error.response?.data?.message || "Failed to fetch bank details";
         showToast(message, "error");
@@ -81,18 +81,22 @@ const ViewBank = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <PageNav pageTitle="Banks" links={links} />
+        <div className={`db-root theme-${theme}`}>
+          <div className="db-page">
+            <PageNav pageTitle="Banks" links={links} />
 
-        {isLoading ? (
-          <EditLoaderComponent text={'Loading Bank Account...'} />
-        ) : viewData ? (
-          // Pass the isolated data directly to the child
-          <ViewBankContent 
-            bank={viewData.bank} 
-            invoices={viewData.invoices || []} 
-            summary={viewData.summary || {}} 
-          />
-        ) : null}
+            {isLoading ? (
+              <EditLoaderComponent text={'Loading Bank Account...'} />
+            ) : viewData ? (
+              // Pass the isolated data directly to the child
+              <ViewBankContent
+                bank={viewData.bank}
+                invoices={viewData.invoices || []}
+                summary={viewData.summary || {}}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );
