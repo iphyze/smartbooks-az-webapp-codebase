@@ -185,6 +185,8 @@ const JournalOverview = () => {
       case 'Payment': return 'danger';
       case 'Receipt': return 'success';
       case 'Expenses': return 'warning';
+      case 'Journal': return 'warning';
+      case 'General': return 'warning';
       default: return null;
     }
   };

@@ -138,9 +138,6 @@ const Dashboard = () => {
               onCurChange={setActiveCur}
             />
 
-            {/* Quick Actions */}
-            <QuickActions delay={0} />
-
             {/* KPI Stats */}
             <StatCards overview={overview} loading={loading} />
 
@@ -177,6 +174,9 @@ const Dashboard = () => {
 
             {/* Client summary table */}
             <ClientSummaryTable clients={topClients} loading={loading} delay={0.3} />
+
+            {/* Quick Actions */}
+            <QuickActions delay={0} />
           </div>
         </div>
       </div>

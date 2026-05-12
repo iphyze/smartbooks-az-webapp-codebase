@@ -1,3 +1,16 @@
+/**
+ * FXRevaluation.jsx — Updated
+ *
+ * Frontend fixes applied (matching the PHP backend changes):
+ *  1. Post button blocked if period is locked (reads period_status from GET response)
+ *  2. Post button blocked + warning shown if already posted (duplicate guard)
+ *  3. PendingJournals preview shows the correct contra account per line
+ *     (Exchange Gain 72000002 OR Exchange Loss 65000003 — not always Gain)
+ *  4. Post modal warning reflects the actual contra accounts to be used
+ *  5. Success banner shows gain_posted_to / loss_posted_to from POST response
+ *  6. CAT_CONFIG extended to include PettyCash and OutsourcingAgent
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DatePicker from "react-datepicker";
@@ -8,25 +21,33 @@ import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
 import useFXRevaluationStore from "../../stores/useFXRevaluationStore";
-import useRateSearchStore from "../../stores/useRateSearchStore"; // ADDED
+import useRateSearchStore from "../../stores/useRateSearchStore";
 import "./FXRevaluation.css";
 import { fmt, fmtDate, fmtDatetime, toLocalISO } from "../../utils/helper";
 
 const CURRENCY_OPTIONS = [
-  { value: "USD", label: "USD — US Dollar"     },
-  { value: "EUR", label: "EUR — Euro"           },
+  { value: "USD", label: "USD — US Dollar" },
+  { value: "EUR", label: "EUR — Euro" },
   { value: "GBP", label: "GBP — British Pound" },
 ];
 
-// Category display config
+/**
+ * CAT_CONFIG — must match $revaluableCategories in both PHP files exactly.
+ *
+ * CHANGES:
+ *  + PettyCash      — "Head Office (USD)" 52000002 is a monetary FCY asset
+ *  + OutsourcingAgent — FCY payables to foreign outsourcing agents
+ */
 const CAT_CONFIG = {
-  BankAccounts:          { label: "Bank Accounts",                 icon: "fa-building-columns", isAsset: true  },
-  OffshoreBankAccounts:  { label: "Offshore Bank Accounts",        icon: "fa-earth-africa",     isAsset: true  },
-  ServiceCustomers:      { label: "Service Customers (Receivables)", icon: "fa-users",           isAsset: true  },
-  StrategicPartners:     { label: "Strategic Partners",            icon: "fa-handshake",        isAsset: true  },
-  Agents:                { label: "Agents",                        icon: "fa-id-badge",         isAsset: true  },
-  LoansAndSimilarDebts:  { label: "Loans and Similar Debts",       icon: "fa-file-contract",    isAsset: false },
-  SuppliersCreditors:    { label: "Suppliers / Creditors",         icon: "fa-truck",            isAsset: false },
+  BankAccounts:         { label: "Bank Accounts",                   icon: "fa-building-columns", isAsset: true  },
+  OffshoreBankAccounts: { label: "Offshore Bank Accounts",          icon: "fa-earth-africa",     isAsset: true  },
+  PettyCash:            { label: "Petty Cash (FCY)",                icon: "fa-coins",            isAsset: true  },
+  ServiceCustomers:     { label: "Service Customers (Receivables)", icon: "fa-users",            isAsset: true  },
+  StrategicPartners:    { label: "Strategic Partners",              icon: "fa-handshake",        isAsset: true  },
+  Agents:               { label: "Agents",                         icon: "fa-id-badge",         isAsset: true  },
+  LoansAndSimilarDebts: { label: "Loans and Similar Debts",         icon: "fa-file-contract",    isAsset: false },
+  SuppliersCreditors:   { label: "Suppliers / Creditors",           icon: "fa-truck",            isAsset: false },
+  OutsourcingAgent:     { label: "Outsourcing Agents",              icon: "fa-people-arrows",    isAsset: false },
 };
 
 const fadeUp = {
@@ -38,10 +59,10 @@ const fadeUp = {
 /* ─────────────────────────────────────────────
    FILTER BAR
 ───────────────────────────────────────────── */
-const FilterBar = ({ 
-  dateFrom, setDateFrom, dateTo, setDateTo, 
-  currency, setCurrency, rateDate, setRateDate, // ADDED
-  onFetch, loading, errors, rateOptions, ratesLoading // ADDED
+const FilterBar = ({
+  dateFrom, setDateFrom, dateTo, setDateTo,
+  currency, setCurrency, rateDate, setRateDate,
+  onFetch, loading, errors, rateOptions, ratesLoading,
 }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
   return (
@@ -49,48 +70,64 @@ const FilterBar = ({
       <div className="fx-filter-grid">
 
         <div className="fx-filter-field">
-          <label className={`fx-filter-label ${errors?.dateFrom ? "fx-filter-label--err" : ""}`}>Date From <span className="fx-req">*</span></label>
+          <label className={`fx-filter-label ${errors?.dateFrom ? "fx-filter-label--err" : ""}`}>
+            Date From <span className="fx-req">*</span>
+          </label>
           <div className="form-wrapper">
-            <DatePicker selected={dateFrom} onChange={setDateFrom} className={`form-input ${errors?.dateFrom ? "input-error" : ""}`} wrapperClassName="input-date-picker" dateFormat="yyyy-MM-dd" placeholderText="Start date" showMonthDropdown showYearDropdown dropdownMode="select" />
+            <DatePicker selected={dateFrom} onChange={setDateFrom}
+              className={`form-input ${errors?.dateFrom ? "input-error" : ""}`}
+              wrapperClassName="input-date-picker" dateFormat="yyyy-MM-dd"
+              placeholderText="Start date" showMonthDropdown showYearDropdown dropdownMode="select" />
             <span className={`chevron-input-icon fas fa-calendar ${errors?.dateFrom ? "input-icon-error" : ""}`} />
           </div>
           {errors?.dateFrom && <span className="fx-filter-err"><i className="fas fa-circle-exclamation" /> {errors.dateFrom}</span>}
         </div>
 
         <div className="fx-filter-field">
-          <label className={`fx-filter-label ${errors?.dateTo ? "fx-filter-label--err" : ""}`}>Date To <span className="fx-req">*</span></label>
+          <label className={`fx-filter-label ${errors?.dateTo ? "fx-filter-label--err" : ""}`}>
+            Date To <span className="fx-req">*</span>
+          </label>
           <div className="form-wrapper">
-            <DatePicker selected={dateTo} onChange={setDateTo} className={`form-input ${errors?.dateTo ? "input-error" : ""}`} wrapperClassName="input-date-picker" dateFormat="yyyy-MM-dd" placeholderText="End date" showMonthDropdown showYearDropdown dropdownMode="select" minDate={dateFrom} />
+            <DatePicker selected={dateTo} onChange={setDateTo}
+              className={`form-input ${errors?.dateTo ? "input-error" : ""}`}
+              wrapperClassName="input-date-picker" dateFormat="yyyy-MM-dd"
+              placeholderText="End date" showMonthDropdown showYearDropdown dropdownMode="select" minDate={dateFrom} />
             <span className={`chevron-input-icon fas fa-calendar ${errors?.dateTo ? "input-icon-error" : ""}`} />
           </div>
           {errors?.dateTo && <span className="fx-filter-err"><i className="fas fa-circle-exclamation" /> {errors.dateTo}</span>}
         </div>
 
         <div className="fx-filter-field">
-          <label className={`fx-filter-label ${errors?.currency ? "fx-filter-label--err" : ""}`}>Foreign Currency <span className="fx-req">*</span></label>
+          <label className={`fx-filter-label ${errors?.currency ? "fx-filter-label--err" : ""}`}>
+            Foreign Currency <span className="fx-req">*</span>
+          </label>
           <div className="form-wrapper">
-            <Select options={CURRENCY_OPTIONS} onChange={setCurrency} value={CURRENCY_OPTIONS.find(o => o.value === currency?.value) || currency} placeholder="Select currency..." className={`form-input-select ${errors?.currency ? "input-error" : ""}`} classNamePrefix="form-input-select" onMenuOpen={() => setOpenMenuId("currency")} onMenuClose={() => setOpenMenuId(null)} />
+            <Select options={CURRENCY_OPTIONS} onChange={setCurrency}
+              value={CURRENCY_OPTIONS.find(o => o.value === currency?.value) || currency}
+              placeholder="Select currency..."
+              className={`form-input-select ${errors?.currency ? "input-error" : ""}`}
+              classNamePrefix="form-input-select"
+              onMenuOpen={() => setOpenMenuId("currency")}
+              onMenuClose={() => setOpenMenuId(null)} />
             <span className={`chevron-input-icon fas fa-chevron-down ${openMenuId === "currency" ? "chevron-rotate" : ""}`} />
           </div>
           {errors?.currency && <span className="fx-filter-err"><i className="fas fa-circle-exclamation" /> {errors.currency}</span>}
         </div>
 
-        {/* ADDED RATE DATE FIELD */}
         <div className="fx-filter-field">
           <label className="fx-filter-label">Closing Rate Date</label>
           <div className="form-wrapper">
-            <Select 
-              options={rateOptions} 
-              onChange={(opt) => setRateDate(opt ? opt.value : null)} 
-              value={rateOptions.find((o) => o.value === rateDate) || null} 
+            <Select
+              options={rateOptions}
+              onChange={(opt) => setRateDate(opt ? opt.value : null)}
+              value={rateOptions.find((o) => o.value === rateDate) || null}
               placeholder="Select rate date..."
-              className="form-input-select" 
-              classNamePrefix="form-input-select" 
-              onMenuOpen={() => setOpenMenuId("rate_date")} 
+              className="form-input-select"
+              classNamePrefix="form-input-select"
+              onMenuOpen={() => setOpenMenuId("rate_date")}
               onMenuClose={() => setOpenMenuId(null)}
               isLoading={ratesLoading}
-              noOptionsMessage={() => !currency ? "Select currency first" : ratesLoading ? "Loading rates..." : "No rates found"}
-            />
+              noOptionsMessage={() => !currency ? "Select currency first" : ratesLoading ? "Loading rates..." : "No rates found"} />
             <span className={`chevron-input-icon fas fa-chevron-down ${openMenuId === "rate_date" ? "chevron-rotate" : ""}`} />
           </div>
         </div>
@@ -98,7 +135,9 @@ const FilterBar = ({
         <div className="fx-filter-field fx-filter-btn-cell">
           <label className="fx-filter-label">&nbsp;</label>
           <button className="fx-preview-btn" onClick={onFetch} disabled={loading}>
-            {loading ? <><div className="fx-btn-loader" /> Calculating...</> : <><i className="fas fa-calculator" /> Preview Revaluation</>}
+            {loading
+              ? <><div className="fx-btn-loader" /> Calculating...</>
+              : <><i className="fas fa-calculator" /> Preview Revaluation</>}
           </button>
         </div>
 
@@ -108,13 +147,39 @@ const FilterBar = ({
 };
 
 /* ─────────────────────────────────────────────
+   PERIOD STATUS BANNERS
+───────────────────────────────────────────── */
+const PeriodLockedBanner = ({ reason }) => (
+  <motion.div className="fx-period-banner fx-period-banner--locked" variants={fadeUp} initial="hidden" animate="show">
+    <i className="fas fa-lock" />
+    <div>
+      <strong>Accounting period is locked.</strong>
+      <span> Previewing is allowed but posting is disabled. {reason ? `Reason: ${reason}` : ""}</span>
+    </div>
+  </motion.div>
+);
+
+const AlreadyPostedBanner = () => (
+  <motion.div className="fx-period-banner fx-period-banner--warn" variants={fadeUp} initial="hidden" animate="show">
+    <i className="fas fa-triangle-exclamation" />
+    <div>
+      <strong>Revaluation already posted for this period.</strong>
+      <span> A previous FX Revaluation journal exists for the selected date range. Reverse those entries before re-posting.</span>
+    </div>
+  </motion.div>
+);
+
+/* ─────────────────────────────────────────────
    EMPTY PROMPT
 ───────────────────────────────────────────── */
 const EmptyPrompt = () => (
   <motion.div className="fx-empty-prompt" variants={fadeUp} initial="hidden" animate="show">
     <div className="fx-empty-icon"><i className="fas fa-arrows-rotate" /></div>
     <h3 className="fx-empty-title">No revaluation calculated yet</h3>
-    <p className="fx-empty-sub">Select a period, foreign currency and closing rate above, then click <strong>Preview Revaluation</strong> to see the FX gain/loss before posting.</p>
+    <p className="fx-empty-sub">
+      Select a period, foreign currency and closing rate above, then click{" "}
+      <strong>Preview Revaluation</strong> to see the FX gain/loss before posting.
+    </p>
   </motion.div>
 );
 
@@ -151,16 +216,20 @@ const SummaryStrip = ({ summary }) => {
       <div className="fx-summary-block">
         <span className="fx-summary-label">Total FX Gain</span>
         <span className="fx-summary-value fx-gain-val">{fmt(summary.grand_total_gain)}</span>
+        <span className="fx-summary-contra">→ CR Exchange Gain (72000002)</span>
       </div>
       <div className="fx-summary-divider" />
       <div className="fx-summary-block">
         <span className="fx-summary-label">Total FX Loss</span>
         <span className="fx-summary-value fx-loss-val">{fmt(summary.grand_total_loss)}</span>
+        <span className="fx-summary-contra">→ DR Exchange Loss (65000003)</span>
       </div>
       <div className="fx-summary-divider" />
       <div className={`fx-summary-block fx-summary-net-block ${isGain ? "" : "fx-summary-net-block--loss"}`}>
         <span className="fx-summary-label">{summary.net_label || "Net Exchange"}</span>
-        <span className={`fx-summary-value ${isGain ? "fx-net-gain-val" : "fx-net-loss-val"}`}>{fmt(Math.abs(summary.grand_total_net))}</span>
+        <span className={`fx-summary-value ${isGain ? "fx-net-gain-val" : "fx-net-loss-val"}`}>
+          {fmt(Math.abs(summary.grand_total_net))}
+        </span>
       </div>
       <div className={`fx-summary-pill ${isGain ? "fx-summary-pill--gain" : "fx-summary-pill--loss"}`}>
         <i className={`fas ${isGain ? "fa-arrow-trend-up" : "fa-arrow-trend-down"}`} />
@@ -176,7 +245,6 @@ const SummaryStrip = ({ summary }) => {
 const CategoryTable = ({ catKey, group }) => {
   const cfg = CAT_CONFIG[catKey] || { label: catKey, icon: "fa-file", isAsset: true };
   if (!group || !group.records || group.records.length === 0) return null;
-
   const netIsGain = Number(group.subtotal_net || 0) >= 0;
 
   return (
@@ -206,7 +274,9 @@ const CategoryTable = ({ catKey, group }) => {
           <div className="fx-cat-sub-divider" />
           <div className="fx-cat-sub-item">
             <span className="fx-cat-sub-label">Net</span>
-            <span className={`fx-cat-sub-val ${netIsGain ? "fx-gain-val" : "fx-loss-val"}`}>{fmt(group.subtotal_net)}</span>
+            <span className={`fx-cat-sub-val ${netIsGain ? "fx-gain-val" : "fx-loss-val"}`}>
+              {fmt(group.subtotal_net)}
+            </span>
           </div>
         </div>
       </div>
@@ -274,8 +344,13 @@ const PendingJournals = ({ journals }) => {
     <div className="fx-pending-wrap">
       <div className="fx-pending-header">
         <i className="fas fa-file-pen" />
-        <span>{journals.length} Journal Line{journals.length !== 1 ? "s" : ""} will be posted</span>
-        <span className="fx-pending-note">Plus one contra entry to Exchange Gain (72000002)</span>
+        <span>
+          {journals.length} ledger{journals.length !== 1 ? "s" : ""} with FX differences —{" "}
+          {journals.length * 2} journal lines will be posted
+        </span>
+        <span className="fx-pending-note">
+          Each line generates a matching contra entry to Exchange Gain (72000002) or Exchange Loss (65000003)
+        </span>
       </div>
       <div className="fx-table-wrap">
         <table className="fx-table fx-pending-table">
@@ -287,6 +362,7 @@ const PendingJournals = ({ journals }) => {
               <th className="fx-th-num">FCY Net</th>
               <th className="fx-th-num">FX Net (NGN)</th>
               <th className="fx-th-num">Raw Difference</th>
+              <th>Contra Account</th>
             </tr>
           </thead>
           <tbody>
@@ -303,7 +379,16 @@ const PendingJournals = ({ journals }) => {
                   </td>
                   <td className="fx-td-num">{fmt(j.fcy_net)}</td>
                   <td className={`fx-td-num ${isGain ? "fx-gain-val" : "fx-loss-val"}`}>{fmt(j.fx_net)}</td>
-                  <td className={`fx-td-num ${Number(j.fx_difference) >= 0 ? "fx-gain-val" : "fx-loss-val"}`}>{fmt(j.fx_difference)}</td>
+                  <td className={`fx-td-num ${Number(j.fx_difference) >= 0 ? "fx-gain-val" : "fx-loss-val"}`}>
+                    {fmt(j.fx_difference)}
+                  </td>
+                  {/* FIX: shows Exchange Gain OR Exchange Loss, not always Gain */}
+                  <td>
+                    <span className={`fx-contra-badge ${isGain ? "fx-contra-badge--gain" : "fx-contra-badge--loss"}`}>
+                      <i className={`fas ${isGain ? "fa-arrow-up-right" : "fa-arrow-down-right"}`} />
+                      {j.contra_ledger_number} — {j.contra_ledger_name}
+                    </span>
+                  </td>
                 </tr>
               );
             })}
@@ -317,17 +402,22 @@ const PendingJournals = ({ journals }) => {
 /* ─────────────────────────────────────────────
    POST MODAL
 ───────────────────────────────────────────── */
-const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
-  const [journalDate,    setJournalDate]    = useState(null);
-  const [description,    setDescription]    = useState("");
-  const [costCenter,     setCostCenter]     = useState("");
-  const [descErr,        setDescErr]        = useState("");
-  const [dateErr,        setDateErr]        = useState("");
+const PostModal = ({ open, onClose, onPost, meta, posting, currency, summary }) => {
+  const [journalDate,   setJournalDate]   = useState(null);
+  const [description,   setDescription]   = useState("");
+  const [costCenter,    setCostCenter]    = useState("");
+  const [descErr,       setDescErr]       = useState("");
+  const [dateErr,       setDateErr]       = useState("");
+
+  const hasGain = summary && Number(summary.grand_total_gain) > 0;
+  const hasLoss = summary && Number(summary.grand_total_loss) > 0;
 
   useEffect(() => {
     if (open) {
       setJournalDate(null);
-      setDescription(`FX Revaluation ${currency} - ${new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`);
+      setDescription(
+        `FX Revaluation ${currency} - ${new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`
+      );
       setCostCenter("");
       setDescErr("");
       setDateErr("");
@@ -336,10 +426,9 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
 
   const handlePost = () => {
     let valid = true;
-    if (!journalDate) { setDateErr("Journal date is required"); valid = false; }
-    if (!description.trim()) { setDescErr("Description is required"); valid = false; }
+    if (!journalDate)        { setDateErr("Journal date is required"); valid = false; }
+    if (!description.trim()) { setDescErr("Description is required");  valid = false; }
     if (!valid) return;
-
     onPost({
       datefrom:            meta?.datefrom,
       dateto:              meta?.dateto,
@@ -357,8 +446,8 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
       <motion.div
         className="fx-modal"
         initial={{ opacity: 0, scale: 0.96, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{ opacity: 1, scale: 1,    y: 0  }}
+        exit={   { opacity: 0, scale: 0.96, y: 20 }}
         transition={{ duration: 0.22 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -378,14 +467,10 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
             <label className="fx-modal-label">Journal Date <span className="fx-req">*</span></label>
             <div className="form-wrapper">
               <DatePicker
-                selected={journalDate}
-                onChange={setJournalDate}
+                selected={journalDate} onChange={setJournalDate}
                 className={`form-input ${dateErr ? "input-error" : ""}`}
-                wrapperClassName="input-date-picker"
-                dateFormat="yyyy-MM-dd"
-                placeholderText="Select posting date"
-                showMonthDropdown showYearDropdown dropdownMode="select"
-              />
+                wrapperClassName="input-date-picker" dateFormat="yyyy-MM-dd"
+                placeholderText="Select posting date" showMonthDropdown showYearDropdown dropdownMode="select" />
               <span className={`chevron-input-icon fas fa-calendar ${dateErr ? "input-icon-error" : ""}`} />
             </div>
             {dateErr && <span className="fx-modal-err"><i className="fas fa-circle-exclamation" /> {dateErr}</span>}
@@ -397,8 +482,7 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
               className={`fx-modal-input ${descErr ? "input-error" : ""}`}
               value={description}
               onChange={(e) => { setDescription(e.target.value); setDescErr(""); }}
-              placeholder="e.g. FX Revaluation USD - December 2025"
-            />
+              placeholder="e.g. FX Revaluation USD - December 2025" />
             {descErr && <span className="fx-modal-err"><i className="fas fa-circle-exclamation" /> {descErr}</span>}
           </div>
 
@@ -408,13 +492,30 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
               className="fx-modal-input"
               value={costCenter}
               onChange={(e) => setCostCenter(e.target.value)}
-              placeholder="Cost centre code"
-            />
+              placeholder="Cost centre code" />
           </div>
 
+          {/* FIX: warning now accurately states which contra accounts are used */}
           <div className="fx-modal-warning">
             <i className="fas fa-triangle-exclamation" />
-            <span>Journal entries will be posted to <strong>Exchange Gain/Loss (72000002)</strong> and all revalued ledgers. Ensure that period is not locked before posting.</span>
+            <div>
+              <span>Journal entries will be posted to the revalued ledgers and the following contra accounts:</span>
+              <ul className="fx-modal-contra-list">
+                {hasGain && (
+                  <li>
+                    <strong>Exchange Gain — 72000002</strong> (Revenue / Other Income):
+                    will receive a <strong>Credit</strong> for all FX gains.
+                  </li>
+                )}
+                {hasLoss && (
+                  <li>
+                    <strong>Exchange Loss — 65000003</strong> (Expense / Finance Cost):
+                    will receive a <strong>Debit</strong> for all FX losses.
+                  </li>
+                )}
+              </ul>
+              <span>Ensure the accounting period is not locked before posting.</span>
+            </div>
           </div>
         </div>
 
@@ -431,19 +532,142 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency }) => {
   );
 };
 
+
+const ReverseModal = ({ open, onClose, onReverse, reversing, originalJournalId }) => {
+  const [reversalDate, setReversalDate]   = useState(null);
+  const [description,  setDescription]   = useState("");
+  const [dateErr,      setDateErr]        = useState("");
+  const [descErr,      setDescErr]        = useState("");
+ 
+  useEffect(() => {
+    if (open) {
+      setReversalDate(null);
+      setDescription(`Reversal of FX Revaluation — JV-${originalJournalId}`);
+      setDateErr("");
+      setDescErr("");
+    }
+  }, [open, originalJournalId]);
+ 
+  const handleReverse = () => {
+    let valid = true;
+    if (!reversalDate)       { setDateErr("Reversal date is required"); valid = false; }
+    if (!description.trim()) { setDescErr("Description is required");   valid = false; }
+    if (!valid) return;
+ 
+    onReverse({
+      journal_id:           originalJournalId,
+      reversal_date:        toLocalISO(reversalDate),
+      reversal_description: description.trim(),
+    });
+  };
+ 
+  if (!open) return null;
+ 
+  return (
+    <div className="fx-modal-overlay" onClick={onClose}>
+      <motion.div
+        className="fx-modal"
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{ opacity: 1, scale: 1,    y: 0  }}
+        exit={   { opacity: 0, scale: 0.96, y: 20 }}
+        transition={{ duration: 0.22 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="fx-modal-header">
+          <div className="fx-modal-title-wrap">
+            <div className="fx-modal-icon" style={{ background: "rgba(244,124,124,0.1)", color: "#f47c7c" }}>
+              <i className="fas fa-rotate-left" />
+            </div>
+            <div>
+              <h3 className="fx-modal-title">Reverse FX Revaluation Journal</h3>
+              <p className="fx-modal-sub">
+                This will post mirror-image entries that net JV-{originalJournalId} to zero.
+                You can then post a corrected revaluation for the same period.
+              </p>
+            </div>
+          </div>
+          <button className="fx-modal-close" onClick={onClose}><i className="fas fa-xmark" /></button>
+        </div>
+ 
+        <div className="fx-modal-body">
+          <div className="fx-modal-field">
+            <label className="fx-modal-label">Reversal Date <span className="fx-req">*</span></label>
+            <div className="form-wrapper">
+              <DatePicker
+                selected={reversalDate}
+                onChange={setReversalDate}
+                className={`form-input ${dateErr ? "input-error" : ""}`}
+                wrapperClassName="input-date-picker"
+                dateFormat="yyyy-MM-dd"
+                placeholderText="Select reversal date"
+                showMonthDropdown showYearDropdown dropdownMode="select"
+              />
+              <span className={`chevron-input-icon fas fa-calendar ${dateErr ? "input-icon-error" : ""}`} />
+            </div>
+            {dateErr && <span className="fx-modal-err"><i className="fas fa-circle-exclamation" /> {dateErr}</span>}
+          </div>
+ 
+          <div className="fx-modal-field">
+            <label className="fx-modal-label">Reversal Description <span className="fx-req">*</span></label>
+            <input
+              className={`fx-modal-input ${descErr ? "input-error" : ""}`}
+              value={description}
+              onChange={(e) => { setDescription(e.target.value); setDescErr(""); }}
+              placeholder={`e.g. Reversal of FX Revaluation — JV-${originalJournalId}`}
+            />
+            {descErr && <span className="fx-modal-err"><i className="fas fa-circle-exclamation" /> {descErr}</span>}
+          </div>
+ 
+          {/* Warning */}
+          <div className="fx-modal-warning" style={{ background: "rgba(244,124,124,0.06)", borderColor: "rgba(244,124,124,0.22)" }}>
+            <i className="fas fa-triangle-exclamation" style={{ color: "#f47c7c" }} />
+            <div>
+              <span>
+                This will create <strong>equal and opposite</strong> journal lines under a new journal ID.
+                All ledger balances affected by JV-{originalJournalId} will return to their pre-revaluation values.
+                The reversal cannot be undone.
+              </span>
+            </div>
+          </div>
+        </div>
+ 
+        <div className="fx-modal-footer">
+          <button className="fx-modal-cancel" onClick={onClose} disabled={reversing}>
+            Cancel
+          </button>
+          <button
+            className="fx-modal-post"
+            onClick={handleReverse}
+            disabled={reversing}
+            style={{ background: "#f47c7c", boxShadow: "0 3px 10px rgba(244,124,124,0.28)" }}
+          >
+            {reversing
+              ? <><div className="fx-btn-loader fx-btn-loader--sm" /> Reversing...</>
+              : <><i className="fas fa-rotate-left" /> Confirm Reversal</>}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+
 /* ─────────────────────────────────────────────
    SUCCESS BANNER
 ───────────────────────────────────────────── */
 const SuccessBanner = ({ result, onDismiss }) => {
   if (!result) return null;
+  const s = result.summary || {};
   return (
     <motion.div className="fx-success-banner" variants={fadeUp} initial="hidden" animate="show">
       <i className="fas fa-check-circle fx-success-icon" />
       <div className="fx-success-body">
         <span className="fx-success-title">Journal Posted Successfully</span>
         <span className="fx-success-detail">
-          Journal ID: <strong>{result.journal_id}</strong> · {result.posted} line{result.posted !== 1 ? "s" : ""} posted ·
-          Net {result.summary?.net_label}: <strong>{fmt(Math.abs(result.summary?.net_fx_ngn || 0))}</strong> NGN
+          Journal ID: <strong>{result.journal_id}</strong> · {result.posted} line{result.posted !== 1 ? "s" : ""} posted
+          {s.gain_posted_to && <> · Gain → <strong>{s.gain_posted_to}</strong></>}
+          {s.loss_posted_to && <> · Loss → <strong>{s.loss_posted_to}</strong></>}
+          {" · "}{s.net_label}: <strong>{fmt(Math.abs(s.net_fx_ngn || 0))}</strong> NGN
         </span>
       </div>
       <button className="fx-success-dismiss" onClick={onDismiss}><i className="fas fa-xmark" /></button>
@@ -455,25 +679,23 @@ const SuccessBanner = ({ result, onDismiss }) => {
    MAIN PAGE
 ───────────────────────────────────────────── */
 const FXRevaluation = () => {
-  const [nav,          setNav]          = useState(false);
+  const [nav,           setNav]           = useState(false);
   const [hasCalculated, setHasCalculated] = useState(false);
-  const [showModal,    setShowModal]    = useState(false);
-  const [errors,       setErrors]       = useState({});
-  const [rateDate,     setRateDate]     = useState(null); // ADDED
+  const [showModal,     setShowModal]     = useState(false);
+  const [showReverseModal, setShowReverseModal] = useState(false);
+  const [errors,        setErrors]        = useState({});
+  const [rateDate,      setRateDate]      = useState(null);
 
-  const [dateFrom, setDateFrom] = useState(null);
-  const [dateTo,   setDateTo]   = useState(null);
-  const [currency, setCurrency] = useState(null);
+  const [dateFrom,  setDateFrom]  = useState(null);
+  const [dateTo,    setDateTo]    = useState(null);
+  const [currency,  setCurrency]  = useState(null);
 
-  const { theme }   = useThemeStore();
-  const { preview, posting, fetchRevaluation, postRevaluation, resetPreview } = useFXRevaluationStore();
-  
-  // ADDED: Rate Search Store
+  const { theme } = useThemeStore();
+  const { preview, posting, reversing, fetchRevaluation, postRevaluation, reverseRevaluation } = useFXRevaluationStore();
   const { rates, searchRates, isLoading: ratesLoading } = useRateSearchStore();
 
   useEffect(() => { document.title = "Smartbooks | FX Gain / Loss"; }, []);
 
-  // ADDED: Fetch rates when currency changes
   useEffect(() => {
     if (currency?.value) {
       setRateDate(null);
@@ -481,21 +703,22 @@ const FXRevaluation = () => {
     }
   }, [currency?.value, searchRates]);
 
-  // ADDED: Compute Rate Options similar to CreateInvoiceForm
   const rateOptions = useMemo(() => {
     const curr = currency?.value?.toLowerCase();
     if (!curr) return [];
-    return rates.filter((r) => r[`${curr}_rate`] != null).map((r) => ({
-      value: r.created_at,
-      label: `${r.created_at} | ${currency.value} @ ${r[`${curr}_rate`]}`,
-      rate: r,
-    }));
+    return rates
+      .filter((r) => r[`${curr}_rate`] != null)
+      .map((r) => ({
+        value: r.created_at,
+        label: `${r.created_at} | ${currency.value} @ ${r[`${curr}_rate`]}`,
+        rate: r,
+      }));
   }, [rates, currency]);
 
   const links = [
-    { label: "Home",              to: "/", active: true },
-    { label: "Reports",           to: "/reports/ledger", active: true },
-    { label: "FX Gain / Loss",    to: "/reports/fx-revaluation", active: false },
+    { label: "Home",           to: "/",                       active: true  },
+    // { label: "Reports",        to: "/reports/ledger",         active: true  },
+    { label: "FX Gain / Loss", to: "/reports/fx-revaluation", active: false },
   ];
 
   const validate = () => {
@@ -503,7 +726,6 @@ const FXRevaluation = () => {
     if (!dateFrom) e.dateFrom = "Required";
     if (!dateTo)   e.dateTo   = "Required";
     if (!currency) e.currency = "Required";
-    // rate_date is optional
     return e;
   };
 
@@ -511,31 +733,54 @@ const FXRevaluation = () => {
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length) return;
-
     const result = await fetchRevaluation({
-      datefrom: toLocalISO(dateFrom),
-      dateto:   toLocalISO(dateTo),
-      currency: currency.value,
-      rate_date: rateDate, // ADDED: Pass rate date to backend
+      datefrom:  toLocalISO(dateFrom),
+      dateto:    toLocalISO(dateTo),
+      currency:  currency.value,
+      rate_date: rateDate,
     });
     if (result) setHasCalculated(true);
   }, [dateFrom, dateTo, currency, fetchRevaluation, rateDate]);
 
   const handlePost = useCallback(async (body) => {
-    const result = await postRevaluation(body);
+    const result = await postRevaluation({ ...body, rate_date: rateDate });
     if (result) {
       setShowModal(false);
-      // Re-fetch to see updated numbers
       await fetchRevaluation({
-        datefrom: toLocalISO(dateFrom),
-        dateto:   toLocalISO(dateTo),
-        currency: currency.value,
-        rate_date: rateDate, // ADDED
+        datefrom:  toLocalISO(dateFrom),
+        dateto:    toLocalISO(dateTo),
+        currency:  currency.value,
+        rate_date: rateDate,
       });
     }
   }, [postRevaluation, fetchRevaluation, dateFrom, dateTo, currency, rateDate]);
 
-  const hasPendingJournals = (preview.pendingJournals || []).length > 0;
+  const handleReverse = useCallback(async (body) => {
+    const result = await reverseRevaluation(body);
+    if (result) {
+      setShowReverseModal(false);
+      // Re-fetch so the UI updates: alreadyPosted becomes false,
+      // the Post button re-enables, and the "Already Posted" banner disappears.
+      await fetchRevaluation({
+        datefrom:  toLocalISO(dateFrom),
+        dateto:    toLocalISO(dateTo),
+        currency:  currency.value,
+        rate_date: rateDate,
+      });
+    }
+  }, [reverseRevaluation, fetchRevaluation, dateFrom, dateTo, currency, rateDate]);
+
+  // FIX: derive blocking conditions from the GET response period_status
+  const periodStatus   = preview.periodStatus || {};
+  const periodIsLocked = !!periodStatus.is_locked;
+  const alreadyPosted  = !!periodStatus.already_posted;
+  const hasPending     = (preview.pendingJournals || []).length > 0;
+  const canPost        = hasPending && !periodIsLocked && !alreadyPosted && !posting.loading;
+
+  let postBtnTitle = "";
+  if (!hasPending)       postBtnTitle = "No FX differences to post";
+  else if (periodIsLocked) postBtnTitle = "Accounting period is locked";
+  else if (alreadyPosted)  postBtnTitle = "Revaluation already posted for this period";
 
   return (
     <div className={`main-container theme-${theme}`}>
@@ -547,17 +792,16 @@ const FXRevaluation = () => {
           <div className="fx-page">
             <PageNav pageTitle="FX Gain / Loss" links={links} />
 
-            {/* Filter bar */}
             <FilterBar
               dateFrom={dateFrom} setDateFrom={setDateFrom}
               dateTo={dateTo}     setDateTo={setDateTo}
               currency={currency} setCurrency={setCurrency}
-              rateDate={rateDate} setRateDate={setRateDate} // ADDED
+              rateDate={rateDate} setRateDate={setRateDate}
               onFetch={handleFetch}
               loading={preview.loading}
               errors={errors}
-              rateOptions={rateOptions} // ADDED
-              ratesLoading={ratesLoading} // ADDED
+              rateOptions={rateOptions}
+              ratesLoading={ratesLoading}
             />
 
             <AnimatePresence mode="wait">
@@ -568,14 +812,23 @@ const FXRevaluation = () => {
               ) : (
                 <motion.div key="results" variants={fadeUp} initial="hidden" animate="show" exit="exit">
 
-                  {/* Success banner */}
                   <AnimatePresence>
                     {posting.result && (
-                      <SuccessBanner result={posting.result} onDismiss={() => useFXRevaluationStore.setState(s => ({ posting: { ...s.posting, result: null } }))} />
+                      <SuccessBanner
+                        result={posting.result}
+                        onDismiss={() =>
+                          useFXRevaluationStore.setState(s => ({ posting: { ...s.posting, result: null } }))
+                        }
+                      />
                     )}
                   </AnimatePresence>
 
-                  {/* Action bar */}
+                  {/* FIX: period lock and duplicate warnings */}
+                  <AnimatePresence>
+                    {periodIsLocked && <PeriodLockedBanner key="lock" reason={periodStatus.lock_reason} />}
+                    {alreadyPosted  && <AlreadyPostedBanner key="dup" />}
+                  </AnimatePresence>
+
                   <div className="fx-action-bar">
                     <div className="fx-action-left">
                       <div className="fx-results-badge">
@@ -590,24 +843,36 @@ const FXRevaluation = () => {
                       </div>
                     </div>
                     <div className="fx-action-right">
-                      <button
-                        className="fx-post-btn"
-                        onClick={() => setShowModal(true)}
-                        disabled={!hasPendingJournals || posting.loading}
-                        title={!hasPendingJournals ? "No FX differences to post" : ""}
-                      >
-                        <i className="fas fa-file-pen" /> Post Journal
-                      </button>
+                      {alreadyPosted ? (
+                        <>
+                          <button
+                            className="fx-post-btn"
+                            onClick={() => setShowReverseModal(true)}
+                            disabled={reversing.loading}
+                            style={{ background: "#f47c7c", boxShadow: "0 3px 10px rgba(244,124,124,0.28)" }}
+                            title="Reverse the existing revaluation before re-posting"
+                          >
+                            <i className="fas fa-rotate-left" /> Reverse Journal
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="fx-post-btn"
+                          onClick={() => setShowModal(true)}
+                          disabled={!canPost}
+                          title={postBtnTitle}
+                        >
+                          {periodIsLocked
+                            ? <><i className="fas fa-lock" /> Period Locked</>
+                            : <><i className="fas fa-file-pen" /> Post Journal</>}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Rate card */}
                   <RateCard info={preview.closingRateInfo} />
-
-                  {/* Summary strip */}
                   <SummaryStrip summary={preview.summary} />
 
-                  {/* Category tables */}
                   <div className="fx-report-paper">
                     <div className="fx-report-paper-header">
                       <div className="fx-report-title-block">
@@ -619,7 +884,6 @@ const FXRevaluation = () => {
                         </p>
                       </div>
                     </div>
-
                     <div className="fx-sections">
                       {Object.keys(CAT_CONFIG).map((key) =>
                         preview.data[key] ? (
@@ -629,7 +893,6 @@ const FXRevaluation = () => {
                     </div>
                   </div>
 
-                  {/* Pending journals preview */}
                   <div className="fx-pending-section">
                     <div className="fx-section-heading">
                       <i className="fas fa-list-check" />
@@ -646,7 +909,6 @@ const FXRevaluation = () => {
         </div>
       </div>
 
-      {/* Post modal */}
       <AnimatePresence>
         {showModal && (
           <PostModal
@@ -656,6 +918,17 @@ const FXRevaluation = () => {
             meta={preview.meta}
             posting={posting.loading}
             currency={currency?.value}
+            summary={preview.summary}
+          />
+        )}
+
+        {showReverseModal && (
+        <ReverseModal
+            open={showReverseModal}
+            onClose={() => setShowReverseModal(false)}
+            onReverse={handleReverse}
+            reversing={reversing.loading}
+            originalJournalId={preview.periodStatus?.posted_journal_id}
           />
         )}
       </AnimatePresence>

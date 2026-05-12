@@ -1,0 +1,358 @@
+/* ═══════════════════════════════════════════════════════════════
+   SMARTBOOKS — INVOICE AGING REPORT PAGE
+   Design language: matches BalanceSheet.css — brand teal + clean
+═══════════════════════════════════════════════════════════════ */
+
+.ia-root {
+  min-height: 100vh;
+  background: var(--sb-bg, #f1f8f6);
+  transition: background 0.3s ease;
+}
+
+.ia-page {
+  width: 100%;
+  margin: 20px 0;
+  padding: 0 28px 60px;
+}
+
+/* ─────────────────────────────────────────────
+   FILTER BAR
+───────────────────────────────────────────── */
+.ia-filter-bar {
+  background: var(--sb-surface, #fff);
+  border: 1px solid var(--sb-border, #deeee9);
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,177,150,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  padding: 20px 24px 18px;
+  margin-bottom: 20px;
+}
+
+.ia-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0 18px;
+  align-items: end;
+}
+
+.ia-filter-field { display: flex; flex-direction: column; gap: 6px; }
+
+.ia-filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--sb-text-2, #3d5752);
+}
+.ia-filter-label--err { color: #f47c7c !important; }
+.ia-req               { color: #f47c7c; margin-left: 2px; }
+
+.ia-filter-err {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: #f47c7c; font-weight: 500;
+}
+
+.ia-filter-btn-cell { align-self: end; }
+
+/* ─────────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────────── */
+.ia-search-btn {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  height: 42px; padding: 0 22px;
+  background: var(--sb-brand, #00b196); color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 13.5px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,177,150,0.28);
+  transition: opacity 0.18s ease, transform 0.15s ease;
+}
+.ia-search-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.ia-search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.ia-excel-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 38px;
+  background: #16a34a; color: #fff; border: none; border-radius: 9px;
+  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(22,163,74,0.25);
+  transition: opacity 0.18s ease, transform 0.15s ease; white-space: nowrap;
+}
+.ia-excel-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.ia-excel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Loader dots */
+.ia-btn-loader {
+  width: 26px; aspect-ratio: 2;
+  --_g: no-repeat radial-gradient(circle closest-side, rgba(255,255,255,0.9) 90%, transparent);
+  background: var(--_g) 0% 50%, var(--_g) 50% 50%, var(--_g) 100% 50%;
+  background-size: calc(100%/3) 50%;
+  animation: ia-dots 0.8s infinite linear;
+}
+.ia-btn-loader--sm { width: 18px; }
+@keyframes ia-dots {
+  20% { background-position: 0% 0%,   50% 50%,  100% 50% }
+  40% { background-position: 0% 100%, 50% 0%,   100% 50% }
+  60% { background-position: 0% 50%,  50% 100%, 100% 0%  }
+  80% { background-position: 0% 50%,  50% 50%,  100% 100%}
+}
+
+/* ─────────────────────────────────────────────
+   EMPTY PROMPT
+───────────────────────────────────────────── */
+.ia-empty-prompt {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; padding: 72px 24px; text-align: center;
+}
+.ia-empty-icon {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: rgba(0,177,150,0.07); border: 1px solid rgba(0,177,150,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: var(--sb-brand, #00b196);
+}
+.ia-empty-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--sb-text-1, #0d1f1b); margin: 0; }
+.ia-empty-sub   { font-size: 13.5px; color: var(--sb-text-3, #7aada6); max-width: 400px; margin: 0; line-height: 1.6; }
+.ia-empty-sub strong { color: var(--sb-brand, #00b196); font-weight: 700; }
+
+/* ─────────────────────────────────────────────
+   ACTION BAR
+───────────────────────────────────────────── */
+.ia-action-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.ia-action-left  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ia-action-right { display: flex; align-items: center; gap: 10px; }
+
+.ia-results-badge, .ia-currency-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 14px; border-radius: 50px;
+  font-size: 12.5px; font-weight: 700;
+}
+.ia-results-badge {
+  background: rgba(0,177,150,0.07);
+  border: 1px solid rgba(0,177,150,0.18);
+  color: var(--sb-brand, #00b196);
+}
+.ia-currency-badge {
+  background: var(--sb-surface, #fff);
+  border: 1px solid var(--sb-border, #deeee9);
+  color: var(--sb-text-2, #3d5752);
+}
+
+/* ─────────────────────────────────────────────
+   SUMMARY STRIP  (4 aging buckets + total)
+───────────────────────────────────────────── */
+.ia-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  background: var(--sb-surface, #fff);
+  border: 1px solid var(--sb-border, #deeee9);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.ia-summary-cell {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 16px 20px;
+  border-right: 1px solid var(--sb-border, #deeee9);
+  position: relative;
+}
+.ia-summary-cell:last-child { border-right: none; }
+
+/* Total cell gets a teal tint */
+.ia-summary-cell--total {
+  background: rgba(0,177,150,0.04);
+}
+
+.ia-summary-cell-label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--sb-text-3, #7aada6);
+}
+.ia-summary-cell--total .ia-summary-cell-label { color: var(--sb-brand, #00b196); }
+
+.ia-summary-cell-value {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px; font-weight: 700;
+  color: var(--sb-text-1, #0d1f1b);
+}
+
+.ia-summary-cell-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 700;
+  width: fit-content;
+}
+
+/* Colour the bucket pills by risk level */
+.ia-pill--fresh   { background: rgba(0,177,150,0.1);  color: var(--sb-brand, #00b196); }
+.ia-pill--watch   { background: rgba(234,179,8,0.1);   color: #ca8a04; }
+.ia-pill--concern { background: rgba(249,115,22,0.1);  color: #ea580c; }
+.ia-pill--overdue { background: rgba(244,124,124,0.12); color: #f47c7c; }
+.ia-pill--total   { background: rgba(0,177,150,0.1);   color: var(--sb-brand, #00b196); }
+
+/* ─────────────────────────────────────────────
+   REPORT PAPER
+───────────────────────────────────────────── */
+.ia-report-paper {
+  background: var(--sb-surface, #fff);
+  border: 1px solid var(--sb-border, #deeee9);
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,177,150,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.ia-report-paper-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; padding: 20px 24px 18px;
+  border-bottom: 1px solid var(--sb-border, #deeee9);
+}
+
+.ia-company-logo { width: 180px; height: auto; display: block; flex-shrink: 0; }
+
+.ia-report-title-block { display: flex; flex-direction: column; gap: 4px; }
+.ia-report-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; color: var(--sb-text-1, #0d1f1b); margin: 0; }
+.ia-report-sub   { font-size: 12.5px; color: var(--sb-text-3, #7aada6); margin: 0; }
+
+/* ─────────────────────────────────────────────
+   TABLE
+───────────────────────────────────────────── */
+.ia-table-wrap { overflow-x: auto; }
+
+.ia-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  min-width: 760px;
+}
+
+/* Thead */
+.ia-table thead tr {
+  background: var(--sb-brand, #00b196);
+}
+.ia-table thead th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: #fff;
+  white-space: nowrap;
+}
+.ia-table thead th.ia-th-num  { text-align: right; }
+.ia-table thead th.ia-th-wide { min-width: 220px; }
+
+/* Age band sub-headers */
+.ia-table thead th.ia-th-fresh   { background: rgba(0,0,0,0.08); }
+.ia-table thead th.ia-th-watch   { background: rgba(0,0,0,0.14); }
+.ia-table thead th.ia-th-concern { background: rgba(0,0,0,0.20); }
+.ia-table thead th.ia-th-overdue { background: rgba(0,0,0,0.28); }
+
+/* Tbody */
+.ia-table tbody tr {
+  border-bottom: 1px solid var(--sb-border-light, #edf6f3);
+  transition: background 0.1s ease;
+}
+.ia-table tbody tr:last-child { border-bottom: none; }
+.ia-table tbody tr:hover { background: var(--sb-surface-2, #f8fcfb); }
+
+.ia-table tbody td {
+  padding: 11px 14px;
+  color: var(--sb-text-2, #3d5752);
+  vertical-align: middle;
+}
+
+.ia-td-num    { text-align: right !important; font-family: 'Sora', sans-serif; font-size: 12.5px; white-space: nowrap; }
+.ia-td-sn     { color: var(--sb-text-4, #a8c9c3) !important; font-size: 11.5px; width: 42px; }
+.ia-client-name { font-weight: 600; color: var(--sb-text-1, #0d1f1b); }
+
+/* Age-band cell tinting */
+.ia-td-watch   { color: #ca8a04 !important; }
+.ia-td-concern { color: #ea580c !important; }
+.ia-td-overdue { color: #f47c7c !important; font-weight: 600 !important; }
+.ia-td-total   { font-weight: 700 !important; color: var(--sb-text-1, #0d1f1b) !important; }
+
+/* Zero amounts */
+.ia-zero { color: var(--sb-text-4, #a8c9c3) !important; font-weight: 400 !important; }
+
+/* tfoot */
+.ia-tfoot-row {
+  background: rgba(0,177,150,0.06) !important;
+  border-top: 2px solid var(--sb-brand, #00b196) !important;
+}
+.ia-tfoot-row td {
+  padding: 12px 14px;
+}
+.ia-tfoot-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--sb-brand, #00b196);
+}
+.ia-tfoot-val {
+  font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700;
+  color: var(--sb-text-1, #0d1f1b);
+  text-align: right !important;
+}
+.ia-tfoot-val--overdue { color: #f47c7c !important; }
+
+/* ─────────────────────────────────────────────
+   DARK MODE
+───────────────────────────────────────────── */
+.theme-dark .ia-filter-bar,
+.theme-dark .ia-report-paper { background: #161b22; border-color: #30363d; }
+
+.theme-dark .ia-filter-label       { color: #8b949e; }
+.theme-dark .ia-filter-label--err  { color: #f47c7c !important; }
+.theme-dark .ia-empty-title        { color: #e6edf3; }
+.theme-dark .ia-results-badge      { background: rgba(0,201,170,0.08); border-color: rgba(0,201,170,0.18); color: #00c9aa; }
+.theme-dark .ia-currency-badge     { background: #1c2128; border-color: #30363d; color: #8b949e; }
+.theme-dark .ia-summary-strip      { background: #161b22; border-color: #30363d; }
+.theme-dark .ia-summary-cell       { border-right-color: #30363d; }
+.theme-dark .ia-summary-cell--total{ background: rgba(0,201,170,0.05); }
+.theme-dark .ia-summary-cell-label { color: #4d7a72; }
+.theme-dark .ia-summary-cell--total .ia-summary-cell-label { color: #00c9aa; }
+.theme-dark .ia-summary-cell-value { color: #e6edf3; }
+.theme-dark .ia-report-paper-header{ border-bottom-color: #30363d; }
+.theme-dark .ia-report-title       { color: #e6edf3; }
+.theme-dark .ia-report-sub         { color: #4d7a72; }
+.theme-dark .ia-table thead tr     { background: #00956e; }
+.theme-dark .ia-table tbody tr     { border-bottom-color: #21262d; }
+.theme-dark .ia-table tbody tr:hover { background: #1c2128; }
+.theme-dark .ia-table tbody td     { color: #8b949e; }
+.theme-dark .ia-client-name        { color: #c9d1d9; }
+.theme-dark .ia-tfoot-row          { background: rgba(0,201,170,0.04) !important; border-top-color: rgba(0,201,170,0.25) !important; }
+.theme-dark .ia-tfoot-label        { color: #00c9aa; }
+.theme-dark .ia-tfoot-val          { color: #e6edf3; }
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ia-summary-strip { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .ia-page { padding: 0 14px 48px; }
+  .ia-filter-bar { padding: 16px 16px 14px; }
+  .ia-filter-grid { grid-template-columns: 1fr; gap: 14px; }
+  .ia-filter-btn-cell { grid-column: 1; }
+  .ia-action-bar { flex-direction: column; align-items: stretch; }
+  .ia-summary-strip { grid-template-columns: 1fr 1fr; }
+}
+
+/* PDF button — matches BalanceSheet bs-pdf-btn */
+.ia-pdf-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 38px;
+  background: #dc2626; color: #fff; border: none; border-radius: 9px;
+  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(220,38,38,0.22);
+  transition: opacity 0.18s ease, transform 0.15s ease; white-space: nowrap;
+  text-decoration: none;
+}
+.ia-pdf-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.ia-pdf-btn:disabled { opacity: 0.6; cursor: wait; }

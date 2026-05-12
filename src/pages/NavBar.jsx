@@ -16,106 +16,107 @@ const NavBar = ({ nav, setNav }) => {
   const isDark = theme === 'dark';
 
   // ... (submenus and navCategories definitions remain the same) ...
-  
+
   const submenus = {
     invoices: {
       basePath: "/invoice",
       items: [
-        { path: "/invoice/home",   label: "Overview",       icon: "fa-list-ul" },
+        { path: "/invoice/home", label: "Overview", icon: "fa-list-ul" },
         { path: "/invoice/create", label: "Create Invoice", icon: "fa-plus" },
       ]
     },
     journal: {
       basePath: "/journal",
       items: [
-        { path: "/journal/home",   label: "Overview",       icon: "fa-list-ul" },
+        { path: "/journal/home", label: "Overview", icon: "fa-list-ul" },
         { path: "/journal/create", label: "Create Journal", icon: "fa-plus" },
       ]
     },
     account: {
       basePath: "/account",
       items: [
-        { path: "/account/home",   label: "Overview",        icon: "fa-list-ul" },
-        { path: "/account/create", label: "Create Account",  icon: "fa-plus" },
+        { path: "/account/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/account/create", label: "Create Account", icon: "fa-plus" },
       ]
     },
     ledgers: {
       basePath: "/ledger",
       items: [
-        { path: "/ledger/home",   label: "Overview",       icon: "fa-list-ul" },
-        { path: "/ledger/create", label: "Create Ledger",  icon: "fa-plus" },
+        { path: "/ledger/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/ledger/create", label: "Create Ledger", icon: "fa-plus" },
       ]
     },
     client: {
       basePath: "/client",
       items: [
-        { path: "/client/home",   label: "Overview",   icon: "fa-list-ul" },
+        { path: "/client/home", label: "Overview", icon: "fa-list-ul" },
         { path: "/client/create", label: "Add Client", icon: "fa-user-plus" },
       ]
     },
     staff: {
       basePath: "/staff",
       items: [
-        { path: "/staff/home",          label: "Overview",  icon: "fa-list-ul" },
-        { path: "/staff/create-staff",  label: "Add Staff", icon: "fa-user-plus" },
+        { path: "/staff/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/staff/create-staff", label: "Add Staff", icon: "fa-user-plus" },
       ]
     },
     project: {
       basePath: "/project",
       items: [
-        { path: "/project/home",   label: "Overview",       icon: "fa-list-ul" },
+        { path: "/project/home", label: "Overview", icon: "fa-list-ul" },
         { path: "/project/create", label: "Create Project", icon: "fa-plus" },
       ]
     },
     timesheet: {
       basePath: "/timesheet",
       items: [
-        { path: "/timesheet/home",              label: "Overview",  icon: "fa-list-ul" },
-        { path: "/timesheet/create-timesheet",  label: "Log Time",  icon: "fa-plus" },
+        { path: "/timesheet/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/timesheet/create-timesheet", label: "Log Time", icon: "fa-plus" },
       ]
     },
     report: {
       basePath: "/reports",
       items: [
-        { path: "/reports/ledger",             label: "Ledger Reports",            icon: "fa-file-lines" },
-        { path: "/reports/fx-revaluation",     label: "Exchange Rate Gain/Loss",   icon: "fa-file-lines" },
+        { path: "/reports/ledger", label: "Ledger Reports", icon: "fa-file-lines" },
+        { path: "/reports/fx-revaluation", label: "Exchange Rate Gain/Loss", icon: "fa-file-lines" },
+        { path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" }
       ]
     },
     users: {
       basePath: "/users",
       items: [
-        { path: "/users/home",        label: "Overview",  icon: "fa-list-ul" },
-        { path: "/users/create-user", label: "Add User",  icon: "fa-user-plus" },
-        { path: "/users/roles",       label: "Roles",     icon: "fa-shield-halved" },
+        { path: "/users/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/users/create-user", label: "Add User", icon: "fa-user-plus" },
+        { path: "/users/roles", label: "Roles", icon: "fa-shield-halved" },
       ]
     },
     settings: {
       basePath: "/settings",
       items: [
-        { path: "/settings/general",  label: "General",  icon: "fa-sliders" },
-        { path: "/settings/profile",  label: "Profile",  icon: "fa-circle-user" },
+        { path: "/settings/general", label: "General", icon: "fa-sliders" },
+        { path: "/settings/profile", label: "Profile", icon: "fa-circle-user" },
         { path: "/settings/security", label: "Security", icon: "fa-lock" },
       ]
     },
     banks: {
       basePath: "/banks",
       items: [
-        { path: "/banks/home",   label: "Overview", icon: "fa-list-ul" },
+        { path: "/banks/home", label: "Overview", icon: "fa-list-ul" },
         { path: "/banks/create", label: "Add Bank", icon: "fa-plus" },
       ]
     },
     rate: {
       basePath: "/rate",
       items: [
-        { path: "/rate/home",    label: "Overview",        icon: "fa-list-ul" },
-        { path: "/rate/create",  label: "Add Rate",        icon: "fa-plus" },
+        { path: "/rate/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/rate/create", label: "Add Rate", icon: "fa-plus" },
       ]
     },
     lockperiod: {
       basePath: "/lock-period",
       items: [
-        { path: "/lock-period/home",   label: "Overview",     icon: "fa-list-ul" },
-        { path: "/lock-period/create", label: "Create Lock",  icon: "fa-lock" },
+        { path: "/lock-period/home", label: "Overview", icon: "fa-list-ul" },
+        { path: "/lock-period/create", label: "Create Lock", icon: "fa-lock" },
       ]
     },
   };
@@ -130,21 +131,21 @@ const NavBar = ({ nav, setNav }) => {
     {
       title: "Accounting",
       items: [
-        { type: "submenu", key: "invoices",  label: "Invoices",        icon: "fa-file-invoice-dollar" },
-        { type: "submenu", key: "journal",   label: "Journal",         icon: "fa-book" },
-        { type: "submenu", key: "account",   label: "Accounts",        icon: "fa-wallet" },
-        { type: "submenu", key: "ledgers",   label: "Ledgers",         icon: "fa-book-open" },
-        { type: "submenu", key: "banks",     label: "Banks",           icon: "fa-building-columns" },
-        { type: "submenu", key: "rate",      label: "Exchange Rates",  icon: "fa-arrow-right-arrow-left" },
+        { type: "submenu", key: "invoices", label: "Invoices", icon: "fa-file-invoice-dollar" },
+        { type: "submenu", key: "journal", label: "Journal", icon: "fa-book" },
+        { type: "submenu", key: "account", label: "Accounts", icon: "fa-wallet" },
+        { type: "submenu", key: "ledgers", label: "Ledgers", icon: "fa-book-open" },
+        { type: "submenu", key: "banks", label: "Banks", icon: "fa-building-columns" },
+        { type: "submenu", key: "rate", label: "Exchange Rates", icon: "fa-arrow-right-arrow-left" },
       ]
     },
     {
       title: "Management",
       items: [
-        { type: "submenu", key: "client",    label: "Clients",     icon: "fa-users" },
-        { type: "submenu", key: "staff",     label: "Staff",       icon: "fa-id-badge" },
-        { type: "submenu", key: "project",   label: "Projects",    icon: "fa-diagram-project" },
-        { type: "submenu", key: "timesheet", label: "Timesheets",  icon: "fa-clock" },
+        { type: "submenu", key: "client", label: "Clients", icon: "fa-users" },
+        { type: "submenu", key: "staff", label: "Staff", icon: "fa-id-badge" },
+        { type: "submenu", key: "project", label: "Projects", icon: "fa-diagram-project" },
+        { type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" },
       ]
     },
     {
@@ -156,9 +157,9 @@ const NavBar = ({ nav, setNav }) => {
     {
       title: "System",
       items: [
-        { type: "submenu", key: "users",      label: "Users",        icon: "fa-users-gear" },
-        { type: "submenu", key: "settings",   label: "Settings",     icon: "fa-gear" },
-        { type: "submenu", key: "lockperiod", label: "Lock Period",  icon: "fa-calendar-xmark" },
+        { type: "submenu", key: "users", label: "Users", icon: "fa-users-gear" },
+        { type: "submenu", key: "settings", label: "Settings", icon: "fa-gear" },
+        { type: "submenu", key: "lockperiod", label: "Lock Period", icon: "fa-calendar-xmark" },
       ]
     },
   ];
@@ -188,7 +189,7 @@ const NavBar = ({ nav, setNav }) => {
       if (navRef.current) {
         // Find the currently active element by the classes applied in the render logic
         const activeElement = navRef.current.querySelector('.sb-nav__sub-item--active, .sb-nav__item--active');
-        
+
         if (activeElement) {
           activeElement.scrollIntoView({
             behavior: 'smooth',

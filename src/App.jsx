@@ -57,6 +57,7 @@ import TrialBalance from "./pages/reports/TrialBalance";
 import ProfitLoss from "./pages/reports/ProfitLoss";
 import BalanceSheet from "./pages/reports/BalanceSheet";
 import FXRevaluation from "./pages/reports/FXRevaluation";
+import InvoiceAging from "./pages/reports/InvoiceAging";
 
 const App = () => {
   
@@ -144,6 +145,7 @@ const App = () => {
           <Route path="/reports/ledger/profit-and-loss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
           <Route path="/reports/ledger/balance-sheet" element={<ProtectedRoute><BalanceSheet /></ProtectedRoute>} />
           <Route path="/reports/fx-revaluation" element={<ProtectedRoute><FXRevaluation /></ProtectedRoute>} />
+          <Route path="/reports/invoice-aging" element={<ProtectedRoute><InvoiceAging /></ProtectedRoute>} />
           
 
           <Route path="*" element={<NotFound />} />

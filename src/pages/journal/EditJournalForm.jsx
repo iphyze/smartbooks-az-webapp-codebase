@@ -20,7 +20,7 @@ import CreateRateModal from "../../components/modals/CreateRateModal";
 import { useNavigate } from "react-router-dom";
 
 /* ─────────────────────────────────────────────
-   Helpers
+   Helpers — identical to original EditJournalForm
 ───────────────────────────────────────────── */
 let _itemCounter = 0;
 
@@ -29,56 +29,46 @@ function createEmptyItem(defaultDescription = "") {
   return {
     id: `item_${Date.now()}_${_itemCounter}`,
     db_id: null,
-    ledger_name: "",
-    ledger_number: "",
-    ledger_class: "",
-    ledger_class_code: "",
-    ledger_sub_class: "",
-    ledger_type: "",
+    ledger_name: "", ledger_number: "", ledger_class: "",
+    ledger_class_code: "", ledger_sub_class: "", ledger_type: "",
     journal_description: defaultDescription,
-    sides: "",
-    jcurrency: "NGN",
-    jrate: "",
-    currencyRate: "",
-    amount: "",
-    rate_date: "",
-    ngn_rate: "",
-    usd_rate: "",
-    eur_rate: "",
-    gbp_rate: "",
-    _db_rate_date: null,
-    _db_usd_rate: null,
-    _db_ngn_rate: null,
-    _db_eur_rate: null,
-    _db_gbp_rate: null,
-    _rate_resolved: true,
+    sides: "", jcurrency: "NGN",
+    jrate: "", currencyRate: "", amount: "",
+    rate_date: "", ngn_rate: "", usd_rate: "", eur_rate: "", gbp_rate: "",
+    _db_rate_date: null, _db_usd_rate: null, _db_ngn_rate: null,
+    _db_eur_rate: null, _db_gbp_rate: null, _rate_resolved: true,
   };
 }
 
 function createItemFromDb(row) {
   _itemCounter++;
-  const rawAmount = parseFloat(row.debit) > 0 ? row.debit : row.credit;
+
+  const debitFCY  = parseFloat(row.debit)      || 0;
+  const creditFCY = parseFloat(row.credit)     || 0;
+  const debitNGN  = parseFloat(row.debit_ngn)  || 0;
+  const creditNGN = parseFloat(row.credit_ngn) || 0;
+
+  const isFCYJournal    = debitFCY > 0 || creditFCY > 0;
+  const effectiveDebit  = isFCYJournal ? debitFCY  : debitNGN;
+  const effectiveCredit = isFCYJournal ? creditFCY : creditNGN;
+
+  const rawAmount = effectiveDebit > 0 ? effectiveDebit : effectiveCredit;
 
   return {
     id: `item_${Date.now()}_${_itemCounter}`,
     db_id: row.id ?? null,
-    ledger_name: row.ledger_name || "",
-    ledger_number: row.ledger_number || "",
-    ledger_class: row.ledger_class || "",
-    ledger_class_code: row.ledger_class_code || "",
-    ledger_sub_class: row.ledger_sub_class || "",
-    ledger_type: row.ledger_type || "",
+    ledger_name: row.ledger_name || "", ledger_number: row.ledger_number || "",
+    ledger_class: row.ledger_class || "", ledger_class_code: row.ledger_class_code || "",
+    ledger_sub_class: row.ledger_sub_class || "", ledger_type: row.ledger_type || "",
     journal_description: row.journal_description || "",
-    sides: parseFloat(row.debit) > 0 ? "Debit" : "Credit",
+    sides: effectiveDebit > 0 ? "Debit" : "Credit",
     jcurrency: row.journal_currency || "NGN",
     jrate: "",
     currencyRate: parseFloat(row.rate) || "",
     amount: String(parseFloat(rawAmount) || ""),
     rate_date: row.rate_date || "",
-    ngn_rate: row.ngn_rate ?? "",
-    usd_rate: row.usd_rate ?? "",
-    eur_rate: row.eur_rate ?? "",
-    gbp_rate: row.gbp_rate ?? "",
+    ngn_rate: row.ngn_rate ?? "", usd_rate: row.usd_rate ?? "",
+    eur_rate: row.eur_rate ?? "", gbp_rate: row.gbp_rate ?? "",
     _db_rate_date: row.rate_date || null,
     _db_usd_rate: row.usd_rate != null ? parseFloat(row.usd_rate) : null,
     _db_ngn_rate: row.ngn_rate != null ? parseFloat(row.ngn_rate) : null,
@@ -101,21 +91,19 @@ function resolveItemRate(item, rates) {
     const gbpOk = item._db_gbp_rate === null || Math.abs(parseFloat(r.gbp_rate) - item._db_gbp_rate) < 0.001;
     return usdOk && ngnOk && eurOk && gbpOk;
   };
-
   const dateMatches = (r) => dbDate && r.created_at && r.created_at.slice(0, 10) === dbDate;
 
   let match = rates.find((r) => dateMatches(r) && subRatesMatch(r));
   if (!match) match = rates.find((r) => dateMatches(r));
   if (!match) match = rates.find((r) => subRatesMatch(r));
-
   if (!match) return { ...item, _rate_resolved: true };
 
   const curr = item.jcurrency.toLowerCase();
   return {
     ...item,
-    jrate: String(match.id),
+    jrate:        String(match.id),
     currencyRate: parseFloat(match[`${curr}_rate`]) || item.currencyRate,
-    rate_date: match.created_at ? match.created_at.slice(0, 10) : item.rate_date,
+    rate_date:    match.created_at ? match.created_at.slice(0, 10) : item.rate_date,
     ngn_rate: match.ngn_rate ?? item.ngn_rate,
     usd_rate: match.usd_rate ?? item.usd_rate,
     eur_rate: match.eur_rate ?? item.eur_rate,
@@ -125,10 +113,7 @@ function resolveItemRate(item, rates) {
 }
 
 const formatNumber = (num) =>
-  Number(num || 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  Number(num || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const EPSILON = 0.001;
 
@@ -136,24 +121,22 @@ const EPSILON = 0.001;
    Static Option Arrays
 ───────────────────────────────────────────── */
 const JOURNAL_TYPE_OPTIONS = [
-  { value: "Payment", label: "Payment" },
-  { value: "Receipt", label: "Receipt" },
+  { value: "Payment",  label: "Payment"  },
+  { value: "Receipt",  label: "Receipt"  },
   { value: "Expenses", label: "Expenses" },
-  { value: "Sales", label: "Sales" },
-  { value: "General", label: "General" },
+  { value: "Sales",    label: "Sales"    },
+  { value: "General",  label: "General"  },
+  { value: "Journal",  label: "Journal"  },
 ];
-
 const TRANSACTION_TYPE_OPTIONS = [
-  { value: "Cash", label: "Cash" },
-  { value: "Bank", label: "Bank" },
+  { value: "Cash",           label: "Cash"           },
+  { value: "Bank",           label: "Bank"           },
   { value: "Not Applicable", label: "Not Applicable" },
 ];
-
 const SIDE_OPTIONS = [
-  { value: "Debit", label: "Debit" },
+  { value: "Debit",  label: "Debit"  },
   { value: "Credit", label: "Credit" },
 ];
-
 const CURRENCY_OPTIONS = [
   { value: "NGN", label: "NGN" },
   { value: "USD", label: "USD" },
@@ -162,22 +145,17 @@ const CURRENCY_OPTIONS = [
 ];
 
 /* ─────────────────────────────────────────────
-   calculateTotals
+   calculateTotals — identical to original
 ───────────────────────────────────────────── */
 function calculateTotals(items) {
-  let totalDebit = 0;
-  let totalCredit = 0;
-  let totalNGNDebit = 0;
-  let totalUSDAmount = 0;
-  let totalUSDCount = 0;
-  let totalUSDDebit = 0;
-  let totalUSDCredit = 0;
+  let totalDebit = 0, totalCredit = 0, totalNGNDebit = 0;
+  let totalUSDAmount = 0, totalUSDCount = 0, totalUSDDebit = 0, totalUSDCredit = 0;
 
   items.forEach((item) => {
-    const amount = parseFloat(item.amount) || 0;
+    const amount       = parseFloat(item.amount)       || 0;
     const currencyRate = parseFloat(item.currencyRate) || 0;
-    const side = item.sides;
-    const currency = item.jcurrency;
+    const side         = item.sides;
+    const currency     = item.jcurrency;
     let currencyConversion = 0;
 
     if (currency === "NGN") {
@@ -185,39 +163,37 @@ function calculateTotals(items) {
       totalNGNDebit += amount;
     } else {
       currencyConversion = amount * currencyRate;
-      if (side === "Debit") totalUSDDebit += amount;
+      if (side === "Debit")  totalUSDDebit  += amount;
       if (side === "Credit") totalUSDCredit += amount;
       totalUSDAmount += amount;
       totalUSDCount++;
     }
 
-    if (side === "Debit") totalDebit += currencyConversion;
+    if (side === "Debit")  totalDebit  += currencyConversion;
     if (side === "Credit") totalCredit += currencyConversion;
   });
 
-  let totalDebitUSD = 0;
-  let totalCreditUSD = 0;
-
+  let totalDebitUSD = 0, totalCreditUSD = 0;
   if (totalUSDCount > 0) {
     if (totalNGNDebit > 0) {
-      const debitAverageRate = totalUSDAmount > 0 ? totalDebit / totalUSDAmount : 0;
+      const debitAverageRate  = totalUSDAmount > 0 ? totalDebit  / totalUSDAmount : 0;
       const creditAverageRate = totalUSDAmount > 0 ? totalCredit / totalUSDAmount : 0;
-      totalDebitUSD = debitAverageRate > 0 ? totalNGNDebit / debitAverageRate : 0;
+      totalDebitUSD  = debitAverageRate  > 0 ? totalNGNDebit / debitAverageRate  : 0;
       totalCreditUSD = creditAverageRate > 0 ? totalNGNDebit / creditAverageRate : 0;
     } else {
-      totalDebitUSD = totalUSDDebit;
+      totalDebitUSD  = totalUSDDebit;
       totalCreditUSD = totalUSDCredit;
     }
   }
 
   return {
-    total_debit_ngn: totalDebit,
+    total_debit_ngn:  totalDebit,
     total_credit_ngn: totalCredit,
-    total_debit_usd: totalDebitUSD,
+    total_debit_usd:  totalDebitUSD,
     total_credit_usd: totalCreditUSD,
-    grand_total_ngn: totalDebit - totalCredit,
-    grand_total_usd: totalCreditUSD - totalDebitUSD,
-    grand_total: totalDebit - totalCredit,
+    grand_total_ngn:  totalDebit - totalCredit,
+    grand_total_usd:  totalCreditUSD - totalDebitUSD,
+    grand_total:      totalDebit - totalCredit,
   };
 }
 
@@ -225,94 +201,128 @@ function calculateTotals(items) {
    Main Component
 ───────────────────────────────────────────── */
 const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
-  const { theme } = useThemeStore();
-  const { showToast } = useToastStore();
+  const { theme }      = useThemeStore();
+  const { showToast }  = useToastStore();
   const { ledgers, searchLedgers } = useLedgerSearchStore();
-  const { rates, searchRates } = useRateSearchStore();
+  const { rates,   searchRates   } = useRateSearchStore();
   const { clients, searchClients } = useClientSearchStore();
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState(null);
   const navigate = useNavigate();
 
-  /* ── Modals State ── */
+  const [isLoading,  setIsLoading]  = useState(false);
+  const [submitted,  setSubmitted]  = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
-  const [showCreateRateModal, setShowCreateRateModal] = useState(false);
-  const [activeRowId, setActiveRowId] = useState(null);
+  const [showCreateRateModal,   setShowCreateRateModal]   = useState(false);
+  const [activeRowId,           setActiveRowId]           = useState(null);
 
-  /* ── Delete-line-item modal state ── */
   const [deleteModal, setDeleteModal] = useState({
-    open: false,
-    itemId: null,
-    db_id: null,
-    isNew: true,
-    isDeleting: false,
+    open: false, itemId: null, db_id: null, isNew: true, isDeleting: false,
   });
 
-  /* ── Header State ── */
+  /* ── Header state ── */
   const [journalDetails, setJournalDetails] = useState({
-    journal_date: new Date(),
-    journal_type: "",
-    journal_currency: "NGN",
-    transaction_type: "",
+    journal_date:             new Date(),
+    journal_type:             "",
+    journal_currency:         "NGN",
+    transaction_type:         "",
     main_journal_description: "",
-    cost_center: "Overhead",
+    cost_center:              "Overhead",
   });
 
-  /* ── Row State ── */
+  /* ── Master rate id ── */
+  const [masterRateId, setMasterRateId] = useState("");
+
+  /* ── Row state ── */
   const [journalItems, setJournalItems] = useState([createEmptyItem()]);
   const prevJournalItemsRef = useRef(journalItems);
 
-  /* ── On mount: load dependencies (rates/ledgers) ── */
-  useEffect(() => {
-    searchRates("");
-    searchLedgers("");
-    searchClients("");
-  }, []);
+  /* ── On mount ── */
+  useEffect(() => { searchRates(""); searchLedgers(""); searchClients(""); }, []);
 
-  /* ── KEY FIX: Populate form when `journal` prop arrives ── */
+  /* ── Populate form when journal prop arrives ── */
   useEffect(() => {
     if (!journal) return;
 
     setJournalDetails({
-      journal_date: journal.journal_date ? new Date(journal.journal_date) : new Date(),
-      journal_type: journal.journal_type || "",
-      journal_currency: journal.journal_currency || "NGN",
-      transaction_type: journal.transaction_type || "",
-      main_journal_description: journal.journal_description || "",
-      cost_center: journal.cost_center || "Overhead",
+      journal_date:             journal.journal_date ? new Date(journal.journal_date) : new Date(),
+      journal_type:             journal.journal_type             || "",
+      journal_currency:         journal.journal_currency         || "NGN",
+      transaction_type:         journal.transaction_type         || "",
+      main_journal_description: journal.journal_description      || "",
+      cost_center:              journal.cost_center              || "Overhead",
     });
 
     if (journal.items && journal.items.length > 0) {
       const seeded = journal.items.map(createItemFromDb);
-      setJournalItems(
-        rates && rates.length > 0 ? seeded.map((item) => resolveItemRate(item, rates)) : seeded
-      );
+      const resolved = rates && rates.length > 0
+        ? seeded.map((item) => resolveItemRate(item, rates))
+        : seeded;
+      setJournalItems(resolved);
+
+      // Derive master rate from the first resolved row's jrate
+      const firstResolved = resolved.find((i) => i.jrate);
+      if (firstResolved?.jrate) {
+        setMasterRateId(firstResolved.jrate);
+      }
     }
   }, [journal]);
 
   /* ── Resolve rates when they finish loading ── */
   useEffect(() => {
     if (!rates || rates.length === 0) return;
-
     setJournalItems((prev) => {
       const needsResolution = prev.some((item) => !item._rate_resolved);
       if (!needsResolution) return prev;
-      return prev.map((item) => resolveItemRate(item, rates));
+      const resolved = prev.map((item) => resolveItemRate(item, rates));
+      // Also set master rate if not yet set
+      if (!masterRateId) {
+        const first = resolved.find((i) => i.jrate);
+        if (first?.jrate) setMasterRateId(first.jrate);
+      }
+      return resolved;
     });
   }, [rates]);
 
-  /* ── Cost Center Options ── */
+  /* ── Master rate options ── */
+  const masterRateOptions = useMemo(() =>
+    rates.map((r) => ({
+      value: String(r.id),
+      label: `${r.created_at?.slice(0, 10)} — NGN:1 | USD:${r.usd_rate} | EUR:${r.eur_rate} | GBP:${r.gbp_rate}`,
+    })),
+  [rates]);
+
+  /* ── When masterRateId changes, push rate to ALL rows ── */
+  useEffect(() => {
+    if (!masterRateId) return;
+    const found = rates.find((r) => String(r.id) === masterRateId);
+    if (!found) return;
+    setJournalItems((prev) =>
+      prev.map((item) => {
+        const curr = item.jcurrency.toLowerCase();
+        return {
+          ...item,
+          jrate:        masterRateId,
+          currencyRate: parseFloat(found[`${curr}_rate`]) || item.currencyRate,
+          rate_date:    found.created_at,
+          ngn_rate:     found.ngn_rate,
+          usd_rate:     found.usd_rate,
+          eur_rate:     found.eur_rate,
+          gbp_rate:     found.gbp_rate,
+          _rate_resolved: true,
+        };
+      })
+    );
+  }, [masterRateId, rates]);
+
+  /* ── Cost center options ── */
   const costCenterOptions = useMemo(() => {
     const clientOpts = clients.map((c) => ({ value: c.clients_name, label: c.clients_name }));
     return [{ value: "Overhead", label: "Overhead" }, ...clientOpts];
   }, [clients]);
 
-  useEffect(() => {
-    prevJournalItemsRef.current = journalItems;
-  }, [journalItems]);
+  useEffect(() => { prevJournalItemsRef.current = journalItems; }, [journalItems]);
 
   /* ── Sync row descriptions when main description changes ── */
   const prevMainDesc = useRef(journalDetails.main_journal_description);
@@ -321,67 +331,52 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     const next = journalDetails.main_journal_description;
     prevMainDesc.current = next;
     setJournalItems((items) =>
-      items.map((item) => (item.journal_description === prev ? { ...item, journal_description: next } : item))
+      items.map((item) => item.journal_description === prev ? { ...item, journal_description: next } : item)
     );
   }, [journalDetails.main_journal_description]);
 
   /* ── Totals ── */
-  const totals = useMemo(() => calculateTotals(journalItems), [journalItems]);
+  const totals     = useMemo(() => calculateTotals(journalItems), [journalItems]);
   const isBalanced = Math.abs(totals.grand_total) < EPSILON;
-
-  /* ── Rate options per row ── */
-  const buildRateOptions = useCallback(
-    (item) => {
-      const curr = item.jcurrency.toLowerCase();
-      return rates
-        .filter((r) => r[`${curr}_rate`] != null)
-        .map((r) => ({
-          value: String(r.id),
-          label: `${r.created_at?.slice(0, 10)} | ${item.jcurrency} @ ${r[`${curr}_rate`]}`,
-        }));
-    },
-    [rates]
-  );
 
   /* ─────────────────────────────────────────────
      Validation
   ───────────────────────────────────────────── */
   const validateHeader = useCallback(() => {
     const e = {};
-    if (!journalDetails.journal_date) e.journal_date = "Journal date is required";
-    if (!journalDetails.journal_type) e.journal_type = "Journal type is required";
-    if (!journalDetails.journal_currency) e.journal_currency = "Currency is required";
-    if (!journalDetails.transaction_type) e.transaction_type = "Transaction type is required";
+    if (!journalDetails.journal_date)                     e.journal_date             = "Journal date is required";
+    if (!journalDetails.journal_type)                     e.journal_type             = "Journal type is required";
+    if (!journalDetails.journal_currency)                 e.journal_currency         = "Currency is required";
+    if (!journalDetails.transaction_type)                 e.transaction_type         = "Transaction type is required";
     if (!journalDetails.main_journal_description?.trim()) e.main_journal_description = "Description is required";
-    if (!journalDetails.cost_center) e.cost_center = "Cost center is required";
+    if (!journalDetails.cost_center)                      e.cost_center              = "Cost center is required";
+    if (!masterRateId)                                    e.master_rate              = "Exchange rate is required";
     return e;
-  }, [journalDetails]);
+  }, [journalDetails, masterRateId]);
 
-  const validateItems = useCallback(() => {
-    return journalItems.map((item) => {
+  const validateItems = useCallback(() =>
+    journalItems.map((item) => {
       const e = {};
-      if (!item.ledger_name) e.ledger_name = "Ledger required";
+      if (!item.ledger_name)                 e.ledger_name         = "Ledger required";
       if (!item.journal_description?.trim()) e.journal_description = "Description required";
-      if (!item.sides) e.sides = "Dr/Cr required";
-      if (!item.jcurrency) e.jcurrency = "Currency required";
-      if (!item.jrate) e.jrate = "Rate required";
+      if (!item.sides)                       e.sides               = "Dr/Cr required";
+      if (!item.jcurrency)                   e.jcurrency           = "Currency required";
+      if (!item.jrate)                       e.jrate               = "Rate required";
       if (item.amount === "" || item.amount === null) e.amount = "Amount required";
       else if (isNaN(parseFloat(item.amount)) || parseFloat(item.amount) <= 0) e.amount = "Invalid amount";
       return e;
-    });
-  }, [journalItems]);
+    }),
+  [journalItems]);
 
-  const headerErrors = useMemo(() => (submitted ? validateHeader() : {}), [submitted, validateHeader]);
-
+  const headerErrors = useMemo(() => submitted ? validateHeader() : {}, [submitted, validateHeader]);
   const itemErrorMap = useMemo(() => {
     if (!submitted) return {};
-    const errs = validateItems();
+    const errs      = validateItems();
     const prevItems = prevJournalItemsRef.current;
     return Object.fromEntries(
       journalItems.map((item, i) => {
         const isNew = !prevItems.some((p) => p.id === item.id);
-        if (isNew) return [item.id, {}];
-        return [item.id, errs[i] || {}];
+        return [item.id, isNew ? {} : (errs[i] || {})];
       })
     );
   }, [submitted, validateItems, journalItems]);
@@ -389,9 +384,8 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   /* ─────────────────────────────────────────────
      Handlers
   ───────────────────────────────────────────── */
-  const handleDetailChange = (field, value) => {
+  const handleDetailChange = (field, value) =>
     setJournalDetails((prev) => ({ ...prev, [field]: value }));
-  };
 
   const handleItemChange = (id, field, value) => {
     setJournalItems((prev) =>
@@ -402,32 +396,30 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
         if (field === "ledger_name") {
           const found = ledgers.find((l) => l.ledger_name === value);
           if (found) {
-            updated.ledger_number = found.ledger_number || "";
-            updated.ledger_class = found.ledger_class || "";
+            updated.ledger_number     = found.ledger_number     || "";
+            updated.ledger_class      = found.ledger_class      || "";
             updated.ledger_class_code = found.ledger_class_code || "";
-            updated.ledger_sub_class = found.ledger_sub_class || "";
-            updated.ledger_type = found.ledger_type || "";
+            updated.ledger_sub_class  = found.ledger_sub_class  || "";
+            updated.ledger_type       = found.ledger_type       || "";
           }
         }
 
-        if (field === "jrate") {
-          const found = rates.find((r) => String(r.id) === String(value));
-          if (found) {
-            const curr = item.jcurrency.toLowerCase();
-            updated.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
-            updated.rate_date = found.created_at ? found.created_at.slice(0, 10) : "";
-            updated.ngn_rate = found.ngn_rate ?? "";
-            updated.usd_rate = found.usd_rate ?? "";
-            updated.eur_rate = found.eur_rate ?? "";
-            updated.gbp_rate = found.gbp_rate ?? "";
-          } else {
-            updated.currencyRate = ""; updated.rate_date = ""; updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
-          }
-          updated._rate_resolved = true;
-        }
-
+        /* Currency changed — re-apply master rate at the new currency's column */
         if (field === "jcurrency") {
-          updated.jrate = ""; updated.currencyRate = ""; updated.rate_date = ""; updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
+          const found = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
+          if (found) {
+            const curr = value.toLowerCase();
+            updated.jrate        = masterRateId;
+            updated.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
+            updated.rate_date    = found.created_at;
+            updated.ngn_rate     = found.ngn_rate;
+            updated.usd_rate     = found.usd_rate;
+            updated.eur_rate     = found.eur_rate;
+            updated.gbp_rate     = found.gbp_rate;
+          } else {
+            updated.jrate = ""; updated.currencyRate = ""; updated.rate_date = "";
+            updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
+          }
           updated._rate_resolved = true;
         }
 
@@ -437,7 +429,22 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   };
 
   const addItem = () => {
-    setJournalItems((prev) => [...prev, createEmptyItem(journalDetails.main_journal_description)]);
+    setJournalItems((prev) => {
+      const newItem = createEmptyItem(journalDetails.main_journal_description);
+      const found   = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
+      if (found) {
+        const curr = newItem.jcurrency.toLowerCase();
+        newItem.jrate        = masterRateId;
+        newItem.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
+        newItem.rate_date    = found.created_at;
+        newItem.ngn_rate     = found.ngn_rate;
+        newItem.usd_rate     = found.usd_rate;
+        newItem.eur_rate     = found.eur_rate;
+        newItem.gbp_rate     = found.gbp_rate;
+        newItem._rate_resolved = true;
+      }
+      return [...prev, newItem];
+    });
   };
 
   const requestRemoveItem = (item) => {
@@ -447,7 +454,6 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
 
   const confirmRemoveItem = async () => {
     const { itemId, db_id, isNew } = deleteModal;
-
     if (!isNew && db_id) {
       setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
       const token = useAuthStore.getState().token;
@@ -463,34 +469,22 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
         return;
       }
     }
-
     setJournalItems((prev) => prev.filter((i) => i.id !== itemId));
     setDeleteModal({ open: false, itemId: null, db_id: null, isNew: true, isDeleting: false });
   };
 
-  /* ── Modal Callbacks ── */
   const handleClientCreated = (newClient) => {
-    setShowCreateClientModal(false);
-    searchClients("");
-    if (newClient) {
-      handleDetailChange("cost_center", newClient.clients_name);
-    }
+    setShowCreateClientModal(false); searchClients("");
+    if (newClient) handleDetailChange("cost_center", newClient.clients_name);
   };
 
   const handleLedgerCreated = (newLedger) => {
-    setShowCreateLedgerModal(false);
-    searchLedgers(""); 
-    if (newLedger && activeRowId) {
-      setTimeout(() => {
-        handleItemChange(activeRowId, "ledger_name", newLedger.ledger_name);
-      }, 500);
-    }
+    setShowCreateLedgerModal(false); searchLedgers("");
+    if (newLedger && activeRowId)
+      setTimeout(() => handleItemChange(activeRowId, "ledger_name", newLedger.ledger_name), 500);
   };
 
-  const handleRateCreated = () => {
-    setShowCreateRateModal(false);
-    searchRates(""); 
-  };
+  const handleRateCreated = () => { setShowCreateRateModal(false); searchRates(""); };
 
   /* ─────────────────────────────────────────────
      Submit
@@ -501,11 +495,10 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
 
     const hErr = validateHeader();
     const iErr = validateItems();
-    if (Object.keys(hErr).length > 0 || iErr.some((rowE) => Object.keys(rowE).length > 0)) {
+    if (Object.keys(hErr).length || iErr.some((r) => Object.keys(r).length)) {
       showToast("Please fill in all required fields", "error");
       return;
     }
-
     if (!isBalanced) {
       showToast("Grand total must be equal to zero. Please ensure that your total debit equals your total credit!", "error");
       return;
@@ -515,41 +508,40 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     const token = useAuthStore.getState().token;
 
     const payload = {
-      journal_id: journalId,
+      journal_id:          journalId,
       ...journalDetails,
-      journal_date: journalDetails.journal_date.toISOString().split("T")[0],
-      total_debit_ngn: totals.total_debit_ngn,
-      total_credit_ngn: totals.total_credit_ngn,
-      total_debit_usd: totals.total_debit_usd,
-      total_credit_usd: totals.total_credit_usd,
-      grand_total_ngn: totals.grand_total_ngn,
-      grand_total_usd: totals.grand_total_usd,
-      grand_total: totals.grand_total,
-      db_id: journalItems.map((i) => i.db_id ?? 0),
-      ledger_name: journalItems.map((i) => i.ledger_name),
-      ledger_number: journalItems.map((i) => i.ledger_number),
-      ledger_class: journalItems.map((i) => i.ledger_class),
-      ledger_class_code: journalItems.map((i) => i.ledger_class_code),
-      ledger_sub_class: journalItems.map((i) => i.ledger_sub_class),
-      ledger_type: journalItems.map((i) => i.ledger_type),
-      amount: journalItems.map((i) => i.amount),
-      sides: journalItems.map((i) => i.sides),
-      jrate: journalItems.map((i) => i.jrate),
-      jcurrency: journalItems.map((i) => i.jcurrency),
-      currency_rate: journalItems.map((i) => i.currencyRate),
+      journal_date:        journalDetails.journal_date.toISOString().split("T")[0],
+      total_debit_ngn:     totals.total_debit_ngn,
+      total_credit_ngn:    totals.total_credit_ngn,
+      total_debit_usd:     totals.total_debit_usd,
+      total_credit_usd:    totals.total_credit_usd,
+      grand_total_ngn:     totals.grand_total_ngn,
+      grand_total_usd:     totals.grand_total_usd,
+      grand_total:         totals.grand_total,
+      db_id:               journalItems.map((i) => i.db_id ?? 0),
+      ledger_name:         journalItems.map((i) => i.ledger_name),
+      ledger_number:       journalItems.map((i) => i.ledger_number),
+      ledger_class:        journalItems.map((i) => i.ledger_class),
+      ledger_class_code:   journalItems.map((i) => i.ledger_class_code),
+      ledger_sub_class:    journalItems.map((i) => i.ledger_sub_class),
+      ledger_type:         journalItems.map((i) => i.ledger_type),
+      amount:              journalItems.map((i) => i.amount),
+      sides:               journalItems.map((i) => i.sides),
+      jrate:               journalItems.map((i) => i.jrate),
+      jcurrency:           journalItems.map((i) => i.jcurrency),
+      currency_rate:       journalItems.map((i) => i.currencyRate),
       journal_description: journalItems.map((i) => i.journal_description),
-      rate_date: journalItems.map((i) => i.rate_date),
-      ngn_rate: journalItems.map((i) => i.ngn_rate),
-      usd_rate: journalItems.map((i) => i.usd_rate),
-      eur_rate: journalItems.map((i) => i.eur_rate),
-      gbp_rate: journalItems.map((i) => i.gbp_rate),
+      rate_date:           journalItems.map((i) => i.rate_date),
+      ngn_rate:            journalItems.map((i) => i.ngn_rate),
+      usd_rate:            journalItems.map((i) => i.usd_rate),
+      eur_rate:            journalItems.map((i) => i.eur_rate),
+      gbp_rate:            journalItems.map((i) => i.gbp_rate),
     };
 
     try {
       const response = await api.put("/journal/edit-journal", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (response.status === 200 || response?.data?.status === "Success") {
         const journal_id = response?.data?.data?.journal_id;
         if (journal_id) {
@@ -566,32 +558,32 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     }
   };
 
+  const selectedMasterRateOpt = masterRateOptions.find((o) => o.value === masterRateId) || null;
+
   /* ─────────────────────────────────────────────
      Render
   ───────────────────────────────────────────── */
   return (
     <>
-      <motion.div variants={fadeInUp} initial="hidden" animate="show" transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }} className={`invoice-form-box theme-${theme}`}>
+      <motion.div variants={fadeInUp} initial="hidden" animate="show"
+        transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }}
+        className={`invoice-form-box theme-${theme}`}>
         <form className="invoice-form-f-container" onSubmit={handleSubmit} noValidate>
-          
+
           <div className="invoice-form-header">
             <div className="invoice-form-htxt">Edit Journal</div>
             <div className="invoice-form-sub-htxt">Update the details below to edit Journal #{journalId}</div>
           </div>
 
           <div className="invoice-form-flex-box">
-            
+
             {/* Journal Date */}
             <div className="invoice-form invoice-form-three">
               <div className="input-form-wrapper">
                 <div className={`input-form-group ${headerErrors.journal_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.journal_date ? "input-label-message" : ""}`} htmlFor="journal_date">Journal Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" 
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"  
-                    />
+                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" showMonthDropdown showYearDropdown dropdownMode="select" />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.journal_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>
@@ -627,16 +619,34 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
               </div>
             </div>
 
-            {/* Journal Description */}
-            <div className="invoice-form">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.main_journal_description ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.main_journal_description ? "input-label-message" : ""}`} htmlFor="main_journal_description">Journal Description</label>
-                  <div className="form-wrapper">
-                    <textarea className={`form-input-select form-input-textarea ${headerErrors.main_journal_description ? "input-error" : ""}`} rows="2" placeholder="Enter description" value={journalDetails.main_journal_description} onChange={(e) => handleDetailChange("main_journal_description", e.target.value)} id="main_journal_description" />
+            {/* Exchange Rate — master selector */}
+            <div className="invoice-form invoice-form-three">
+              <div className="inv-form-flex">
+                <div className="input-form-wrapper inv-form-flex-wrap">
+                  <div className={`input-form-group ${headerErrors.master_rate ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.master_rate ? "input-label-message" : ""}`} htmlFor="master_rate">Exchange Rate</label>
+                    <div className="form-wrapper">
+                      <Select
+                        options={masterRateOptions}
+                        onChange={(opt) => setMasterRateId(opt ? opt.value : "")}
+                        value={selectedMasterRateOpt}
+                        placeholder={rates.length === 0 ? "Loading rates..." : "Select rate..."}
+                        className={`form-input-select ${headerErrors.master_rate ? "input-error" : ""}`}
+                        classNamePrefix="form-input-select"
+                        isClearable
+                        inputId="master_rate"
+                        onMenuOpen={() => setOpenMenuId("master_rate")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                        noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : "No rates found"}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "master_rate" ? "chevron-rotate" : "", headerErrors.master_rate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                    </div>
                   </div>
+                  {headerErrors.master_rate && <div className="input-error-message">{headerErrors.master_rate}</div>}
                 </div>
-                {headerErrors.main_journal_description && <div className="input-error-message">{headerErrors.main_journal_description}</div>}
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate">
+                  <span className="fas fa-plus" />
+                </button>
               </div>
             </div>
 
@@ -654,7 +664,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
               </div>
             </div>
 
-            {/* Cost Center with "+" Button */}
+            {/* Cost Center */}
             <div className="invoice-form invoice-form-three">
               <div className="inv-form-flex">
                 <div className="input-form-wrapper inv-form-flex-wrap">
@@ -668,14 +678,27 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                   {headerErrors.cost_center && <div className="input-error-message">{headerErrors.cost_center}</div>}
                 </div>
                 <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client">
-                  <span className="fas fa-plus"></span>
+                  <span className="fas fa-plus" />
                 </button>
+              </div>
+            </div>
+
+            {/* Journal Description — last */}
+            <div className="invoice-form">
+              <div className="input-form-wrapper">
+                <div className={`input-form-group ${headerErrors.main_journal_description ? "input-form-error" : ""}`}>
+                  <label className={`input-form-label ${headerErrors.main_journal_description ? "input-label-message" : ""}`} htmlFor="main_journal_description">Journal Description</label>
+                  <div className="form-wrapper">
+                    <textarea className={`form-input-select form-input-textarea ${headerErrors.main_journal_description ? "input-error" : ""}`} rows="2" placeholder="Enter description" value={journalDetails.main_journal_description} onChange={(e) => handleDetailChange("main_journal_description", e.target.value)} id="main_journal_description" />
+                  </div>
+                </div>
+                {headerErrors.main_journal_description && <div className="input-error-message">{headerErrors.main_journal_description}</div>}
               </div>
             </div>
 
           </div>
 
-          {/* ── JOURNAL ITEMS TABLE ── */}
+          {/* ── JOURNAL ITEMS TABLE — no Rate column ── */}
           <div className="invoice-form-full">
             <div className="invoice-items-table">
               <div className="invoice-table-header journal-table-header">
@@ -683,25 +706,20 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                 <div className="invoice-table-cell">Description</div>
                 <div className="invoice-table-cell cell-small">DR / CR</div>
                 <div className="invoice-table-cell cell-small">Currency</div>
-                <div className="invoice-table-cell cell-small">Rate</div>
                 <div className="invoice-table-cell">Amount</div>
                 <div className="invoice-table-cell cell-action">Action</div>
               </div>
 
               {journalItems.map((item) => {
-                const rowErr = itemErrorMap[item.id] || {};
-                const rateOptions = buildRateOptions(item);
-                const selectedRateOpt = item.jrate ? rateOptions.find((o) => o.value === String(item.jrate)) ?? null : null;
-
+                const rowErr   = itemErrorMap[item.id] || {};
                 const ledgerId = `ledger_${item.id}`;
-                const sideId = `side_${item.id}`;
-                const currId = `curr_${item.id}`;
-                const rateId = `rate_${item.id}`;
+                const sideId   = `side_${item.id}`;
+                const currId   = `curr_${item.id}`;
 
                 return (
                   <div key={item.id} className="invoice-table-row">
-                    
-                    {/* Ledger Name with "+" Button */}
+
+                    {/* Ledger */}
                     <div className="invoice-table-cell">
                       <div className="inv-form-flex">
                         <div className="input-form-wrapper inv-form-flex-wrap">
@@ -715,13 +733,11 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                                 onMenuClose={() => { setOpenMenuId(null); searchLedgers(""); }}
                                 onChange={(opt) => handleItemChange(item.id, "ledger_name", opt ? opt.value : "")}
                                 value={item.ledger_name ? { value: item.ledger_name, label: item.ledger_name } : null}
-                                placeholder="Search ledger..."
+                                placeholder="Search ledger..." isClearable inputId={ledgerId}
                                 className={`form-input-select ${rowErr.ledger_name ? "input-error" : ""}`}
                                 classNamePrefix="form-input-select"
-                                isClearable
-                                inputId={ledgerId}
                                 menuPortalTarget={document.body}
-                                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                                styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
                               />
                               <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `ledger_${item.id}` ? "chevron-rotate" : "", rowErr.ledger_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                             </div>
@@ -729,7 +745,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                           {rowErr.ledger_name && <div className="input-error-message">{rowErr.ledger_name}</div>}
                         </div>
                         <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateLedgerModal(true); }} title="Add New Ledger">
-                          <span className="fas fa-plus"></span>
+                          <span className="fas fa-plus" />
                         </button>
                       </div>
                     </div>
@@ -752,7 +768,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                         <div className={`input-form-group ${rowErr.sides ? "input-form-error" : ""}`}>
                           <label className={`input-form-label ${rowErr.sides ? "input-label-message" : ""}`} htmlFor={sideId}>Side</label>
                           <div className="form-wrapper">
-                            <Select options={SIDE_OPTIONS} onChange={(opt) => handleItemChange(item.id, "sides", opt ? opt.value : "")} value={SIDE_OPTIONS.find((o) => o.value === item.sides) || null} placeholder="Select" className={`form-input-select ${rowErr.sides ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={sideId} onMenuOpen={() => setOpenMenuId(`sides_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
+                            <Select options={SIDE_OPTIONS} onChange={(opt) => handleItemChange(item.id, "sides", opt ? opt.value : "")} value={SIDE_OPTIONS.find((o) => o.value === item.sides) || null} placeholder="Select" className={`form-input-select ${rowErr.sides ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={sideId} onMenuOpen={() => setOpenMenuId(`sides_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }} />
                             <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `sides_${item.id}` ? "chevron-rotate" : "", rowErr.sides ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                           </div>
                         </div>
@@ -766,7 +782,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                         <div className={`input-form-group ${rowErr.jcurrency ? "input-form-error" : ""}`}>
                           <label className={`input-form-label ${rowErr.jcurrency ? "input-label-message" : ""}`} htmlFor={currId}>Currency</label>
                           <div className="form-wrapper">
-                            <Select options={CURRENCY_OPTIONS} onChange={(opt) => handleItemChange(item.id, "jcurrency", opt ? opt.value : "NGN")} value={CURRENCY_OPTIONS.find((o) => o.value === item.jcurrency) || null} className={`form-input-select ${rowErr.jcurrency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={currId} onMenuOpen={() => setOpenMenuId(`currency_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
+                            <Select options={CURRENCY_OPTIONS} onChange={(opt) => handleItemChange(item.id, "jcurrency", opt ? opt.value : "NGN")} value={CURRENCY_OPTIONS.find((o) => o.value === item.jcurrency) || null} className={`form-input-select ${rowErr.jcurrency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={currId} onMenuOpen={() => setOpenMenuId(`currency_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }} />
                             <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `currency_${item.id}` ? "chevron-rotate" : "", rowErr.jcurrency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                           </div>
                         </div>
@@ -774,52 +790,19 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                       </div>
                     </div>
 
-                    {/* Rate with "+" Button */}
-                    <div className="invoice-table-cell">
-                      <div className="inv-form-flex">
-                        <div className="input-form-wrapper inv-form-flex-wrap">
-                          <div className={`input-form-group ${rowErr.jrate ? "input-form-error" : ""}`}>
-                            <label className={`input-form-label ${rowErr.jrate ? "input-label-message" : ""}`} htmlFor={rateId}>Rate</label>
-                            <div className="form-wrapper">
-                              <Select
-                                options={rateOptions}
-                                onChange={(opt) => handleItemChange(item.id, "jrate", opt ? opt.value : "")}
-                                value={selectedRateOpt}
-                                placeholder={!item._rate_resolved ? "Loading..." : "Select rate"}
-                                className={`form-input-select ${rowErr.jrate ? "input-error" : ""}`}
-                                classNamePrefix="form-input-select"
-                                isClearable
-                                inputId={rateId}
-                                onMenuOpen={() => setOpenMenuId(`rate_${item.id}`)}
-                                onMenuClose={() => setOpenMenuId(null)}
-                                noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : `No rates for ${item.jcurrency}`}
-                                menuPortalTarget={document.body}
-                                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-                              />
-                              <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `rate_${item.id}` ? "chevron-rotate" : "", rowErr.jrate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                            </div>
-                          </div>
-                          {rowErr.jrate && <div className="input-error-message">{rowErr.jrate}</div>}
-                        </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate">
-                          <span className="fas fa-plus"></span>
-                        </button>
-                      </div>
-                    </div>
-
                     {/* Amount */}
-                    <div className="invoice-table-cell cell-small">
+                    <div className="invoice-table-cell">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">
-                            <input type="number" className={`form-input form-input-number ${rowErr.amount ? "input-error" : ""}`} value={item.amount} onChange={(e) => handleItemChange(item.id, "amount", e.target.value)} onWheel={(e) => e.target.blur()} step="0.01" min="0" placeholder="0.00" />
+                            <input type="number" className={`form-input form-input-number ${rowErr.amount ? "input-error" : ""}`} value={item.amount} onChange={(e) => handleItemChange(item.id, "amount", e.target.value)} onWheel={(e) => e.target.blur()} step="any" min="0" placeholder="0.00" />
                           </div>
                         </div>
                         {rowErr.amount && <div className="input-error-message">{rowErr.amount}</div>}
                       </div>
                     </div>
 
-                    {/* Remove Row */}
+                    {/* Remove */}
                     <div className="invoice-table-cell cell-action">
                       <button type="button" onClick={() => requestRemoveItem(item)} className="invoice-remove-btn" disabled={journalItems.length === 1} title="Remove row">
                         <span className="fas fa-trash" />
@@ -837,7 +820,6 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             <button type="button" onClick={addItem} className="invoice-add-btn">
               <span className="fas fa-plus-circle" /> Add Row
             </button>
-
             <div className="invoice-totals journal-summary-grid">
               <div className="journal-summary-col">
                 <div className="invoice-total-row-header">NGN</div>
@@ -845,19 +827,17 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
                 <div className="invoice-total-row"><div className="invoice-total-label">Credit</div><div className="invoice-total-value">{formatNumber(totals.total_credit_ngn)}</div></div>
                 <div className="invoice-total-row"><div className="invoice-total-label inv-bold">Balance</div><div className="invoice-total-value inv-bold">{formatNumber(totals.grand_total_ngn)}</div></div>
               </div>
-
               <div className="journal-summary-col">
                 <div className="invoice-total-row-header">FCY</div>
                 <div className="invoice-total-row"><div className="invoice-total-label">Debit</div><div className="invoice-total-value">{formatNumber(totals.total_debit_usd)}</div></div>
                 <div className="invoice-total-row"><div className="invoice-total-label">Credit</div><div className="invoice-total-value">{formatNumber(totals.total_credit_usd)}</div></div>
                 <div className="invoice-total-row"><div className="invoice-total-label inv-bold">Balance</div><div className="invoice-total-value inv-bold">{formatNumber(totals.grand_total_usd)}</div></div>
               </div>
-
               <div className="journal-summary-col jsc-summary">
                 <div className={`invoice-total-row invoice-grand-total ${!isBalanced ? "error-total" : "balanced-total"}`}>
                   <div className="invoice-total-label invoice-diff-text">
                     Difference
-                    {!isBalanced && (<span style={{ fontSize: "10px", marginLeft: "5px", color: "#f8d9d9" }}>(must be 0.00)</span>)}
+                    {!isBalanced && <span style={{ fontSize: "10px", marginLeft: "5px", color: "#f8d9d9" }}>(must be 0.00)</span>}
                   </div>
                   <div className="invoice-total-value invoice-diff-text">{formatNumber(totals.grand_total)}</div>
                 </div>
@@ -869,14 +849,14 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
           <div className="invoice-action-btn">
             <div className="invoice-action-btn-wrapper">
               <button type="submit" disabled={isLoading} className="invoice-submit-btn">
-                {isLoading ? (<div className="invoice-loader" />) : (<span className="invoice-submit-btn-text">Update Journal</span>)}
+                {isLoading ? <div className="invoice-loader" /> : <span className="invoice-submit-btn-text">Update Journal</span>}
               </button>
             </div>
           </div>
+
         </form>
       </motion.div>
 
-      {/* ── MODALS ── */}
       <AnimatePresence>
         {deleteModal.open && (
           <DeleteLineItemModal
@@ -887,9 +867,9 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             isDeleting={deleteModal.isDeleting}
           />
         )}
-        {showCreateClientModal && (<CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />)}
-        {showCreateLedgerModal && (<CreateLedgerModal isOpen={showCreateLedgerModal} onClose={() => setShowCreateLedgerModal(false)} onLedgerCreated={handleLedgerCreated} />)}
-        {showCreateRateModal && (<CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />)}
+        {showCreateClientModal && <CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />}
+        {showCreateLedgerModal && <CreateLedgerModal isOpen={showCreateLedgerModal} onClose={() => setShowCreateLedgerModal(false)} onLedgerCreated={handleLedgerCreated} />}
+        {showCreateRateModal   && <CreateRateModal   isOpen={showCreateRateModal}   onClose={() => setShowCreateRateModal(false)}   onRateCreated={handleRateCreated}   />}
       </AnimatePresence>
     </>
   );

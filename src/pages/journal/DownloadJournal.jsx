@@ -27,6 +27,7 @@ const DownloadJournal = ({ journal }) => {
       case 'Journal': return 'JV';
       case 'Receipt': return 'RV';
       case 'Expenses': return 'EV';
+      case 'General': return 'GV';
       default: return 'V';
     }
   };
@@ -86,8 +87,18 @@ const DownloadJournal = ({ journal }) => {
 
             {/* Table Body */}
             {items && items.length > 0 && items.map((row, index) => {
-                const amount = row.debit === "0" ? row.credit : row.debit;
-                const sides = row.debit === "0" ? "C" : "D";
+                // FIXED
+                const debitFCY  = parseFloat(row.debit)      || 0;
+                const creditFCY = parseFloat(row.credit)     || 0;
+                const debitNGN  = parseFloat(row.debit_ngn)  || 0;
+                const creditNGN = parseFloat(row.credit_ngn) || 0;
+
+                const isFCYJournal    = debitFCY > 0 || creditFCY > 0;
+                const effectiveDebit  = isFCYJournal ? debitFCY  : debitNGN;
+                const effectiveCredit = isFCYJournal ? creditFCY : creditNGN;
+
+                const amount = effectiveDebit > 0 ? effectiveDebit : effectiveCredit;
+                const sides  = effectiveDebit > 0 ? "D" : "C";
 
                 return (
                     <View style={[styles.tableRow, index % 2 !== 0 && styles.tableRowOdd]} key={row.id}>

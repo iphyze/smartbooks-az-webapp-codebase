@@ -551,3 +551,165 @@
   .fx-filter-grid { grid-template-columns: 1fr; gap: 14px; }
   .fx-filter-btn-cell { grid-column: 1; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   FXRevaluation.css — ADDITIONS
+   Append these at the bottom of the existing FXRevaluation.css.
+   These cover three new UI elements introduced in the updated
+   FXRevaluation.jsx that have no styles in the current sheet:
+     1. Period status banners (locked / already-posted)
+     2. Summary strip contra-account hint labels
+     3. Contra account badge in the Pending Journals table
+     4. Modal contra account list
+═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────
+   1. PERIOD STATUS BANNERS
+   PeriodLockedBanner and AlreadyPostedBanner
+───────────────────────────────────────────── */
+.fx-period-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 18px;
+  border-radius: 12px;
+  border: 1.5px solid;
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.fx-period-banner i {
+  font-size: 15px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.fx-period-banner div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fx-period-banner strong {
+  font-weight: 700;
+}
+
+/* Locked — red tone */
+.fx-period-banner--locked {
+  background: rgba(244, 124, 124, 0.07);
+  border-color: rgba(244, 124, 124, 0.28);
+  color: #b91c1c;
+}
+.fx-period-banner--locked i { color: #f47c7c; }
+
+/* Already posted — amber tone */
+.fx-period-banner--warn {
+  background: rgba(217, 119, 6, 0.06);
+  border-color: rgba(217, 119, 6, 0.22);
+  color: #92400e;
+}
+.fx-period-banner--warn i { color: #d97706; }
+
+/* Dark mode */
+.theme-dark .fx-period-banner--locked {
+  background: rgba(244, 124, 124, 0.06);
+  border-color: rgba(244, 124, 124, 0.22);
+  color: #fca5a5;
+}
+.theme-dark .fx-period-banner--warn {
+  background: rgba(217, 119, 6, 0.08);
+  border-color: rgba(217, 119, 6, 0.25);
+  color: #fde68a;
+}
+
+/* ─────────────────────────────────────────────
+   2. SUMMARY STRIP — CONTRA HINT LABELS
+   The small "→ CR Exchange Gain (72000002)"
+   line beneath each summary value.
+───────────────────────────────────────────── */
+.fx-summary-contra {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--sb-text-3, #7aada6);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+
+.theme-dark .fx-summary-contra {
+  color: #4d7a72;
+}
+
+/* ─────────────────────────────────────────────
+   3. CONTRA ACCOUNT BADGE
+   Used in the Pending Journals table column.
+   Two variants: gain (green) and loss (red).
+───────────────────────────────────────────── */
+.fx-contra-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Sora', sans-serif;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.fx-contra-badge i {
+  font-size: 10px;
+}
+
+.fx-contra-badge--gain {
+  background: rgba(0, 177, 150, 0.08);
+  border-color: rgba(0, 177, 150, 0.22);
+  color: var(--sb-brand, #00b196);
+}
+
+.fx-contra-badge--loss {
+  background: rgba(244, 124, 124, 0.08);
+  border-color: rgba(244, 124, 124, 0.22);
+  color: #f47c7c;
+}
+
+/* Dark mode */
+.theme-dark .fx-contra-badge--gain {
+  background: rgba(0, 201, 170, 0.07);
+  border-color: rgba(0, 201, 170, 0.2);
+  color: #00c9aa;
+}
+.theme-dark .fx-contra-badge--loss {
+  background: rgba(244, 124, 124, 0.07);
+  border-color: rgba(244, 124, 124, 0.2);
+  color: #fca5a5;
+}
+
+/* ─────────────────────────────────────────────
+   4. MODAL — CONTRA ACCOUNT LIST
+   The <ul> inside the Post modal warning block
+   that lists which contra accounts will be hit.
+───────────────────────────────────────────── */
+.fx-modal-contra-list {
+  margin: 8px 0 6px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.fx-modal-contra-list li {
+  color: inherit;
+}
+
+.fx-modal-contra-list strong {
+  font-weight: 700;
+  color: #92400e;
+}
+
+.theme-dark .fx-modal-contra-list strong {
+  color: #fde68a;
+}

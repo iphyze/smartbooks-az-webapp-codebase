@@ -10,6 +10,8 @@ const useInvoiceStore = create(
     (set, get) => ({
       // ── Data (Transient - Do not persist) ────────────────────────────────
       data: [],
+      kpis: null,
+      kpisLoading: false,
       loading: false,
       error: null,
       total: 0,
@@ -62,6 +64,20 @@ const useInvoiceStore = create(
             loading: false,
           });
           useToastStore.getState().showToast('Failed to fetch invoices', 'error');
+        }
+      },
+
+      fetchKPIs: async () => {
+        const token = useAuthStore.getState().token;
+        set({ kpisLoading: true });
+        try {
+          const res = await api.get('/invoice/kpi-stats', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          set({ kpis: res.data.data, kpisLoading: false });
+        } catch (err) {
+          set({ kpisLoading: false });
+          // Silent fail — KPIs are non-critical; table still works
         }
       },
 
@@ -281,6 +297,8 @@ const useInvoiceStore = create(
         itemsPerPage: state.itemsPerPage,
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
+        kpis: state.kpis,
+        kpisLoading: state.kpisLoading,
       }),
     }
   )

@@ -20,6 +20,7 @@ import CreateRateModal from "../../components/modals/CreateRateModal";
 import CreateClientsModal from "../../components/modals/CreateClientsModal"; // Added
 import CreateProjectModal from "../../components/modals/CreateProjectModal";
 import CreateBankModal from "../../components/modals/CreateBankModal";
+import { findEffectiveRate } from "../../utils/helper";
 
 
 /* ─────────────────────────────────────────────
@@ -74,6 +75,7 @@ const CreateInvoiceForm = () => {
   const [showCreateClientModal, setShowCreateClientModal] = useState(false); // Added for Client Modal
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false); // Added for Project Modal
   const [showCreateBankModal, setShowCreateBankModal] = useState(false); // Added for Bank Modal
+  
 
   const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null });
 
@@ -88,6 +90,24 @@ const CreateInvoiceForm = () => {
 
   useEffect(() => { searchRates(""); searchClients(""); searchProjects(""); searchBanks(""); }, []);
   useEffect(() => { prevInvoiceItemsRef.current = invoiceItems; }, [invoiceItems]);
+
+  // Auto-select the effective rate whenever invoice_date or currency changes
+  useEffect(() => {
+    if (!invoiceDetails.invoice_date || !invoiceDetails.currency) return;
+ 
+    // rates may still be loading; re-run once they arrive (rates is a dep)
+    const effectiveRateDate = findEffectiveRate(
+      rates,
+      invoiceDetails.currency,
+      invoiceDetails.invoice_date
+    );
+ 
+    // Only update if we found something and it's different from current selection
+    // (avoids overwriting a deliberate manual selection with the same value)
+    if (effectiveRateDate && effectiveRateDate !== invoiceDetails.rate_date) {
+      handleDetailChange("rate_date", effectiveRateDate);
+    }
+  }, [invoiceDetails.invoice_date, invoiceDetails.currency, rates]);
 
   const rateOptions = useMemo(() => {
     const curr = invoiceDetails.currency?.toLowerCase();
@@ -258,7 +278,7 @@ const CreateInvoiceForm = () => {
                 <div className={`input-form-group ${headerErrors.currency ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.currency ? "input-label-message" : ""}`} htmlFor="currency">Currency</label>
                   <div className="form-wrapper">
-                    <Select options={CURRENCY_OPTIONS} onChange={(opt) => { handleDetailChange("currency", opt?.value || ""); handleDetailChange("rate_date", ""); }} value={CURRENCY_OPTIONS.find((o) => o.value === invoiceDetails.currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="currency" onMenuOpen={() => setOpenMenuId("currency")} onMenuClose={() => setOpenMenuId(null)} />
+                    <Select options={CURRENCY_OPTIONS} onChange={(opt) => { handleDetailChange("currency", opt?.value || ""); }} value={CURRENCY_OPTIONS.find((o) => o.value === invoiceDetails.currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="currency" onMenuOpen={() => setOpenMenuId("currency")} onMenuClose={() => setOpenMenuId(null)} />
                     <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "currency" ? "chevron-rotate" : "", headerErrors.currency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>

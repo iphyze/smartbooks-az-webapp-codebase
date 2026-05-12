@@ -17,6 +17,7 @@ import UpdateModal from "../../components/modals/UpdateModal"; // Import UpdateM
 import useInvoiceStore from "../../stores/useInvoiceStore"; // Updated Store
 import useAuthStore from "../../stores/useAuthStore";
 import { formatCurrencyDecimals } from "../../utils/helper";
+import InvoiceKPICards from "./InvoiceKPICards";
 
 const InvoiceOverview = () => {
   const [nav, setNav] = useState(false);
@@ -29,7 +30,8 @@ const InvoiceOverview = () => {
     sortOrder, searchQuery, selectedItems, fetchData, setCurrentPage,
     setItemsPerPage, setSearchQuery, setSorting, toggleItemSelection,
     clearSelection, deleteSelectedItems, exportToExcel, getTotalPages,
-    updateInvoiceStatus // New action for status update
+    updateInvoiceStatus, // New action for status update
+    fetchKPIs, kpis, kpisLoading,
   } = useInvoiceStore();
 
   // Local UI states for modals and actions
@@ -59,6 +61,7 @@ const InvoiceOverview = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | Invoice Overview";
+    fetchKPIs();
   }, []);
 
   // Fetch data whenever relevant store states change
@@ -220,6 +223,8 @@ const InvoiceOverview = () => {
           <div className="db-page">
         
         <PageNav pageTitle='Invoice Overview' links={links} />
+
+        <InvoiceKPICards kpis={kpis} loading={kpisLoading} />
 
         <motion.div variants={fadeInUp} initial="hidden" animate="show"
           transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}

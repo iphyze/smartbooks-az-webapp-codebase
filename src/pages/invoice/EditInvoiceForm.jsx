@@ -20,6 +20,7 @@ import CreateRateModal from "../../components/modals/CreateRateModal"; // Added 
 import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateProjectModal from "../../components/modals/CreateProjectModal";
 import CreateBankModal from "../../components/modals/CreateBankModal";
+import { findEffectiveRate } from "../../utils/helper";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -150,6 +151,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showCreateBankModal, setShowCreateBankModal] = useState(false);
+  const hasUserChangedDateOrCurrency = useRef(false);
 
   /* ── Delete-line-item modal state ── */
   const [deleteModal, setDeleteModal] = useState({
@@ -220,6 +222,22 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
     prevInvoiceItemsRef.current = invoiceItems;
   }, [invoiceItems]);
 
+  // Add alongside the other useEffects, after the invoice populate effect
+  useEffect(() => {
+    if (!hasUserChangedDateOrCurrency.current) return;
+    if (!invoiceDetails.invoice_date || !invoiceDetails.currency) return;
+
+    const effectiveRateDate = findEffectiveRate(
+      rates,
+      invoiceDetails.currency,
+      invoiceDetails.invoice_date
+    );
+
+    if (effectiveRateDate && effectiveRateDate !== invoiceDetails.rate_date) {
+      handleDetailChange("rate_date", effectiveRateDate);
+    }
+  }, [invoiceDetails.invoice_date, invoiceDetails.currency, rates]);
+
   /* ── Rate options based on selected currency ── */
   const rateOptions = useMemo(() => {
     const curr = invoiceDetails.currency?.toLowerCase();
@@ -239,7 +257,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
   const clientOptions = useMemo(() => clients.map((c) => ({ value: c.clients_name, label: c.clients_name, client: c })), [clients]);
   /* ── Project options ── */
   const projectOptions = useMemo(() => projects.map((p) => ({ value: p.project_name, label: p.project_name })), [projects]);
-  
+
   /* ── Totals ── */
   const totals = useMemo(() => calculateTotals(invoiceItems), [invoiceItems]);
 
@@ -351,7 +369,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
     searchRates(""); // Refresh the dropdown list
   };
 
-    const handleClientCreated = (newClient) => {
+  const handleClientCreated = (newClient) => {
     setShowCreateClientModal(false);
     searchClients("");
     if (newClient) {
@@ -462,10 +480,15 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                 <div className={`input-form-group ${headerErrors.invoice_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.invoice_date ? "input-label-message" : ""}`} htmlFor="invoice_date">Invoice Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={invoiceDetails.invoice_date} onChange={(date) => handleDetailChange("invoice_date", date)} className={`form-input ${headerErrors.invoice_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="invoice_date" 
+                    <DatePicker selected={invoiceDetails.invoice_date}
+                      onChange={(date) => {
+                        hasUserChangedDateOrCurrency.current = true;
+                        handleDetailChange("invoice_date", date);
+                      }}
+                      className={`form-input ${headerErrors.invoice_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="invoice_date"
                       showMonthDropdown
                       showYearDropdown
-                      dropdownMode="select"  
+                      dropdownMode="select"
                     />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.invoice_date ? "input-icon-error" : ""}`} />
                   </div>
@@ -480,10 +503,10 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                 <div className={`input-form-group ${headerErrors.due_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.due_date ? "input-label-message" : ""}`} htmlFor="due_date">Due Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={invoiceDetails.due_date} onChange={(date) => handleDetailChange("due_date", date)} className={`form-input ${headerErrors.due_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="due_date" 
+                    <DatePicker selected={invoiceDetails.due_date} onChange={(date) => handleDetailChange("due_date", date)} className={`form-input ${headerErrors.due_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="due_date"
                       showMonthDropdown
                       showYearDropdown
-                      dropdownMode="select"  
+                      dropdownMode="select"
                     />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.due_date ? "input-icon-error" : ""}`} />
                   </div>
@@ -498,7 +521,12 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                 <div className={`input-form-group ${headerErrors.currency ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.currency ? "input-label-message" : ""}`} htmlFor="currency">Currency</label>
                   <div className="form-wrapper">
-                    <Select options={CURRENCY_OPTIONS} onChange={(opt) => { handleDetailChange("currency", opt?.value || ""); handleDetailChange("rate_date", ""); }} value={CURRENCY_OPTIONS.find((o) => o.value === invoiceDetails.currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="currency" onMenuOpen={() => setOpenMenuId("currency")} onMenuClose={() => setOpenMenuId(null)} />
+                    <Select options={CURRENCY_OPTIONS}
+                      onChange={(opt) => {
+                        hasUserChangedDateOrCurrency.current = true;
+                        handleDetailChange("currency", opt?.value || "");
+                      }}
+                      value={CURRENCY_OPTIONS.find((o) => o.value === invoiceDetails.currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="currency" onMenuOpen={() => setOpenMenuId("currency")} onMenuClose={() => setOpenMenuId(null)} />
                     <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "currency" ? "chevron-rotate" : "", headerErrors.currency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>
@@ -513,7 +541,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                   <div className={`input-form-group ${headerErrors.clients_name ? "input-form-error" : ""}`}>
                     <label className={`input-form-label ${headerErrors.clients_name ? "input-label-message" : ""}`} htmlFor="clients_name">Client Name</label>
                     <div className="form-wrapper">
-                      <Select options={clientOptions} onInputChange={(val) => { if (val.length > 1) searchClients(val); }} onMenuOpen={() => setOpenMenuId("clients_name")} onMenuClose={() => { setOpenMenuId(null); searchClients(""); }} onChange={(opt) => { if (opt) { handleDetailChange("clients_name", opt.value); handleDetailChange("clients_id", opt.client?.clients_id ? String(opt.client.clients_id) : ""); } else { handleDetailChange("clients_name", ""); handleDetailChange("clients_id", ""); }}} value={invoiceDetails.clients_name ? { value: invoiceDetails.clients_name, label: invoiceDetails.clients_name } : null} placeholder="Search client..." className={`form-input-select ${headerErrors.clients_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="clients_name" isLoading={clientsLoading} />
+                      <Select options={clientOptions} onInputChange={(val) => { if (val.length > 1) searchClients(val); }} onMenuOpen={() => setOpenMenuId("clients_name")} onMenuClose={() => { setOpenMenuId(null); searchClients(""); }} onChange={(opt) => { if (opt) { handleDetailChange("clients_name", opt.value); handleDetailChange("clients_id", opt.client?.clients_id ? String(opt.client.clients_id) : ""); } else { handleDetailChange("clients_name", ""); handleDetailChange("clients_id", ""); } }} value={invoiceDetails.clients_name ? { value: invoiceDetails.clients_name, label: invoiceDetails.clients_name } : null} placeholder="Search client..." className={`form-input-select ${headerErrors.clients_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="clients_name" isLoading={clientsLoading} />
                       <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "clients_name" ? "chevron-rotate" : "", headerErrors.clients_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                     </div>
                   </div>
@@ -574,7 +602,7 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
                   <div className={`input-form-group ${headerErrors.bank_name ? "input-form-error" : ""}`}>
                     <label className={`input-form-label ${headerErrors.bank_name ? "input-label-message" : ""}`} htmlFor="bank_account">Select Bank Account <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
                     <div className="form-wrapper">
-                      <Select options={bankOptions} onInputChange={(val) => { if (val.length > 1) searchBanks(val); }} onMenuOpen={() => setOpenMenuId("bank_account")} onMenuClose={() => { setOpenMenuId(null); searchBanks(""); }} onChange={(opt) => { if (opt) { handleDetailChange("bank_name", opt.bank.bank_name); handleDetailChange("account_name", opt.bank.account_name); handleDetailChange("account_number", opt.bank.account_number); handleDetailChange("account_currency", opt.bank.account_currency); } else { handleDetailChange("bank_name", ""); handleDetailChange("account_name", ""); handleDetailChange("account_number", ""); handleDetailChange("account_currency", ""); }}} value={invoiceDetails.bank_name ? { value: invoiceDetails.bank_name, label: `${invoiceDetails.bank_name} - ${invoiceDetails.account_number}` } : null} placeholder="Search bank account..." className={`form-input-select ${headerErrors.bank_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="bank_account" isLoading={banksLoading} />
+                      <Select options={bankOptions} onInputChange={(val) => { if (val.length > 1) searchBanks(val); }} onMenuOpen={() => setOpenMenuId("bank_account")} onMenuClose={() => { setOpenMenuId(null); searchBanks(""); }} onChange={(opt) => { if (opt) { handleDetailChange("bank_name", opt.bank.bank_name); handleDetailChange("account_name", opt.bank.account_name); handleDetailChange("account_number", opt.bank.account_number); handleDetailChange("account_currency", opt.bank.account_currency); } else { handleDetailChange("bank_name", ""); handleDetailChange("account_name", ""); handleDetailChange("account_number", ""); handleDetailChange("account_currency", ""); } }} value={invoiceDetails.bank_name ? { value: invoiceDetails.bank_name, label: `${invoiceDetails.bank_name} - ${invoiceDetails.account_number}` } : null} placeholder="Search bank account..." className={`form-input-select ${headerErrors.bank_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="bank_account" isLoading={banksLoading} />
                       <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "bank_account" ? "chevron-rotate" : "", headerErrors.bank_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                     </div>
                   </div>
