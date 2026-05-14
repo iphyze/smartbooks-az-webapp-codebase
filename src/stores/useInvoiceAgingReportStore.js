@@ -3,71 +3,92 @@ import api from '../services/api';
 import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 
-/**
- * useInvoiceAgingReportStore
- *
- * Manages the Invoice Aging Report:
- *   GET  /invoice/reports/all-invoice-aging   — fetch full report (no pagination)
- *   GET  /invoice/reports/invoice-aging-excel — download Excel
- *
- * We use the non-paginated route because aging reports are grouped by client
- * (one row per client) so the dataset is naturally small, and grand totals
- * must reflect the entire dataset — not just one page.
- */
-const useInvoiceAgingReportStore = create((set) => ({
+const emptyTotals = {
+  total_bucket_0_30: 0,
+  total_bucket_31_60: 0,
+  total_bucket_61_90: 0,
+  total_bucket_91_plus: 0,
+  grand_total_outstanding: 0,
+  invoice_count: 0,
+  pending_count: 0,
+  partially_paid_count: 0,
+  overdue_count: 0,
+  client_count: 0,
+  overdue_exposure: 0,
+  overdue_exposure_percent: 0,
+  high_risk_exposure_percent: 0,
+};
 
-  // ── State ──────────────────────────────────────────────────────────────────
+const numberValue = (value) => Number(value || 0);
+
+const buildTotalsFromRows = (rows = []) => {
+  const totals = rows.reduce(
+    (acc, row) => {
+      acc.total_bucket_0_30 += numberValue(row.bucket_0_30);
+      acc.total_bucket_31_60 += numberValue(row.bucket_31_60);
+      acc.total_bucket_61_90 += numberValue(row.bucket_61_90);
+      acc.total_bucket_91_plus += numberValue(row.bucket_91_plus);
+      acc.grand_total_outstanding += numberValue(row.total_outstanding);
+      acc.invoice_count += numberValue(row.invoice_count);
+      acc.pending_count += numberValue(row.pending_count);
+      acc.partially_paid_count += numberValue(row.partially_paid_count);
+      acc.overdue_count += numberValue(row.overdue_count);
+      return acc;
+    },
+    { ...emptyTotals, client_count: rows.length }
+  );
+
+  totals.overdue_exposure =
+    totals.total_bucket_31_60 + totals.total_bucket_61_90 + totals.total_bucket_91_plus;
+
+  if (totals.grand_total_outstanding > 0) {
+    totals.overdue_exposure_percent = Number(
+      ((totals.overdue_exposure / totals.grand_total_outstanding) * 100).toFixed(2)
+    );
+    totals.high_risk_exposure_percent = Number(
+      ((totals.total_bucket_91_plus / totals.grand_total_outstanding) * 100).toFixed(2)
+    );
+  }
+
+  return totals;
+};
+
+const useInvoiceAgingReportStore = create((set) => ({
   agingReport: {
-    data:    [],      // array of { clients_id, clients_name, currency, bucket_0_30, … }
-    totals:  null,    // { total_bucket_0_30, total_bucket_31_60, … grand_total_outstanding }
-    meta:    null,    // { currency }
+    data: [],
+    totals: null,
+    meta: null,
     loading: false,
-    error:   null,
+    error: null,
   },
 
-  // ── Actions ────────────────────────────────────────────────────────────────
-
-  /**
-   * Fetch the full aging report (no pagination).
-   * Params: { currency }
-   */
   fetchAgingReport: async (params) => {
     const token = useAuthStore.getState().token;
     set((s) => ({ agingReport: { ...s.agingReport, loading: true, error: null } }));
 
     try {
       const query = new URLSearchParams({ currency: params.currency });
-
       const res = await api.get(`/invoice/reports/all-invoice-aging?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Compute grand totals client-side so they always match the visible rows
-      const rows = res.data.data || [];
-      const totals = rows.reduce(
-        (acc, row) => ({
-          total_bucket_0_30:          acc.total_bucket_0_30          + (parseFloat(row.bucket_0_30)       || 0),
-          total_bucket_31_60:         acc.total_bucket_31_60         + (parseFloat(row.bucket_31_60)      || 0),
-          total_bucket_61_90:         acc.total_bucket_61_90         + (parseFloat(row.bucket_61_90)      || 0),
-          total_bucket_91_plus:       acc.total_bucket_91_plus       + (parseFloat(row.bucket_91_plus)    || 0),
-          grand_total_outstanding:    acc.grand_total_outstanding    + (parseFloat(row.total_outstanding) || 0),
-        }),
-        {
-          total_bucket_0_30:       0,
-          total_bucket_31_60:      0,
-          total_bucket_61_90:      0,
-          total_bucket_91_plus:    0,
-          grand_total_outstanding: 0,
-        }
-      );
+      const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+      const totals = res.data?.totals || buildTotalsFromRows(rows);
 
       set({
         agingReport: {
-          data:    rows,
+          data: rows,
           totals,
-          meta:    { currency: params.currency },
+          meta: {
+            currency: params.currency,
+            as_of_date: res.data?.meta?.as_of_date,
+            aging_basis: res.data?.meta?.aging_basis,
+            outstanding_basis: res.data?.meta?.outstanding_basis,
+            included_statuses: res.data?.meta?.included_statuses || ['Pending', 'Partially Paid', 'Overdue'],
+            excluded_statuses: res.data?.meta?.excluded_statuses || ['Paid', 'Cancelled'],
+          },
           loading: false,
-          error:   null,
+          error: null,
         },
       });
 
@@ -80,15 +101,11 @@ const useInvoiceAgingReportStore = create((set) => ({
     }
   },
 
-  /**
-   * Download the Excel version of the aging report.
-   * Params: { currency }
-   */
   downloadAgingExcel: async (params) => {
     const token = useAuthStore.getState().token;
+
     try {
       const query = new URLSearchParams({ currency: params.currency });
-
       const res = await api.get(`/invoice/reports/invoice-aging-excel?${query}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -97,10 +114,11 @@ const useInvoiceAgingReportStore = create((set) => ({
         responseType: 'blob',
       });
 
-      const url  = window.URL.createObjectURL(new Blob([res.data]));
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
-      link.href  = url;
-      link.setAttribute('download', `Invoice_Aging_Report_${params.currency}.xlsx`);
+      const today = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+      link.href = url;
+      link.setAttribute('download', `Invoice_Aging_Report_${params.currency}_${today}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -117,10 +135,8 @@ const useInvoiceAgingReportStore = create((set) => ({
     }
   },
 
-  // ── Reset ──────────────────────────────────────────────────────────────────
   resetAgingReport: () =>
     set({ agingReport: { data: [], totals: null, meta: null, loading: false, error: null } }),
-
 }));
 
 export default useInvoiceAgingReportStore;

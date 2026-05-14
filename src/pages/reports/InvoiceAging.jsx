@@ -34,6 +34,9 @@ const fmtTotal = (n) => {
   return num < 0 ? `(${abs})` : abs;
 };
 
+const pct = (n) => `${Number(n || 0).toFixed(2)}%`;
+const count = (n) => Number(n || 0).toLocaleString("en-US");
+
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] } },
@@ -112,6 +115,43 @@ const EmptyPrompt = () => (
 );
 
 /* ─────────────────────────────────────────────
+   EXECUTIVE KPI STRIP
+───────────────────────────────────────────── */
+const ExecutiveKpis = ({ totals }) => {
+  if (!totals) return null;
+
+  return (
+    <div className="ia-kpi-grid">
+      <div className="ia-kpi-card ia-kpi-card--primary">
+        <span className="ia-kpi-label">Total Receivables</span>
+        <strong className="ia-kpi-value">{fmtTotal(totals.grand_total_outstanding)}</strong>
+        <span className="ia-kpi-note">Open customer balances</span>
+      </div>
+      <div className="ia-kpi-card">
+        <span className="ia-kpi-label">Clients Owing</span>
+        <strong className="ia-kpi-value">{count(totals.client_count)}</strong>
+        <span className="ia-kpi-note">Grouped receivables</span>
+      </div>
+      <div className="ia-kpi-card">
+        <span className="ia-kpi-label">Open Invoices</span>
+        <strong className="ia-kpi-value">{count(totals.invoice_count)}</strong>
+        <span className="ia-kpi-note">Pending + partial + overdue</span>
+      </div>
+      <div className="ia-kpi-card ia-kpi-card--risk">
+        <span className="ia-kpi-label">Overdue Exposure</span>
+        <strong className="ia-kpi-value">{pct(totals.overdue_exposure_percent)}</strong>
+        <span className="ia-kpi-note">31+ days outstanding</span>
+      </div>
+      <div className="ia-kpi-card ia-kpi-card--danger">
+        <span className="ia-kpi-label">High Risk</span>
+        <strong className="ia-kpi-value">{pct(totals.high_risk_exposure_percent)}</strong>
+        <span className="ia-kpi-note">91+ days outstanding</span>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
    SUMMARY STRIP
 ───────────────────────────────────────────── */
 const SummaryStrip = ({ totals }) => {
@@ -164,7 +204,7 @@ const SummaryStrip = ({ totals }) => {
 ───────────────────────────────────────────── */
 const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
   const pdfDocument = useMemo(() => (
-    <DownloadInvoiceAging data={data} totals={totals} meta={meta} />
+    <DownloadInvoiceAging data={data} totals={totals} meta={meta || {}} />
   ), [data, totals, meta]);
 
   return (
@@ -204,6 +244,9 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
       </div>
     </div>
 
+    {/* Executive KPIs */}
+    <ExecutiveKpis totals={totals} />
+
     {/* Summary strip */}
     <SummaryStrip totals={totals} />
 
@@ -213,7 +256,7 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
         <div className="ia-report-title-block">
           <h2 className="ia-report-title">Invoice Aging Report</h2>
           <p className="ia-report-sub">
-            Pending invoices grouped by days outstanding &nbsp;·&nbsp;
+            Open receivables grouped by days outstanding &nbsp;·&nbsp;
             Currency: {meta?.currency} &nbsp;·&nbsp;
             As at {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
           </p>
@@ -232,12 +275,14 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
               <th className="ia-th-num ia-th-concern">61 – 90 Days</th>
               <th className="ia-th-num ia-th-overdue">91+ Days</th>
               <th className="ia-th-num">Total Outstanding</th>
+              <th className="ia-th-num">Invoices</th>
+              <th className="ia-th-num">Oldest Age</th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", padding: "40px 20px", color: "var(--sb-text-3, #7aada6)", fontStyle: "italic" }}>
+                <td colSpan={9} style={{ textAlign: "center", padding: "40px 20px", color: "var(--sb-text-3, #7aada6)", fontStyle: "italic" }}>
                   No pending invoices found for {meta?.currency}.
                 </td>
               </tr>
@@ -258,6 +303,8 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
                     <td className={`ia-td-num ${b61 === 0 ? "ia-zero" : "ia-td-concern"}`}>{fmt(b61)}</td>
                     <td className={`ia-td-num ${b91 === 0 ? "ia-zero" : "ia-td-overdue"}`}>{fmt(b91)}</td>
                     <td className="ia-td-num ia-td-total">{fmtTotal(tot)}</td>
+                    <td className="ia-td-num">{count(row.invoice_count)}</td>
+                    <td className={`ia-td-num ${Number(row.oldest_age_days) > 90 ? "ia-td-overdue" : ""}`}>{count(row.oldest_age_days)} days</td>
                   </tr>
                 );
               })
@@ -275,6 +322,8 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
                   {fmtTotal(totals.total_bucket_91_plus)}
                 </td>
                 <td className="ia-tfoot-val">{fmtTotal(totals.grand_total_outstanding)}</td>
+                <td className="ia-tfoot-val">{count(totals.invoice_count)}</td>
+                <td className="ia-tfoot-val">—</td>
               </tr>
             </tfoot>
           )}

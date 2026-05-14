@@ -79,15 +79,17 @@ const NavBar = ({ nav, setNav }) => {
       items: [
         { path: "/reports/ledger", label: "Ledger Reports", icon: "fa-file-lines" },
         { path: "/reports/fx-revaluation", label: "Exchange Rate Gain/Loss", icon: "fa-file-lines" },
-        { path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" }
+        { path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" },
+        { path: "/reports/timesheet", label: "Timesheet Report", icon: "fa-business-time" },
+        { path: "/reports/bank-reconciliation", label: "Bank Reconciliation", icon: "fa-scale-balanced" }
       ]
     },
     users: {
-      basePath: "/users",
+      basePath: "/user",
       items: [
         { path: "/users/home", label: "Overview", icon: "fa-list-ul" },
         { path: "/users/create-user", label: "Add User", icon: "fa-user-plus" },
-        { path: "/users/roles", label: "Roles", icon: "fa-shield-halved" },
+        // { path: "/users/roles", label: "Roles", icon: "fa-shield-halved" },
       ]
     },
     settings: {

@@ -133,11 +133,8 @@ const Header = ({ nav, setNav }) => {
                 </div>
               </div>
               <div className="sb-header__dropdown-divider" />
-              <NavLink to="/settings/profile" className="sb-header__dropdown-item" onClick={() => setShowUserMenu(false)}>
-                <i className="fas fa-circle-user" /><span>Profile Settings</span>
-              </NavLink>
-              <NavLink to="/settings/security" className="sb-header__dropdown-item" onClick={() => setShowUserMenu(false)}>
-                <i className="fas fa-lock" /><span>Change Password</span>
+              <NavLink to="/users/my-profile" className="sb-header__dropdown-item" onClick={() => setShowUserMenu(false)}>
+                <i className="fas fa-circle-user" /><span>My Profile</span>
               </NavLink>
               <div className="sb-header__dropdown-divider" />
               <button className="sb-header__dropdown-item sb-header__dropdown-item--danger" onClick={handleLogout}>

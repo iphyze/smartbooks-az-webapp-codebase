@@ -58,6 +58,13 @@ import ProfitLoss from "./pages/reports/ProfitLoss";
 import BalanceSheet from "./pages/reports/BalanceSheet";
 import FXRevaluation from "./pages/reports/FXRevaluation";
 import InvoiceAging from "./pages/reports/InvoiceAging";
+import TimesheetReport from "./pages/reports/TimesheetReport";
+import BankReconciliation from "./pages/reports/recon/BankReconciliation";
+import UsersOverview from "./pages/users/UsersOverview";
+import CreateUser from "./pages/users/CreateUser";
+import EditUser from "./pages/users/EditUser";
+import ViewUser from "./pages/users/ViewUser";
+import MyProfile from "./pages/users/MyProfile";
 
 const App = () => {
   
@@ -146,6 +153,15 @@ const App = () => {
           <Route path="/reports/ledger/balance-sheet" element={<ProtectedRoute><BalanceSheet /></ProtectedRoute>} />
           <Route path="/reports/fx-revaluation" element={<ProtectedRoute><FXRevaluation /></ProtectedRoute>} />
           <Route path="/reports/invoice-aging" element={<ProtectedRoute><InvoiceAging /></ProtectedRoute>} />
+          <Route path="/reports/timesheet" element={<ProtectedRoute><TimesheetReport /></ProtectedRoute>} />
+          <Route path="/reports/bank-reconciliation" element={<ProtectedRoute><BankReconciliation /></ProtectedRoute>} />
+
+          {/* Users */}
+          <Route path="/users/home"         element={<ProtectedRoute><UsersOverview /></ProtectedRoute>} />
+          <Route path="/users/create-user"  element={<ProtectedRoute><CreateUser /></ProtectedRoute>} />
+          <Route path="/users/edit/:id"     element={<ProtectedRoute><EditUser /></ProtectedRoute>} />
+          <Route path="/users/view/:id"     element={<ProtectedRoute><ViewUser /></ProtectedRoute>} />
+          <Route path="/users/my-profile"   element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
           
 
           <Route path="*" element={<NotFound />} />
