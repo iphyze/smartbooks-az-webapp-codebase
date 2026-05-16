@@ -59,12 +59,15 @@ import BalanceSheet from "./pages/reports/BalanceSheet";
 import FXRevaluation from "./pages/reports/FXRevaluation";
 import InvoiceAging from "./pages/reports/InvoiceAging";
 import TimesheetReport from "./pages/reports/TimesheetReport";
-import BankReconciliation from "./pages/reports/recon/BankReconciliation";
 import UsersOverview from "./pages/users/UsersOverview";
 import CreateUser from "./pages/users/CreateUser";
 import EditUser from "./pages/users/EditUser";
 import ViewUser from "./pages/users/ViewUser";
 import MyProfile from "./pages/users/MyProfile";
+import BankReconOverview from "./pages/reports/recon/BankReconOverview";
+import EditBankRecon from "./pages/reports/recon/EditBankRecon";
+import CreateBankRecon from "./pages/reports/recon/CreateBankRecon";
+import BankReconWorkspace from "./pages/reports/recon/BankReconWorkspace";
 
 const App = () => {
   
@@ -154,7 +157,13 @@ const App = () => {
           <Route path="/reports/fx-revaluation" element={<ProtectedRoute><FXRevaluation /></ProtectedRoute>} />
           <Route path="/reports/invoice-aging" element={<ProtectedRoute><InvoiceAging /></ProtectedRoute>} />
           <Route path="/reports/timesheet" element={<ProtectedRoute><TimesheetReport /></ProtectedRoute>} />
-          <Route path="/reports/bank-reconciliation" element={<ProtectedRoute><BankReconciliation /></ProtectedRoute>} />
+          
+          
+          {/* Reports */}
+          <Route path="/reports/bank-recon" element={<ProtectedRoute><BankReconOverview /></ProtectedRoute>} />
+          <Route path="/reports/bank-recon/create" element={<ProtectedRoute><CreateBankRecon /></ProtectedRoute>} />
+          <Route path="/reports/bank-recon/edit/:id" element={<ProtectedRoute><EditBankRecon /></ProtectedRoute>} />
+          <Route path="/reports/bank-recon/workspace/:id" element={<ProtectedRoute><BankReconWorkspace /></ProtectedRoute>} />
 
           {/* Users */}
           <Route path="/users/home"         element={<ProtectedRoute><UsersOverview /></ProtectedRoute>} />

@@ -81,7 +81,7 @@ const NavBar = ({ nav, setNav }) => {
         { path: "/reports/fx-revaluation", label: "Exchange Rate Gain/Loss", icon: "fa-file-lines" },
         { path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" },
         { path: "/reports/timesheet", label: "Timesheet Report", icon: "fa-business-time" },
-        { path: "/reports/bank-reconciliation", label: "Bank Reconciliation", icon: "fa-scale-balanced" }
+        { path: "/reports/bank-recon", label: "Bank Reconciliation", icon: "fa-scale-balanced" }
       ]
     },
     users: {

@@ -61,12 +61,10 @@ export const StatusPill = ({ status }) => (
   </span>
 );
 
-export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSelect, onUnmatch, onClassify, onEditLine, onUnclassify }) => {
-  const matched    = line.match_status === 'Matched';
+export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSelect, onUnmatch, onClassify }) => {
+  const matched = line.match_status === 'Matched';
   const classified = ['Classified', 'Bank-Only'].includes(line.match_status);
-  const isOut      = line.direction === 'OUT';
-  // Classified lines are always selectable so the user can bulk re-classify them.
-  // Only Matched lines are locked (use the unlink button on those).
+  const isOut = line.direction === 'OUT';
   const selectable = !matched && canSelect;
 
   return (
@@ -75,34 +73,24 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
         'br-line',
         isSelected ? 'br-line--sel' : '',
         matched ? 'br-line--matched' : '',
-        // Classified lines get the amber border UNLESS they are currently selected
-        classified && !isSelected ? 'br-line--bankonly' : '',
+        classified ? 'br-line--bankonly' : '',
         selectable ? 'br-line--clickable' : '',
-        // Only mute lines that are truly locked (not matched, not classified, just disabled)
-        !matched && !classified && !canSelect ? 'br-line--muted' : '',
+        !matched && !canSelect ? 'br-line--muted' : '',
       ].filter(Boolean).join(' ')}
       onClick={() => selectable && onToggleSelect(line.id)}
     >
       <div className="br-line-r1">
         {!matched && (
           <label className="br-check-wrap" onClick={(e) => e.stopPropagation()}>
-            <input type="checkbox" disabled={!selectable} checked={isSelected} onChange={() => selectable && onToggleSelect(line.id)} />
+            <input type="checkbox" disabled={!canSelect} checked={isSelected} onChange={() => canSelect && onToggleSelect(line.id)} />
             <span />
           </label>
         )}
 
         <span className="br-line-date">{fmtDate(line.txn_date)}</span>
-        <span className={`br-dir-badge ${
-          side === 'ledger'
-            // ? (isOut ? 'br-dir-in' : 'br-dir-out')   // ledger: OUT=Cr(green), IN=Dr(red)
-            ? (isOut ? 'br-dir-out' : 'br-dir-in')   // ledger: OUT=Cr(green), IN=Dr(red)
-            : (isOut ? 'br-dir-out' : 'br-dir-in')   // bank:   OUT=Dr(red),  IN=Cr(green)
-        }`}>
+        <span className={`br-dir-badge ${isOut ? 'br-dir-out' : 'br-dir-in'}`}>
           <i className={`fas ${isOut ? 'fa-arrow-up-right' : 'fa-arrow-down-left'}`} />
-          {side === 'ledger'
-            // ? (isOut ? 'Cr' : 'Dr')
-            ? (isOut ? 'Dr' : 'Cr')
-            : (isOut ? 'Dr' : 'Cr')}
+          {isOut ? 'OUT' : 'IN'}
         </span>
         <StatusPill status={line.match_status} />
 
@@ -132,52 +120,17 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
         {classified && <span className="br-type-tag"><i className="fas fa-tag" />{safe(line.category_name || line.bank_only_type)}</span>}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-        {!matched && (
-          <button
-            className="br-classify-link"
-            style={{ margin: 0 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClassify([line.id], side);
-            }}
-          >
-            <i className={`fas ${classified ? 'fa-pencil' : 'fa-layer-group'}`} />
-            {classified ? 'Re-classify' : 'Move to Details'}
-          </button>
-        )}
-        {classified && onUnclassify && (
-          <button
-            className="br-classify-link"
-            style={{ margin: 0, color: '#f47c7c' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onUnclassify(line.id);
-            }}
-          >
-            <i className="fas fa-xmark-circle" />
-            Remove from Class
-          </button>
-        )}
-        {onEditLine && (
-          <button
-            className="br-classify-link"
-            style={{ margin: 0, color: '#6366f1' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditLine(line, side);
-            }}
-          >
-            <i className="fas fa-pen-to-square" />
-            Edit Line
-          </button>
-        )}
-      </div>
-      {/* Bulk re-classify hint */}
-      {classified && isSelected && (
-        <span style={{ fontSize: 10, color: 'var(--sb-brand, #00b196)', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <i className="fas fa-check-circle" />Selected for bulk re-classify
-        </span>
+      {!matched && (
+        <button
+          className="br-classify-link"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClassify([line.id], side);
+          }}
+        >
+          <i className={`fas ${classified ? 'fa-pencil' : 'fa-layer-group'}`} />
+          {classified ? 'Re-classify' : 'Move to Details'}
+        </button>
       )}
     </div>
   );
@@ -185,20 +138,11 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
 
 export const FilterBar = ({ tabs, filterVal, searchVal, onFilterChange, onSearchChange }) => (
   <div className="br-filter-bar">
-    <div className="br-fsearch-wrap">
-      <input
-        className="form-input br-fsearch"
-        placeholder="Search description or amount…"
-        value={searchVal}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
-      {searchVal ? (
-        <button type="button" className="br-fsearch-icon br-fsearch-clear" onClick={() => onSearchChange('')}>
-          <i className="fas fa-xmark" />
-        </button>
-      ) : (
-        <span className="br-fsearch-icon fas fa-search" />
-      )}
+    <div className="form-wrapper br-fsearch-wrap">
+      <input className="form-input br-fsearch" placeholder="Search description or amount…" value={searchVal} onChange={(e) => onSearchChange(e.target.value)} />
+      {searchVal
+        ? <button type="button" className="br-search-clear" onClick={() => onSearchChange('')}><i className="fas fa-xmark" /></button>
+        : <span className="chevron-input-icon fas fa-search" />}
     </div>
     <div className="br-tabs">
       {tabs.map((t) => (

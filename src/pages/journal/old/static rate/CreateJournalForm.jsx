@@ -60,20 +60,20 @@ const EPSILON = 0.001;
    Static Option Arrays
 ───────────────────────────────────────────── */
 const JOURNAL_TYPE_OPTIONS = [
-  { value: "Payment", label: "Payment" },
-  { value: "Receipt", label: "Receipt" },
+  { value: "Payment",  label: "Payment"  },
+  { value: "Receipt",  label: "Receipt"  },
   { value: "Expenses", label: "Expenses" },
-  { value: "Sales", label: "Sales" },
-  { value: "General", label: "General" },
-  { value: "Journal", label: "Journal" },
+  { value: "Sales",    label: "Sales"    },
+  { value: "General",  label: "General"  },
+  { value: "Journal",  label: "Journal"  },
 ];
 const TRANSACTION_TYPE_OPTIONS = [
-  { value: "Cash", label: "Cash" },
-  { value: "Bank", label: "Bank" },
+  { value: "Cash",           label: "Cash"           },
+  { value: "Bank",           label: "Bank"           },
   { value: "Not Applicable", label: "Not Applicable" },
 ];
 const SIDE_OPTIONS = [
-  { value: "Debit", label: "Debit" },
+  { value: "Debit",  label: "Debit"  },
   { value: "Credit", label: "Credit" },
 ];
 const CURRENCY_OPTIONS = [
@@ -91,10 +91,10 @@ function calculateTotals(items) {
   let totalUSDAmount = 0, totalUSDCount = 0, totalUSDDebit = 0, totalUSDCredit = 0;
 
   items.forEach((item) => {
-    const amount = parseFloat(item.amount) || 0;
+    const amount       = parseFloat(item.amount)       || 0;
     const currencyRate = parseFloat(item.currencyRate) || 0;
-    const side = item.sides;
-    const currency = item.jcurrency;
+    const side         = item.sides;
+    const currency     = item.jcurrency;
     let currencyConversion = 0;
 
     if (currency === "NGN") {
@@ -102,37 +102,37 @@ function calculateTotals(items) {
       totalNGNDebit += amount;
     } else {
       currencyConversion = amount * currencyRate;
-      if (side === "Debit") totalUSDDebit += amount;
+      if (side === "Debit")  totalUSDDebit  += amount;
       if (side === "Credit") totalUSDCredit += amount;
       totalUSDAmount += amount;
       totalUSDCount++;
     }
 
-    if (side === "Debit") totalDebit += currencyConversion;
+    if (side === "Debit")  totalDebit  += currencyConversion;
     if (side === "Credit") totalCredit += currencyConversion;
   });
 
   let totalDebitUSD = 0, totalCreditUSD = 0;
   if (totalUSDCount > 0) {
     if (totalNGNDebit > 0) {
-      const debitAverageRate = totalUSDAmount > 0 ? totalDebit / totalUSDAmount : 0;
+      const debitAverageRate  = totalUSDAmount > 0 ? totalDebit  / totalUSDAmount : 0;
       const creditAverageRate = totalUSDAmount > 0 ? totalCredit / totalUSDAmount : 0;
-      totalDebitUSD = debitAverageRate > 0 ? totalNGNDebit / debitAverageRate : 0;
+      totalDebitUSD  = debitAverageRate  > 0 ? totalNGNDebit / debitAverageRate  : 0;
       totalCreditUSD = creditAverageRate > 0 ? totalNGNDebit / creditAverageRate : 0;
     } else {
-      totalDebitUSD = totalUSDDebit;
+      totalDebitUSD  = totalUSDDebit;
       totalCreditUSD = totalUSDCredit;
     }
   }
 
   return {
-    total_debit_ngn: totalDebit,
+    total_debit_ngn:  totalDebit,
     total_credit_ngn: totalCredit,
-    total_debit_usd: totalDebitUSD,
+    total_debit_usd:  totalDebitUSD,
     total_credit_usd: totalCreditUSD,
-    grand_total_ngn: totalDebit - totalCredit,
-    grand_total_usd: totalCreditUSD - totalDebitUSD,
-    grand_total: totalDebit - totalCredit,
+    grand_total_ngn:  totalDebit - totalCredit,
+    grand_total_usd:  totalCreditUSD - totalDebitUSD,
+    grand_total:      totalDebit - totalCredit,
   };
 }
 
@@ -140,32 +140,32 @@ function calculateTotals(items) {
    Main Component
 ───────────────────────────────────────────── */
 const CreateJournalForm = () => {
-  const { theme } = useThemeStore();
-  const { showToast } = useToastStore();
+  const { theme }      = useThemeStore();
+  const { showToast }  = useToastStore();
   const { ledgers, searchLedgers } = useLedgerSearchStore();
-  const { rates, searchRates } = useRateSearchStore();
+  const { rates,   searchRates   } = useRateSearchStore();
   const { clients, searchClients } = useClientSearchStore();
   const navigate = useNavigate();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [isLoading,  setIsLoading]  = useState(false);
+  const [submitted,  setSubmitted]  = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
 
   const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null });
 
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
-  const [showCreateRateModal, setShowCreateRateModal] = useState(false);
-  const [activeRowId, setActiveRowId] = useState(null);
+  const [showCreateRateModal,   setShowCreateRateModal]   = useState(false);
+  const [activeRowId,           setActiveRowId]           = useState(null);
 
   /* ── Header state ── */
   const [journalDetails, setJournalDetails] = useState({
-    journal_date: new Date(),
-    journal_type: "",
-    journal_currency: "NGN",
-    transaction_type: "",
+    journal_date:             new Date(),
+    journal_type:             "",
+    journal_currency:         "NGN",
+    transaction_type:         "",
     main_journal_description: "",
-    cost_center: "Overhead",
+    cost_center:              "Overhead",
   });
 
   /* ── Master rate id — drives all rows ── */
@@ -177,13 +177,13 @@ const CreateJournalForm = () => {
     const effectiveId = findEffectiveRateId(rates, item.jcurrency, new Date());
     const found = effectiveId ? rates.find((r) => String(r.id) === effectiveId) : null;
     if (found) {
-      item.jrate = effectiveId;
+      item.jrate        = effectiveId;
       item.currencyRate = parseFloat(found[`${item.jcurrency.toLowerCase()}_rate`]) || 0;
-      item.rate_date = found.created_at;
-      item.ngn_rate = found.ngn_rate;
-      item.usd_rate = found.usd_rate;
-      item.eur_rate = found.eur_rate;
-      item.gbp_rate = found.gbp_rate;
+      item.rate_date    = found.created_at;
+      item.ngn_rate     = found.ngn_rate;
+      item.usd_rate     = found.usd_rate;
+      item.eur_rate     = found.eur_rate;
+      item.gbp_rate     = found.gbp_rate;
     }
     return [item];
   });
@@ -200,12 +200,14 @@ const CreateJournalForm = () => {
 
   /* ── Master rate options — all rates, all currencies visible ── */
   const masterRateOptions = useMemo(() =>
-  rates.map((r) => ({
-    value: String(r.id),
-    label: r.created_at?.slice(0, 10) || "",
-    rate: r,
-  })),
-  [rates]);
+    rates.map((r) => ({
+      value: String(r.id),
+      label: r.created_at
+        ? `${r.created_at.slice(0, 10)} | ${journalDetails.journal_currency} @ ${r[`${journalDetails.journal_currency.toLowerCase()}_rate`]}`
+        : "",
+      rate: r,
+    })),
+  [rates, journalDetails.journal_currency]);
 
   /* ── Auto-set master rate from journal_date when rates load ── */
   useEffect(() => {
@@ -226,13 +228,13 @@ const CreateJournalForm = () => {
         const curr = item.jcurrency.toLowerCase();
         return {
           ...item,
-          jrate: masterRateId,
+          jrate:        masterRateId,
           currencyRate: parseFloat(found[`${curr}_rate`]) || 0,
-          rate_date: found.created_at,
-          ngn_rate: found.ngn_rate,
-          usd_rate: found.usd_rate,
-          eur_rate: found.eur_rate,
-          gbp_rate: found.gbp_rate,
+          rate_date:    found.created_at,
+          ngn_rate:     found.ngn_rate,
+          usd_rate:     found.usd_rate,
+          eur_rate:     found.eur_rate,
+          gbp_rate:     found.gbp_rate,
         };
       })
     );
@@ -254,7 +256,7 @@ const CreateJournalForm = () => {
   }, [journalDetails.main_journal_description]);
 
   /* ── Totals ── */
-  const totals = useMemo(() => calculateTotals(journalItems), [journalItems]);
+  const totals     = useMemo(() => calculateTotals(journalItems), [journalItems]);
   const isBalanced = Math.abs(totals.grand_total) < EPSILON;
 
   /* ─────────────────────────────────────────────
@@ -262,34 +264,34 @@ const CreateJournalForm = () => {
   ───────────────────────────────────────────── */
   const validateHeader = useCallback(() => {
     const e = {};
-    if (!journalDetails.journal_date) e.journal_date = "Journal date is required";
-    if (!journalDetails.journal_type) e.journal_type = "Journal type is required";
-    if (!journalDetails.journal_currency) e.journal_currency = "Currency is required";
-    if (!journalDetails.transaction_type) e.transaction_type = "Transaction type is required";
+    if (!journalDetails.journal_date)                     e.journal_date             = "Journal date is required";
+    if (!journalDetails.journal_type)                     e.journal_type             = "Journal type is required";
+    if (!journalDetails.journal_currency)                 e.journal_currency         = "Currency is required";
+    if (!journalDetails.transaction_type)                 e.transaction_type         = "Transaction type is required";
     if (!journalDetails.main_journal_description?.trim()) e.main_journal_description = "Description is required";
-    if (!journalDetails.cost_center) e.cost_center = "Cost center is required";
-    if (!masterRateId) e.master_rate = "Exchange rate is required";
+    if (!journalDetails.cost_center)                      e.cost_center              = "Cost center is required";
+    if (!masterRateId)                                    e.master_rate              = "Exchange rate is required";
     return e;
   }, [journalDetails, masterRateId]);
 
   const validateItems = useCallback(() =>
     journalItems.map((item) => {
       const e = {};
-      if (!item.ledger_name) e.ledger_name = "Ledger required";
+      if (!item.ledger_name)                 e.ledger_name         = "Ledger required";
       if (!item.journal_description?.trim()) e.journal_description = "Description required";
-      if (!item.sides) e.sides = "Dr/Cr required";
-      if (!item.jcurrency) e.jcurrency = "Currency required";
-      if (!item.jrate) e.jrate = "Rate required";
+      if (!item.sides)                       e.sides               = "Dr/Cr required";
+      if (!item.jcurrency)                   e.jcurrency           = "Currency required";
+      if (!item.jrate)                       e.jrate               = "Rate required";
       if (item.amount === "" || item.amount === null) e.amount = "Amount required";
       else if (isNaN(parseFloat(item.amount)) || parseFloat(item.amount) <= 0) e.amount = "Invalid amount";
       return e;
     }),
-    [journalItems]);
+  [journalItems]);
 
   const headerErrors = useMemo(() => submitted ? validateHeader() : {}, [submitted, validateHeader]);
   const itemErrorMap = useMemo(() => {
     if (!submitted) return {};
-    const errs = validateItems();
+    const errs     = validateItems();
     const prevItems = prevJournalItemsRef.current;
     return Object.fromEntries(
       journalItems.map((item, i) => {
@@ -314,11 +316,11 @@ const CreateJournalForm = () => {
         if (field === "ledger_name") {
           const found = ledgers.find((l) => l.ledger_name === value);
           if (found) {
-            updated.ledger_number = found.ledger_number || "";
-            updated.ledger_class = found.ledger_class || "";
+            updated.ledger_number     = found.ledger_number     || "";
+            updated.ledger_class      = found.ledger_class      || "";
             updated.ledger_class_code = found.ledger_class_code || "";
-            updated.ledger_sub_class = found.ledger_sub_class || "";
-            updated.ledger_type = found.ledger_type || "";
+            updated.ledger_sub_class  = found.ledger_sub_class  || "";
+            updated.ledger_type       = found.ledger_type       || "";
           }
         }
 
@@ -327,13 +329,13 @@ const CreateJournalForm = () => {
           const found = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
           if (found) {
             const curr = value.toLowerCase();
-            updated.jrate = masterRateId;
+            updated.jrate        = masterRateId;
             updated.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
-            updated.rate_date = found.created_at;
-            updated.ngn_rate = found.ngn_rate;
-            updated.usd_rate = found.usd_rate;
-            updated.eur_rate = found.eur_rate;
-            updated.gbp_rate = found.gbp_rate;
+            updated.rate_date    = found.created_at;
+            updated.ngn_rate     = found.ngn_rate;
+            updated.usd_rate     = found.usd_rate;
+            updated.eur_rate     = found.eur_rate;
+            updated.gbp_rate     = found.gbp_rate;
           } else {
             updated.jrate = ""; updated.currencyRate = ""; updated.rate_date = "";
             updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
@@ -350,16 +352,16 @@ const CreateJournalForm = () => {
   const addItem = () => {
     setJournalItems((prev) => {
       const newItem = createEmptyItem(journalDetails.main_journal_description);
-      const found = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
+      const found   = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
       if (found) {
         const curr = newItem.jcurrency.toLowerCase();
-        newItem.jrate = masterRateId;
+        newItem.jrate        = masterRateId;
         newItem.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
-        newItem.rate_date = found.created_at;
-        newItem.ngn_rate = found.ngn_rate;
-        newItem.usd_rate = found.usd_rate;
-        newItem.eur_rate = found.eur_rate;
-        newItem.gbp_rate = found.gbp_rate;
+        newItem.rate_date    = found.created_at;
+        newItem.ngn_rate     = found.ngn_rate;
+        newItem.usd_rate     = found.usd_rate;
+        newItem.eur_rate     = found.eur_rate;
+        newItem.gbp_rate     = found.gbp_rate;
       }
       return [...prev, newItem];
     });
@@ -411,31 +413,31 @@ const CreateJournalForm = () => {
 
     const payload = {
       ...journalDetails,
-      journal_date: journalDetails.journal_date.toISOString().split("T")[0],
-      total_debit_ngn: totals.total_debit_ngn,
-      total_credit_ngn: totals.total_credit_ngn,
-      total_debit_usd: totals.total_debit_usd,
-      total_credit_usd: totals.total_credit_usd,
-      grand_total_ngn: totals.grand_total_ngn,
-      grand_total_usd: totals.grand_total_usd,
-      grand_total: totals.grand_total,
-      ledger_name: journalItems.map((i) => i.ledger_name),
-      ledger_number: journalItems.map((i) => i.ledger_number),
-      ledger_class: journalItems.map((i) => i.ledger_class),
-      ledger_class_code: journalItems.map((i) => i.ledger_class_code),
-      ledger_sub_class: journalItems.map((i) => i.ledger_sub_class),
-      ledger_type: journalItems.map((i) => i.ledger_type),
-      amount: journalItems.map((i) => i.amount),
-      sides: journalItems.map((i) => i.sides),
-      jrate: journalItems.map((i) => i.jrate),
-      jcurrency: journalItems.map((i) => i.jcurrency),
-      currency_rate: journalItems.map((i) => i.currencyRate),
+      journal_date:        journalDetails.journal_date.toISOString().split("T")[0],
+      total_debit_ngn:     totals.total_debit_ngn,
+      total_credit_ngn:    totals.total_credit_ngn,
+      total_debit_usd:     totals.total_debit_usd,
+      total_credit_usd:    totals.total_credit_usd,
+      grand_total_ngn:     totals.grand_total_ngn,
+      grand_total_usd:     totals.grand_total_usd,
+      grand_total:         totals.grand_total,
+      ledger_name:         journalItems.map((i) => i.ledger_name),
+      ledger_number:       journalItems.map((i) => i.ledger_number),
+      ledger_class:        journalItems.map((i) => i.ledger_class),
+      ledger_class_code:   journalItems.map((i) => i.ledger_class_code),
+      ledger_sub_class:    journalItems.map((i) => i.ledger_sub_class),
+      ledger_type:         journalItems.map((i) => i.ledger_type),
+      amount:              journalItems.map((i) => i.amount),
+      sides:               journalItems.map((i) => i.sides),
+      jrate:               journalItems.map((i) => i.jrate),
+      jcurrency:           journalItems.map((i) => i.jcurrency),
+      currency_rate:       journalItems.map((i) => i.currencyRate),
       journal_description: journalItems.map((i) => i.journal_description),
-      rate_date: journalItems.map((i) => i.rate_date),
-      ngn_rate: journalItems.map((i) => i.ngn_rate),
-      usd_rate: journalItems.map((i) => i.usd_rate),
-      eur_rate: journalItems.map((i) => i.eur_rate),
-      gbp_rate: journalItems.map((i) => i.gbp_rate),
+      rate_date:           journalItems.map((i) => i.rate_date),
+      ngn_rate:            journalItems.map((i) => i.ngn_rate),
+      usd_rate:            journalItems.map((i) => i.usd_rate),
+      eur_rate:            journalItems.map((i) => i.eur_rate),
+      gbp_rate:            journalItems.map((i) => i.gbp_rate),
     };
 
     try {
@@ -457,13 +459,13 @@ const CreateJournalForm = () => {
         const effectiveId = findEffectiveRateId(rates, resetItem.jcurrency, new Date());
         const found = effectiveId ? rates.find((r) => String(r.id) === effectiveId) : null;
         if (found) {
-          resetItem.jrate = effectiveId;
+          resetItem.jrate        = effectiveId;
           resetItem.currencyRate = parseFloat(found[`${resetItem.jcurrency.toLowerCase()}_rate`]) || 0;
-          resetItem.rate_date = found.created_at;
-          resetItem.ngn_rate = found.ngn_rate;
-          resetItem.usd_rate = found.usd_rate;
-          resetItem.eur_rate = found.eur_rate;
-          resetItem.gbp_rate = found.gbp_rate;
+          resetItem.rate_date    = found.created_at;
+          resetItem.ngn_rate     = found.ngn_rate;
+          resetItem.usd_rate     = found.usd_rate;
+          resetItem.eur_rate     = found.eur_rate;
+          resetItem.gbp_rate     = found.gbp_rate;
         }
         setJournalItems([resetItem]);
         navigate(`/journal/view/${journal_id}`);
@@ -538,7 +540,36 @@ const CreateJournalForm = () => {
               </div>
             </div>
 
-
+            {/* Exchange Rate — master selector (replaces per-row rate) */}
+            <div className="invoice-form invoice-form-three">
+              <div className="inv-form-flex">
+                <div className="input-form-wrapper inv-form-flex-wrap">
+                  <div className={`input-form-group ${headerErrors.master_rate ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.master_rate ? "input-label-message" : ""}`} htmlFor="master_rate">Exchange Rate</label>
+                    <div className="form-wrapper">
+                      <Select
+                        options={masterRateOptions}
+                        onChange={(opt) => setMasterRateId(opt ? opt.value : "")}
+                        value={selectedMasterRateOpt}
+                        placeholder="Select rate..."
+                        className={`form-input-select ${headerErrors.master_rate ? "input-error" : ""}`}
+                        classNamePrefix="form-input-select"
+                        isClearable
+                        inputId="master_rate"
+                        onMenuOpen={() => setOpenMenuId("master_rate")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                        noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : "No rates found"}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "master_rate" ? "chevron-rotate" : "", headerErrors.master_rate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                    </div>
+                  </div>
+                  {headerErrors.master_rate && <div className="input-error-message">{headerErrors.master_rate}</div>}
+                </div>
+                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate">
+                  <span className="fas fa-plus" />
+                </button>
+              </div>
+            </div>
 
             {/* Transaction Type */}
             <div className="invoice-form invoice-form-three">
@@ -590,22 +621,21 @@ const CreateJournalForm = () => {
 
           {/* ── JOURNAL ITEMS TABLE — no Rate column ── */}
           <div className="invoice-form-full">
-            <div className="invoice-items-table journal-items-table">
+            <div className="invoice-items-table">
               <div className="invoice-table-header journal-table-header">
                 <div className="invoice-table-cell">Ledger Name</div>
                 <div className="invoice-table-cell">Description</div>
                 <div className="invoice-table-cell cell-small">DR / CR</div>
                 <div className="invoice-table-cell cell-small">Currency</div>
-                <div className="invoice-table-cell">Rate Date</div>
                 <div className="invoice-table-cell">Amount</div>
                 <div className="invoice-table-cell cell-action">Action</div>
               </div>
 
               {journalItems.map((item) => {
-                const rowErr = itemErrorMap[item.id] || {};
+                const rowErr   = itemErrorMap[item.id] || {};
                 const ledgerId = `ledger_${item.id}`;
-                const sideId = `side_${item.id}`;
-                const currId = `curr_${item.id}`;
+                const sideId   = `side_${item.id}`;
+                const currId   = `curr_${item.id}`;
 
                 return (
                   <div key={item.id} className="invoice-table-row">
@@ -678,49 +708,6 @@ const CreateJournalForm = () => {
                           </div>
                         </div>
                         {rowErr.jcurrency && <div className="input-error-message">{rowErr.jcurrency}</div>}
-                      </div>
-                    </div>
-
-                    {/* Rate Date — Select using masterRateOptions, auto-filled & styled consistently */}
-                    <div className="invoice-table-cell">
-                      <div className="inv-form-flex">
-                        <div className="input-form-wrapper inv-form-flex-wrap" style={{ margin: 0 }}>
-                          <div className={`input-form-group ${rowErr.jrate ? "input-form-error" : ""}`}>
-                            <label className={`input-form-label ${rowErr.jrate ? "input-label-message" : ""}`} htmlFor={`rate_${item.id}`}>Rate Date</label>
-                            <div className="form-wrapper">
-                              <Select
-                                options={masterRateOptions.map((o) => ({
-                                  ...o,
-                                  label: o.rate
-                                    ? `${o.rate.created_at?.slice(0, 10)} | ${item.jcurrency} @ ${o.rate[`${item.jcurrency.toLowerCase()}_rate`]}`
-                                    : o.label,
-                                }))}
-                                onChange={(opt) => setMasterRateId(opt ? opt.value : "")}
-                                value={item.jrate ? {
-                                    value: item.jrate,
-                                    label: item.rate_date
-                                      ? `${String(item.rate_date).slice(0, 10)} | ${item.jcurrency} @ ${item.currencyRate}`
-                                      : "",
-                                  } : null}
-                                placeholder={rates.length === 0 ? "Loading..." : "Select rate..."}
-                                className={`form-input-select ${rowErr.jrate ? "input-error" : ""}`}
-                                classNamePrefix="form-input-select"
-                                isClearable
-                                inputId={`rate_${item.id}`}
-                                onMenuOpen={() => setOpenMenuId(`rate_${item.id}`)}
-                                onMenuClose={() => setOpenMenuId(null)}
-                                menuPortalTarget={document.body}
-                                styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
-                                noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : "No rates found"}
-                              />
-                              <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `rate_${item.id}` ? "chevron-rotate" : "", rowErr.jrate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                            </div>
-                          </div>
-                          {rowErr.jrate && <div className="input-error-message">{rowErr.jrate}</div>}
-                        </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate">
-                          <span className="fas fa-plus" />
-                        </button>
                       </div>
                     </div>
 

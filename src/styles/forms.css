@@ -814,7 +814,7 @@ input[type="number"] {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--f-border);
-  margin: 0 4px;
+  margin: 5px 4px;
 }
 
 .jsc-summary {
@@ -928,4 +928,7 @@ input[type="number"] {
 }
 .timesheet-items-table{
   min-width: 150%; /* adjust to match your total column widths */
+}
+.journal-items-table{
+  min-width: 1600px;
 }
