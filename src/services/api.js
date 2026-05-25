@@ -2,8 +2,8 @@ import axios from 'axios';
 import useAuthStore from '../stores/useAuthStore';
 
 const api = axios.create({
-    // baseURL: 'https://api.a-zconsultancyltd.com/smartbooks-server/api',
-    baseURL: 'http://localhost/smartbooks-server/api',
+    baseURL: 'https://api.a-zconsultancyltd.com/smartbooks-server/api',
+    // baseURL: 'http://localhost/smartbooks-server/api',
     headers: {
         'Content-Type': 'application/json',
     },

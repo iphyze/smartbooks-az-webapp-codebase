@@ -200,20 +200,24 @@ const CreateJournalForm = () => {
 
   /* ── Master rate options — all rates, all currencies visible ── */
   const masterRateOptions = useMemo(() =>
-  rates.map((r) => ({
-    value: String(r.id),
-    label: r.created_at?.slice(0, 10) || "",
-    rate: r,
-  })),
-  [rates]);
+    rates.map((r) => ({
+      value: String(r.id),
+      label: r.created_at?.slice(0, 10) || "",
+      rate: r,
+    })),
+    [rates]);
 
   /* ── Auto-set master rate from journal_date when rates load ── */
   useEffect(() => {
     if (!journalDetails.journal_date || !rates.length) return;
-    const effectiveId = findEffectiveRateId(rates, "NGN", journalDetails.journal_date);
-    if (!effectiveId) return;
-    // Only auto-set if nothing is selected yet — don't overwrite a deliberate choice
-    setMasterRateId((prev) => prev || effectiveId);
+
+    const effectiveId = findEffectiveRateId(
+      rates,
+      "NGN",
+      journalDetails.journal_date
+    );
+
+    setMasterRateId(effectiveId || "");
   }, [journalDetails.journal_date, rates]);
 
   /* ── When masterRateId changes, push rate to ALL rows ── */
@@ -502,7 +506,19 @@ const CreateJournalForm = () => {
                 <div className={`input-form-group ${headerErrors.journal_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.journal_date ? "input-label-message" : ""}`} htmlFor="journal_date">Journal Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" showMonthDropdown showYearDropdown dropdownMode="select" />
+                    <DatePicker
+                      selected={journalDetails.journal_date}
+                      onChange={(date) => {
+                        handleDetailChange("journal_date", date);
+                      }}
+                      className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`}
+                      dateFormat="yyyy-MM-dd"
+                      wrapperClassName="input-date-picker"
+                      id="journal_date"
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                    />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.journal_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>
@@ -697,11 +713,11 @@ const CreateJournalForm = () => {
                                 }))}
                                 onChange={(opt) => setMasterRateId(opt ? opt.value : "")}
                                 value={item.jrate ? {
-                                    value: item.jrate,
-                                    label: item.rate_date
-                                      ? `${String(item.rate_date).slice(0, 10)} | ${item.jcurrency} @ ${item.currencyRate}`
-                                      : "",
-                                  } : null}
+                                  value: item.jrate,
+                                  label: item.rate_date
+                                    ? `${String(item.rate_date).slice(0, 10)} | ${item.jcurrency} @ ${item.currencyRate}`
+                                    : "",
+                                } : null}
                                 placeholder={rates.length === 0 ? "Loading..." : "Select rate..."}
                                 className={`form-input-select ${rowErr.jrate ? "input-error" : ""}`}
                                 classNamePrefix="form-input-select"

@@ -18,6 +18,7 @@ import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateLedgerModal from "../../components/modals/CreateLedgerModal";
 import CreateRateModal from "../../components/modals/CreateRateModal";
 import { useNavigate } from "react-router-dom";
+import { findEffectiveRateId } from "../../utils/helper";
 
 /* ─────────────────────────────────────────────
    Helpers — identical to original EditJournalForm
@@ -293,6 +294,31 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
       rate: r,
     })),
   [rates]);
+
+  /* ── Auto-update rate when journal date changes by user ── */
+const initialJournalDateRef = useRef(
+  journal?.journal_date
+    ? new Date(journal.journal_date).toISOString().slice(0, 10)
+    : null
+);
+
+useEffect(() => {
+  if (!journalDetails.journal_date || !rates.length) return;
+
+  const currentDate =
+    journalDetails.journal_date.toISOString().slice(0, 10);
+
+  // Prevent overwriting existing saved rate on first load
+  if (currentDate === initialJournalDateRef.current) return;
+
+  const effectiveId = findEffectiveRateId(
+    rates,
+    "NGN",
+    journalDetails.journal_date
+  );
+
+  setMasterRateId(effectiveId || "");
+}, [journalDetails.journal_date, rates]);
 
   /* ── When masterRateId changes, push rate to ALL rows ── */
   useEffect(() => {
