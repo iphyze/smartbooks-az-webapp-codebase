@@ -165,3 +165,28 @@
 @media (max-width: 480px) {
   .chart-select-dropdown { position: fixed; left: 12px; right: 12px; width: auto; min-width: unset; }
 }
+
+/* Dropdowns in compact action modals can reserve their own space so the card stays composed. */
+.chart-select-wrapper--reserve-menu { display: block; width: 100%; }
+.chart-select-wrapper--reserve-menu .chart-select-dropdown {
+  position: relative;
+  top: auto;
+  left: auto;
+  margin-top: 7px;
+  width: 100%;
+  box-shadow: none;
+}
+.status-update-select-box { width: 100%; }
+.status-update-select-box .chart-select-display { width: 100%; min-height: 49px; border-radius: 12px; }
+.status-update-select-box.chart-select-wrapper--reserve-menu .chart-select-dropdown { border-radius: 12px; }
+.theme-dark .chart-select-display,
+.theme-dark .chart-select-dropdown {
+  background: var(--sb-surface-2, #141e31);
+  border-color: var(--sb-border, #233047);
+  color: var(--sb-text-1, #eef3fb);
+}
+.theme-dark .chart-select-option { color: var(--sb-text-2, #b0bdd0); }
+.theme-dark .chart-select-option.active-option {
+  background: var(--sb-brand, #13c0ad);
+  color: #061b18 !important;
+}

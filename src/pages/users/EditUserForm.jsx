@@ -5,6 +5,7 @@ import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useToastStore from "../../stores/useToastStore";
 import useUsersStore from "../../stores/useUsersStore";
+import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
 import Select from "react-select";
 import "../inputs-styles/Inputs.css";
 
@@ -42,6 +43,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { updateUser } = useUsersStore();
+  const { staff, searchStaff } = useTimesheetReferenceStore();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +57,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
     email: "",
     phone: "",
     integrity: "",
+    staff_id: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -68,6 +71,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       email: user.email ?? "",
       phone: user.phone ?? "",
       integrity: user.integrity ?? "",
+      staff_id: user.staff_id ?? "",
       newPassword: "",
       confirmPassword: "",
     });
@@ -77,6 +81,18 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    if (form.integrity === "Timesheet") searchStaff("");
+  }, [form.integrity, searchStaff]);
+
+  const staffOptions = useMemo(() => {
+    const options = staff.map((item) => ({ value: item.staff_id, label: item.staff_name }));
+    if (form.staff_id && user?.linked_staff_name && !options.some((option) => String(option.value) === String(form.staff_id))) {
+      options.unshift({ value: form.staff_id, label: user.linked_staff_name });
+    }
+    return options;
+  }, [staff, form.staff_id, user]);
+
   const validateForm = useCallback(() => {
     const e = {};
     if (!form.fname.trim()) e.fname = "First name is required";
@@ -85,8 +101,9 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Enter a valid email address";
     if (!form.integrity) e.integrity = "Role is required";
-    if (form.newPassword && form.newPassword.length < 6)
-      e.newPassword = "Password must be at least 6 characters";
+    if (form.integrity === "Timesheet" && !form.staff_id) e.staff_id = "Assign a staff profile for Timesheet access";
+    if (form.newPassword && form.newPassword.length < 12)
+      e.newPassword = "Password must be at least 12 characters";
     if (form.newPassword && form.newPassword !== form.confirmPassword)
       e.confirmPassword = "Passwords do not match";
     return e;
@@ -116,6 +133,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       email: form.email,
       phone: form.phone,
       integrity: form.integrity,
+      staff_id: form.integrity === "Timesheet" ? form.staff_id : null,
     };
     if (form.newPassword) payload.password = form.newPassword;
 
@@ -228,7 +246,10 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
             <div className="form-wrapper">
               <Select
                 options={ROLE_OPTIONS}
-                onChange={(opt) => handleChange("integrity", opt?.value || "")}
+                onChange={(opt) => {
+                  const role = opt?.value || "";
+                  setForm((prev) => ({ ...prev, integrity: role, staff_id: role === "Timesheet" ? prev.staff_id : "" }));
+                }}
                 value={ROLE_OPTIONS.find((o) => o.value === form.integrity) || null}
                 placeholder="Select role"
                 className={`form-input-select ${errors.integrity ? "input-error" : ""}`}
@@ -248,6 +269,24 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
               />
             </div>
           </Field>
+
+          {form.integrity === "Timesheet" && (
+            <Field id="staff_id" label="Linked Staff Profile" required error={errors.staff_id}>
+              <div className="form-wrapper">
+                <Select
+                  options={staffOptions}
+                  onInputChange={(value) => searchStaff(value.length > 1 ? value : "")}
+                  onChange={(opt) => handleChange("staff_id", opt?.value || "")}
+                  value={staffOptions.find((option) => String(option.value) === String(form.staff_id)) || null}
+                  placeholder="Select the staff account this user owns"
+                  className={`form-input-select ${errors.staff_id ? "input-error" : ""}`}
+                  classNamePrefix="form-input-select"
+                  inputId="staff_id"
+                  isClearable
+                />
+              </div>
+            </Field>
+          )}
 
           {/* Password reset divider */}
           <div className="invoice-form" style={{ width: "100%", padding: "12px 0" }}>

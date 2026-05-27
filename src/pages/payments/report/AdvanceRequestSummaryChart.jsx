@@ -9,18 +9,14 @@ const AdvanceRequestSummaryChart = () => {
   const [timeFrame, setTimeFrame] = useState('daily');
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { theme } = useThemeStore();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const res = await api.get(`/request/advance/getReports?type=summary&timeFrame=${timeFrame}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await api.get(`/request/advance/getReports?type=summary&timeFrame=${timeFrame}`);
 
         // Transform the time_series data for the chart
         const timeSeriesData = Object.entries(res.data.data.time_series).map(([date, statuses]) => ({
@@ -42,8 +38,8 @@ const AdvanceRequestSummaryChart = () => {
       }
     };
 
-    if (token) fetchData();
-  }, [timeFrame, token]);
+    if (isAuthenticated) fetchData();
+  }, [timeFrame, isAuthenticated]);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {

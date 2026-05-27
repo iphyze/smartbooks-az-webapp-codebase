@@ -1,25 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React from 'react';
+import useAuthStore from '../stores/useAuthStore';
 
-const AuthContext = createContext();
+/**
+ * Backward-compatible context exports without storing credentials in Web Storage.
+ * Prefer importing useAuthStore directly in new components.
+ */
+export const useAuth = () => useAuthStore();
 
-export const useAuth = () => useContext(AuthContext);
-
-export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
-
-  const login = (userToken) => {
-    localStorage.setItem("token", userToken);
-    setToken(userToken);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+export const AuthProvider = ({ children }) => <>{children}</>;

@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useToastStore from "../../stores/useToastStore";
 import useUsersStore from "../../stores/useUsersStore";
+import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
 import Select from "react-select";
 import "../inputs-styles/Inputs.css";
 
@@ -44,6 +45,7 @@ const CreateUserForm = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { createUser } = useUsersStore();
+  const { staff, searchStaff } = useTimesheetReferenceStore();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -58,11 +60,21 @@ const CreateUserForm = () => {
     password: "",
     confirmPassword: "",
     integrity: "",
+    staff_id: "",
   });
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    if (form.integrity === "Timesheet") searchStaff("");
+  }, [form.integrity, searchStaff]);
+
+  const staffOptions = useMemo(
+    () => staff.map((item) => ({ value: item.staff_id, label: item.staff_name })),
+    [staff]
+  );
 
   const validateForm = useCallback(() => {
     const e = {};
@@ -72,9 +84,10 @@ const CreateUserForm = () => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Enter a valid email address";
     if (!form.integrity) e.integrity = "Role is required";
+    if (form.integrity === "Timesheet" && !form.staff_id) e.staff_id = "Assign a staff profile for Timesheet access";
     if (!form.password) e.password = "Password is required";
-    else if (form.password.length < 6)
-      e.password = "Password must be at least 6 characters";
+    else if (form.password.length < 12)
+      e.password = "Password must be at least 12 characters";
     if (!form.confirmPassword) e.confirmPassword = "Please confirm the password";
     else if (form.password !== form.confirmPassword)
       e.confirmPassword = "Passwords do not match";
@@ -189,7 +202,10 @@ const CreateUserForm = () => {
             <div className="form-wrapper">
               <Select
                 options={ROLE_OPTIONS}
-                onChange={(opt) => handleChange("integrity", opt?.value || "")}
+                onChange={(opt) => {
+                  const role = opt?.value || "";
+                  setForm((prev) => ({ ...prev, integrity: role, staff_id: role === "Timesheet" ? prev.staff_id : "" }));
+                }}
                 value={ROLE_OPTIONS.find((o) => o.value === form.integrity) || null}
                 placeholder="Select role"
                 className={`form-input-select ${errors.integrity ? "input-error" : ""}`}
@@ -209,6 +225,24 @@ const CreateUserForm = () => {
               />
             </div>
           </Field>
+
+          {form.integrity === "Timesheet" && (
+            <Field id="staff_id" label="Linked Staff Profile" required error={errors.staff_id}>
+              <div className="form-wrapper">
+                <Select
+                  options={staffOptions}
+                  onInputChange={(value) => searchStaff(value.length > 1 ? value : "")}
+                  onChange={(opt) => handleChange("staff_id", opt?.value || "")}
+                  value={staffOptions.find((option) => String(option.value) === String(form.staff_id)) || null}
+                  placeholder="Select the staff account this user owns"
+                  className={`form-input-select ${errors.staff_id ? "input-error" : ""}`}
+                  classNamePrefix="form-input-select"
+                  inputId="staff_id"
+                  isClearable
+                />
+              </div>
+            </Field>
+          )}
 
           {/* Password */}
           <Field id="password" label="Password" required error={errors.password}>

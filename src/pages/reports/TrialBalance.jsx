@@ -448,7 +448,7 @@ const TrialBalance = () => {
 
   const links = [
     { label: "Home",          to: "/", active: true },
-    { label: "Reports",       to: "/reports/ledger", active: true },
+    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
     { label: "Trial Balance", to: "/reports/ledger/trial-balance", active: false },
   ];
 

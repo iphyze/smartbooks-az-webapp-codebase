@@ -77,7 +77,7 @@
   gap: 9px;
   height: 42px;
   padding: 0 22px;
-  background: var(--sb-brand, #00b196);
+  background: var(--sb-brand, #099e91);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -198,7 +198,7 @@
   line-height: 1.6;
 }
 
-.tb-empty-sub strong { color: var(--sb-brand, #00b196); font-weight: 700; }
+.tb-empty-sub strong { color: var(--sb-brand, #099e91); font-weight: 700; }
 
 /* ─────────────────────────────────────────────
    ACTION BAR
@@ -272,7 +272,7 @@
 
 .tb-search-input::placeholder { color: var(--sb-text-4, #a8c9c3); }
 .tb-search-input:focus {
-  border-color: var(--sb-brand, #00b196);
+  border-color: var(--sb-brand, #099e91);
   box-shadow: 0 0 0 3px rgba(0,177,150,0.1);
 }
 
@@ -335,13 +335,13 @@
 
 .tb-debit-val     { color: #2563eb; }
 .tb-credit-val    { color: #d97706; }
-.tb-balanced-val  { color: var(--sb-brand, #00b196); }
+.tb-balanced-val  { color: var(--sb-brand, #099e91); }
 .tb-unbalanced-val { color: #f47c7c; }
 
 .tb-balanced-block   { background: rgba(0,177,150,0.04); }
 .tb-unbalanced-block { background: rgba(244,124,124,0.04); }
 
-.tb-balanced-block .tb-total-label   { color: var(--sb-brand, #00b196); }
+.tb-balanced-block .tb-total-label   { color: var(--sb-brand, #099e91); }
 .tb-unbalanced-block .tb-total-label { color: #f47c7c; }
 
 .tb-total-currency-pill {
@@ -349,7 +349,7 @@
   font-family: 'Sora', sans-serif;
   font-size: 13px;
   font-weight: 700;
-  color: var(--sb-brand, #00b196);
+  color: var(--sb-brand, #099e91);
   background: var(--sb-brand-dim, rgba(0,177,150,0.07));
   border-left: 1px solid var(--sb-border, #deeee9);
   align-self: stretch;
@@ -543,7 +543,7 @@
 
 .tb-td-num  { text-align: right !important; font-family: 'Sora', sans-serif; font-size: 12.5px; white-space: nowrap; }
 .tb-td-sn   { color: var(--sb-text-4, #a8c9c3) !important; font-size: 11.5px; width: 42px; }
-.tb-mono    { font-family: 'Sora', monospace; font-size: 12.5px; color: var(--sb-brand, #00b196) !important; font-weight: 600; }
+.tb-mono    { font-family: 'Sora', monospace; font-size: 12.5px; color: var(--sb-brand, #099e91) !important; font-weight: 600; }
 
 .tb-name-cell {
   display: flex;
@@ -587,43 +587,43 @@
    DARK MODE
 ───────────────────────────────────────────── */
 .theme-dark .tb-filter-bar,
-.theme-dark .tb-report-paper  { background: #161b22; border-color: #30363d; }
+.theme-dark .tb-report-paper  { background: #0f1727; border-color: #233047; }
 
-.theme-dark .tb-filter-label  { color: #8b949e; }
+.theme-dark .tb-filter-label  { color: #7d8da5; }
 .theme-dark .tb-filter-label--err { color: #f47c7c !important; }
 
-.theme-dark .tb-empty-title   { color: #e6edf3; }
+.theme-dark .tb-empty-title   { color: #eef3fb; }
 .theme-dark .tb-empty-icon    { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.18); color: #a78bfa; }
 .theme-dark .tb-results-count { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.18); color: #a78bfa; }
-.theme-dark .tb-period-badge  { background: #1c2128; border-color: #30363d; color: #8b949e; }
+.theme-dark .tb-period-badge  { background: #141e31; border-color: #233047; color: #7d8da5; }
 
-.theme-dark .tb-search-input  { background: #0e1117; border-color: #30363d; color: #e6edf3; }
+.theme-dark .tb-search-input  { background: #090f1b; border-color: #233047; color: #eef3fb; }
 
-.theme-dark .tb-totals-strip  { background: #161b22; border-color: #30363d; }
-.theme-dark .tb-total-divider-v { background: #30363d; }
+.theme-dark .tb-totals-strip  { background: #0f1727; border-color: #233047; }
+.theme-dark .tb-total-divider-v { background: #233047; }
 .theme-dark .tb-total-label   { color: #4d7a72; }
-.theme-dark .tb-total-currency-pill { background: rgba(0,201,170,0.08); border-color: #30363d; color: #00c9aa; }
+.theme-dark .tb-total-currency-pill { background: rgba(0,201,170,0.08); border-color: #233047; color: #13c0ad; }
 .theme-dark .tb-balanced-block   { background: rgba(0,201,170,0.04); }
-.theme-dark .tb-balanced-val     { color: #00c9aa; }
+.theme-dark .tb-balanced-val     { color: #13c0ad; }
 
-.theme-dark .tb-report-paper-header { border-bottom-color: #30363d; }
-.theme-dark .tb-report-title  { color: #e6edf3; }
+.theme-dark .tb-report-paper-header { border-bottom-color: #233047; }
+.theme-dark .tb-report-title  { color: #eef3fb; }
 .theme-dark .tb-report-sub    { color: #4d7a72; }
 
-.theme-dark .tb-class-header  { background: #1c2128; border-bottom-color: #21262d; }
-.theme-dark .tb-class-name    { color: #e6edf3; }
-.theme-dark .tb-class-header-right { background: #0e1117; border-color: #30363d; }
-.theme-dark .tb-class-subtotal-div { background: #30363d; }
+.theme-dark .tb-class-header  { background: #141e31; border-bottom-color: #1a263b; }
+.theme-dark .tb-class-name    { color: #eef3fb; }
+.theme-dark .tb-class-header-right { background: #090f1b; border-color: #233047; }
+.theme-dark .tb-class-subtotal-div { background: #233047; }
 
-.theme-dark .tb-table thead th { background: #1c2128; color: #4d7a72; border-bottom-color: #30363d; }
-.theme-dark .tb-table tbody tr  { border-bottom-color: #21262d; }
-.theme-dark .tb-table tbody tr:hover { background: #1c2128; }
-.theme-dark .tb-table tbody td  { color: #8b949e; }
+.theme-dark .tb-table thead th { background: #141e31; color: #4d7a72; border-bottom-color: #233047; }
+.theme-dark .tb-table tbody tr  { border-bottom-color: #1a263b; }
+.theme-dark .tb-table tbody tr:hover { background: #141e31; }
+.theme-dark .tb-table tbody td  { color: #7d8da5; }
 .theme-dark .tb-ledger-name     { color: #c9d1d9; }
-.theme-dark .tb-mono            { color: #00c9aa !important; }
-.theme-dark .tb-tfoot-row       { background: #1c2128 !important; border-top-color: #30363d !important; }
-.theme-dark .tb-tfoot-val       { color: #e6edf3; }
-.theme-dark .tb-class-section   { border-bottom-color: #21262d; }
+.theme-dark .tb-mono            { color: #13c0ad !important; }
+.theme-dark .tb-tfoot-row       { background: #141e31 !important; border-top-color: #233047 !important; }
+.theme-dark .tb-tfoot-val       { color: #eef3fb; }
+.theme-dark .tb-class-section   { border-bottom-color: #1a263b; }
 
 /* ─────────────────────────────────────────────
    RESPONSIVE

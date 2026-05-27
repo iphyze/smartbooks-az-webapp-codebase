@@ -5,14 +5,13 @@ import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import { fadeIn, fadeInUp, fadeInDown } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
-import useAuthStore from "../../stores/useAuthStore";
+import api from "../../services/api";
 
 const Reports = () => {
   const [nav, setNav] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false); // State for loading indicator
   const { theme } = useThemeStore();
-  const {token} = useAuthStore();
 
   const links = [
     // { label: "Reports", to: "/Reports", active: true },
@@ -31,24 +30,12 @@ const Reports = () => {
     setIsExporting(true);
     
     try {
-      // 1. Retrieve the auth token (Adjust this depending on how you store your token)
-      // Example: localStorage, sessionStorage, or a zustand store 
+      const response = await api.get(
+        '/ledger/reports/bs-reports-excel?datefrom=2024-01-01&dateto=2024-12-31&zerobal=Yes&currency=NGN',
+        { responseType: 'blob' }
+      );
 
-      // 2. Fetch the file
-      const response = await fetch(`http://localhost/smartbooks-server/api/ledger/reports/bs-reports-excel?datefrom=2024-01-01&dateto=2024-12-31&zerobal=Yes&currency=NGN`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`, // Ensure your backend expects this format
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to download report. Please check permissions.');
-      }
-
-      // 3. Convert response to Blob
-      const blob = await response.blob();
+      const blob = response.data;
       
       // 4. Create a temporary URL and trigger download
       const url = window.URL.createObjectURL(blob);

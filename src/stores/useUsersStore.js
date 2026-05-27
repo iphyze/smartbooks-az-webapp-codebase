@@ -31,7 +31,6 @@ const useUsersStore = create(
       ═══════════════════════════════════════════════════════════════ */
       fetchData: async () => {
         const { currentPage, itemsPerPage, sortBy, sortOrder, searchQuery } = get();
-        const token = useAuthStore.getState().token;
 
         set({ loading: true, error: null });
 
@@ -44,9 +43,7 @@ const useUsersStore = create(
           });
           if (searchQuery) params.append('search', searchQuery);
 
-          const response = await api.get(`/users/getFilteredRequest?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.get(`/users/getFilteredRequest?${params}`);
 
           set({
             data: response.data.data,
@@ -67,13 +64,11 @@ const useUsersStore = create(
          fetchSingleUser
       ═══════════════════════════════════════════════════════════════ */
       fetchSingleUser: async (userId) => {
-        const token = useAuthStore.getState().token;
         set({ fetchingSingle: true, singleUserError: null, singleUser: null });
 
         try {
           const response = await api.get(
-            `/users/getSingleUser?id=${userId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            `/users/getSingleUser?id=${userId}`
           );
           set({ singleUser: response.data.data ?? null, fetchingSingle: false });
         } catch (error) {
@@ -89,11 +84,8 @@ const useUsersStore = create(
          createUser
       ═══════════════════════════════════════════════════════════════ */
       createUser: async (payload) => {
-        const token = useAuthStore.getState().token;
         try {
-          const response = await api.post('/users/createUsers', payload, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.post('/users/createUsers', payload);
           useToastStore.getState().showToast('User created successfully', 'success');
           return { success: true, data: response.data.data };
         } catch (error) {
@@ -107,11 +99,8 @@ const useUsersStore = create(
          updateUser  (Admin: edit any user)
       ═══════════════════════════════════════════════════════════════ */
       updateUser: async (payload) => {
-        const token = useAuthStore.getState().token;
         try {
-          const response = await api.put('/users/editUsers', payload, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.put('/users/editUsers', payload);
           useToastStore.getState().showToast('User updated successfully', 'success');
           return { success: true, data: response.data.data };
         } catch (error) {
@@ -125,17 +114,18 @@ const useUsersStore = create(
          updateProfile  (Any user: update own profile)
       ═══════════════════════════════════════════════════════════════ */
       updateProfile: async (payload) => {
-        const token = useAuthStore.getState().token;
         try {
-          const response = await api.put('/users/updateProfile', payload, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          // Also update the auth store so the header reflects changes immediately
-          const { user } = useAuthStore.getState();
-          useAuthStore.setState({
-            user: { ...user, ...response.data.data },
-          });
-          useToastStore.getState().showToast('Profile updated successfully', 'success');
+          const response = await api.put('/users/updateProfile', payload);
+          if (response.data.requiresLogin) {
+            useAuthStore.getState().clearSession();
+            useToastStore.getState().showToast(response.data.message, 'info');
+          } else {
+            const { user } = useAuthStore.getState();
+            useAuthStore.setState({
+              user: { ...user, ...response.data.data },
+            });
+            useToastStore.getState().showToast('Profile updated successfully', 'success');
+          }
           return { success: true, data: response.data.data };
         } catch (error) {
           const message = error.response?.data?.message || 'Failed to update profile';
@@ -149,11 +139,9 @@ const useUsersStore = create(
       ═══════════════════════════════════════════════════════════════ */
       deleteSelectedItems: async () => {
         const { selectedItems } = get();
-        const token = useAuthStore.getState().token;
 
         try {
           await api.delete('/users/deleteUsers', {
-            headers: { Authorization: `Bearer ${token}` },
             data: { userIds: selectedItems },
           });
           await get().fetchData();

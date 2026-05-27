@@ -9,18 +9,14 @@ const ExpensePaymentScheduleReport = () => {
   const [reportType, setReportType] = useState('daily');
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { theme } = useThemeStore();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const res = await api.get(`/gaps/expense/report?type=${reportType}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await api.get(`/gaps/expense/report?type=${reportType}`);
         setData(res.data);
       } catch (err) {
         console.error('Failed to fetch report:', err);
@@ -29,8 +25,8 @@ const ExpensePaymentScheduleReport = () => {
       }
     };
 
-    if (token) fetchData();
-  }, [reportType, token]);
+    if (isAuthenticated) fetchData();
+  }, [reportType, isAuthenticated]);
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {

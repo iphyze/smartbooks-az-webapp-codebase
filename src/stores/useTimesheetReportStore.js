@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import api from '../services/api';
-import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 
 const emptyReport = {
@@ -45,7 +44,6 @@ const useTimesheetReportStore = create((set) => ({
      * Use this only for exports/PDF preparation, not for the visible report table.
      */
     fetchAllTimesheetReport: async (params) => {
-        const token = useAuthStore.getState().token;
         const cleanParams = normalizeParams(params);
 
         set((s) => ({
@@ -58,9 +56,7 @@ const useTimesheetReportStore = create((set) => ({
 
         try {
             const query = new URLSearchParams(cleanParams);
-            const res = await api.get(`/timesheet/reports/all-timesheet-report?${query}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get(`/timesheet/reports/all-timesheet-report?${query}`);
 
             set({
                 timesheetReport: {
@@ -93,7 +89,6 @@ const useTimesheetReportStore = create((set) => ({
      * Summary remains full-period summary from the backend, while data is the current page.
      */
     fetchPaginatedTimesheetReport: async (params = {}) => {
-        const token = useAuthStore.getState().token;
         const cleanParams = normalizeParams(params);
         const page = Number(params.page || 1);
         const limit = Number(params.limit || 25);
@@ -113,9 +108,7 @@ const useTimesheetReportStore = create((set) => ({
         }));
 
         try {
-            const res = await api.get(`/timesheet/reports/timesheet-report?${query}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get(`/timesheet/reports/timesheet-report?${query}`);
 
             set({
                 timesheetReport: {
@@ -148,14 +141,11 @@ const useTimesheetReportStore = create((set) => ({
      * Does not mutate the visible paginated report state.
      */
     fetchTimesheetReportForExport: async (params) => {
-        const token = useAuthStore.getState().token;
         const cleanParams = normalizeParams(params);
 
         try {
             const query = new URLSearchParams(cleanParams);
-            const res = await api.get(`/timesheet/reports/all-timesheet-report?${query}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await api.get(`/timesheet/reports/all-timesheet-report?${query}`);
 
             return res.data;
         } catch (err) {
@@ -169,14 +159,12 @@ const useTimesheetReportStore = create((set) => ({
      * Excel export already uses the full filtered export route.
      */
     downloadTimesheetExcel: async (params) => {
-        const token = useAuthStore.getState().token;
         const cleanParams = normalizeParams(params);
 
         try {
             const query = new URLSearchParams(cleanParams);
             const res = await api.get(`/timesheet/reports/timesheet-excel?${query}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 },
                 responseType: 'blob',

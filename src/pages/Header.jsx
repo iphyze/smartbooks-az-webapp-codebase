@@ -4,6 +4,7 @@ import LogoLight from '../assets/images/smartbooks/smartbooks.png';
 import LogoDark from '../assets/images/smartbooks/smartbooks_dark.png';
 import useAuthStore from "../stores/useAuthStore";
 import useThemeStore from "../stores/useThemeStore";
+import { defaultRouteForRole } from "../utils/permissions";
 import GlobalSearch from "./GlobalSearch";
 import './Header.css';
 
@@ -15,6 +16,7 @@ const Header = ({ nav, setNav }) => {
   const navigate = useNavigate();
   const Logo = theme === 'dark' ? LogoDark : LogoLight;
   const isDark = theme === 'dark';
+  const homePath = defaultRouteForRole(user);
 
   const handleNavToggle = (e) => {
     e.preventDefault();
@@ -22,10 +24,10 @@ const Header = ({ nav, setNav }) => {
     setNav(prev => !prev);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setShowUserMenu(false);
-    logout();
-    navigate('/login');
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   useEffect(() => {
@@ -55,7 +57,7 @@ const Header = ({ nav, setNav }) => {
       {/* ── Left: hamburger (mobile) OR logo (desktop) ── */}
       <div className="sb-header__left">
         {/* Desktop logo — hidden on mobile */}
-        <NavLink to="/" className="sb-header__logo-link sb-header__logo-link--desktop">
+        <NavLink to={homePath} className="sb-header__logo-link sb-header__logo-link--desktop">
           <img src={Logo} alt="Smartbooks" className="sb-header__logo" />
         </NavLink>
 
@@ -70,7 +72,7 @@ const Header = ({ nav, setNav }) => {
             <span /><span /><span />
           </span>
         </button>
-        <NavLink to="/" className="sb-header__logo-link sb-header__logo-link--mobile">
+        <NavLink to={homePath} className="sb-header__logo-link sb-header__logo-link--mobile">
           <img src={Logo} alt="Smartbooks" className="sb-header__logo" />
         </NavLink>
       </div>
@@ -83,18 +85,16 @@ const Header = ({ nav, setNav }) => {
       {/* ── Right: actions ── */}
       <div className="sb-header__right">
 
-        {/* Theme toggle — pill style */}
+        {/* Theme mode action — single button rather than a toggle track */}
         <button
-          className="sb-header__theme-toggle"
+          className="sb-header__theme-btn"
           onClick={toggleTheme}
           aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          type="button"
         >
-          <span className={`sb-header__theme-track ${isDark ? "sb-header__theme-track--dark" : ""}`}>
-            <span className="sb-header__theme-thumb">
-              <i className={`fas ${isDark ? "fa-moon" : "fa-sun"}`} />
-            </span>
-          </span>
+          <i className={`fas ${isDark ? "fa-sun" : "fa-moon"}`} />
+          <span>{isDark ? "Light mode" : "Dark mode"}</span>
         </button>
 
         {/* Notifications */}

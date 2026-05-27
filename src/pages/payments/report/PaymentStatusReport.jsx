@@ -7,7 +7,7 @@ import Select from "react-select";
 import { formatWithDecimals } from "../../../utils/helper";
 
 const PaymentStatusReport = () => {
-    const { token } = useAuthStore();
+    const { isAuthenticated } = useAuthStore();
     const { theme } = useThemeStore();
     const [table, setTable] = useState("supplier_fund_request_table");
     const [year, setYear] = useState(new Date().getFullYear());
@@ -32,8 +32,7 @@ const PaymentStatusReport = () => {
         const fetchReport = async () => {
             try {
                 const res = await api.get(
-                    `/reports/paymentStatus?table=${table}&year=${year}`,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    `/reports/paymentStatus?table=${table}&year=${year}`
                 );
 
                 const responseData = res.data.data || {};
@@ -47,8 +46,8 @@ const PaymentStatusReport = () => {
             }
         };
 
-        if (token) fetchReport();
-    }, [table, year, token]);
+        if (isAuthenticated) fetchReport();
+    }, [table, year, isAuthenticated]);
 
     const EmptyState = () => (
         <div className="empty-state">

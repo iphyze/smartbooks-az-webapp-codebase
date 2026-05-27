@@ -8,12 +8,9 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import useToastStore from "../../stores/useToastStore";
-import useStaffSearchStore from "../../stores/useStaffSearchStore";
 import useTimesheetStore from "../../stores/useTimesheetStore";
-import useClientSearchStore from "../../stores/useClientSearchStore";
-import useProjectSearchStore from "../../stores/useProjectSearchStore";
-import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
+import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
 import "../inputs-styles/Inputs.css";
 import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
 import CreateStaffModal from "../../components/modals/CreateStaffModal";
@@ -90,10 +87,11 @@ const formatDateToTimeStr = (date) => {
 const CreateTimesheetForm = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
-  const { staff, searchStaff } = useStaffSearchStore();
-  const { clients, searchClients } = useClientSearchStore();
-  const { projects, searchProjects } = useProjectSearchStore();
+  const { staff, clients, projects, searchStaff, searchClients, searchProjects } = useTimesheetReferenceStore();
   const { createTimesheet } = useTimesheetStore();
+  const { user } = useAuthStore();
+  const isTimesheetUser = user?.integrity === "Timesheet";
+  const ownStaff = isTimesheetUser ? staff[0] : null;
   
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -120,6 +118,15 @@ const CreateTimesheetForm = () => {
   useEffect(() => {
     prevTimesheetItemsRef.current = timesheetItems;
   }, [timesheetItems]);
+
+  useEffect(() => {
+    if (!isTimesheetUser || !ownStaff) return;
+    setTimesheetItems((prev) => prev.map((item) => ({
+      ...item,
+      staff_name: ownStaff.staff_name,
+      staff_id: ownStaff.staff_id,
+    })));
+  }, [isTimesheetUser, ownStaff]);
 
   const staffOptions = useMemo(() => staff.map((s) => ({ value: s.staff_id, label: s.staff_name })), [staff]);
   const clientOptions = useMemo(() => clients.map((c) => ({ value: c.clients_id || c.id, label: c.clients_name })), [clients]);
@@ -173,7 +180,15 @@ const CreateTimesheetForm = () => {
     );
   };
 
-  const addItem = () => setTimesheetItems((prev) => [...prev, createEmptyItem()]);
+  const addItem = () => setTimesheetItems((prev) => [
+    ...prev,
+    {
+      ...createEmptyItem(),
+      ...(isTimesheetUser && ownStaff
+        ? { staff_name: ownStaff.staff_name, staff_id: ownStaff.staff_id }
+        : {}),
+    },
+  ]);
 
   const requestRemoveItem = (itemId) => {
     if (timesheetItems.length === 1) return;
@@ -332,7 +347,8 @@ const CreateTimesheetForm = () => {
                                 placeholder="Search staff..."
                                 className={`form-input-select ${rowErr.staff_name ? "input-error" : ""}`}
                                 classNamePrefix="form-input-select"
-                                isClearable
+                                isClearable={!isTimesheetUser}
+                                isDisabled={isTimesheetUser}
                                 inputId={`staff_${item.id}`}
                                 menuPortalTarget={document.body}
                                 styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
@@ -342,9 +358,11 @@ const CreateTimesheetForm = () => {
                           </div>
                           {rowErr.staff_name && <div className="input-error-message">{rowErr.staff_name}</div>}
                         </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateStaffModal(true); }} title="Add New Staff">
-                          <span className="fas fa-plus"></span>
-                        </button>
+                        {!isTimesheetUser && (
+                          <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateStaffModal(true); }} title="Add New Staff">
+                            <span className="fas fa-plus"></span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -374,9 +392,11 @@ const CreateTimesheetForm = () => {
                           </div>
                           {rowErr.clients_name && <div className="input-error-message">{rowErr.clients_name}</div>}
                         </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateClientModal(true); }} title="Add New Client">
-                          <span className="fas fa-plus"></span>
-                        </button>
+                        {!isTimesheetUser && (
+                          <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateClientModal(true); }} title="Add New Client">
+                            <span className="fas fa-plus"></span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -422,9 +442,11 @@ const CreateTimesheetForm = () => {
                             </div>
                           </div>
                         </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateProjectModal(true); }} title="Add New Project">
-                          <span className="fas fa-plus"></span>
-                        </button>
+                        {!isTimesheetUser && (
+                          <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateProjectModal(true); }} title="Add New Project">
+                            <span className="fas fa-plus"></span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -537,21 +559,21 @@ const CreateTimesheetForm = () => {
             isNew={true} 
           />
         )}
-        {showCreateStaffModal && (
+        {!isTimesheetUser && showCreateStaffModal && (
           <CreateStaffModal 
             isOpen={showCreateStaffModal} 
             onClose={() => setShowCreateStaffModal(false)} 
             onStaffCreated={handleStaffCreated} 
           />
         )}
-        {showCreateClientModal && (
+        {!isTimesheetUser && showCreateClientModal && (
           <CreateClientsModal 
             isOpen={showCreateClientModal} 
             onClose={() => setShowCreateClientModal(false)} 
             onClientCreated={handleClientCreated} 
           />
         )}
-        {showCreateProjectModal && (
+        {!isTimesheetUser && showCreateProjectModal && (
           <CreateProjectModal 
             isOpen={showCreateProjectModal} 
             onClose={() => setShowCreateProjectModal(false)} 

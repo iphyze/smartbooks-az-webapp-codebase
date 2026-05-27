@@ -73,7 +73,7 @@ const UpdateModal = ({ isOpen, onClose, onConfirm, count, statusOptions }) => {
   return (
     <div className={`modal-overlay theme-${theme}`}>
       <motion.div 
-        className="modal-content" 
+        className="modal-content modal-content--status-update" 
         ref={modalRef}
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -106,7 +106,8 @@ const UpdateModal = ({ isOpen, onClose, onConfirm, count, statusOptions }) => {
               value={selectedStatus}
               onChange={(val) => setSelectedStatus(val)}
               className="status-update-select-box"
-              isDisabled={isUpdating} // Disable select while loading
+              isDisabled={isUpdating}
+              reserveMenuSpace // Keep menu contained in the modal while opened
             />
           </div>
         </div>

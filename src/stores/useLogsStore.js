@@ -29,15 +29,15 @@ const useLogsStore = create((set, get) => ({
   sseConnected: false,
 
   initializeSSE: () => {
-    const token = useAuthStore.getState().token;
+    const isAuthenticated = useAuthStore.getState().isAuthenticated;
     const showToast = useToastStore.getState().showToast;
     
-    if (!token) {
-      console.error('No token available for SSE connection');
+    if (!isAuthenticated) {
+      console.error('No authenticated session available for SSE connection');
       return;
     }
 
-    const eventSource = eventService.connect(token);
+    const eventSource = eventService.connect();
 
     // Handle connection state
     eventSource.onopen = () => {
@@ -65,12 +65,7 @@ const useLogsStore = create((set, get) => ({
             // Refresh logs
             const fetchLogs = async () => {
               try {
-                const token = useAuthStore.getState().token;
-                const response = await api.get(`/logs/getSingleClientLog/${currentClientId}/${data.contactType}`, {
-                  headers: {
-                    'Authorization': `Bearer ${token}`
-                  }
-                });
+                const response = await api.get(`/logs/getSingleClientLog/${currentClientId}/${data.contactType}`);
     
                 if (response.data.status === "Success") {
                   set({ 
@@ -105,12 +100,7 @@ const useLogsStore = create((set, get) => ({
             // Refresh responses
             const fetchResponses = async () => {
               try {
-                const token = useAuthStore.getState().token;
-                const response = await api.get('/logs/getAllLogResponses', {
-                  headers: {
-                    'Authorization': `Bearer ${token}`
-                  }
-                });
+                const response = await api.get('/logs/getAllLogResponses');
     
                 if (response.data.status === "Success") {
                   set({ 
@@ -188,12 +178,7 @@ const useLogsStore = create((set, get) => ({
     set({ isLoading: true });
   
     try {
-      const token = useAuthStore.getState().token;
-      const response = await api.get(`/logs/getSingleClientLog/${clientId}/${contactType}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.get(`/logs/getSingleClientLog/${clientId}/${contactType}`);
   
       if (response.data.status === "Success") {
         set({ 
@@ -217,17 +202,11 @@ const useLogsStore = create((set, get) => ({
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
       const response = await api.post('/logs/createLog', 
         {
           ...logData,
           clientId: logData.clientId, // Ensure clientId is included
           contactType: logData.contactType // Include contactType
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
         }
       );
 
@@ -252,16 +231,10 @@ const useLogsStore = create((set, get) => ({
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
       const response = await api.post('/logs/createLogResponse', 
         {
           ...logData,
           clientId: logData.clientId // Ensure clientId is included
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
         }
       );
   
@@ -275,21 +248,15 @@ const useLogsStore = create((set, get) => ({
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create response';
       showToast(errorMessage, 'error');
       throw error;
-    }s
+    }
   },
 
   editLog: async (logData) => {
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
       const response = await api.put('/logs/editLog', 
-        logData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        logData
       );
   
       if (response.data.status === "Success") {
@@ -315,12 +282,7 @@ const useLogsStore = create((set, get) => ({
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
-      const response = await api.get('/logs/getAllLogResponses', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/logs/getAllLogResponses');
   
       if (response.data.status === "Success") {
         set({ 
@@ -343,14 +305,8 @@ const useLogsStore = create((set, get) => ({
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
       const response = await api.put('/logs/editResponseLog', 
-        logData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
+        logData
       );
   
       if (response.data.status === "Success") {
@@ -389,11 +345,7 @@ const useLogsStore = create((set, get) => ({
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
       const response = await api.delete('/logs/deleteLog', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         data: { messageIds }
       });
 
@@ -418,11 +370,7 @@ const useLogsStore = create((set, get) => ({
     const showToast = useToastStore.getState().showToast;
     
     try {
-      const token = useAuthStore.getState().token;
       const response = await api.delete('/logs/deleteResponse', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         data: { responseIds }
       });
   

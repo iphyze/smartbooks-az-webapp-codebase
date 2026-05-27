@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import './App.css';
 import './Responsive.css';
@@ -5,6 +6,9 @@ import './assets/fontawesome/css/all.css';
 // import './Fonts.css';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleRoute from './components/RoleRoute';
+import NonSensitiveAutocomplete from './components/NonSensitiveAutocomplete';
+import { ADMIN_ONLY_ROLES, OPERATIONAL_ROLES, TIMESHEET_ROLES } from './utils/permissions';
 import Toast from './services/Toast';
 import Login from "./pages/auth/Login";
 import PublicRoute from "./services/PublicRoute";
@@ -68,108 +72,122 @@ import BankReconOverview from "./pages/reports/recon/BankReconOverview";
 import EditBankRecon from "./pages/reports/recon/EditBankRecon";
 import CreateBankRecon from "./pages/reports/recon/CreateBankRecon";
 import BankReconWorkspace from "./pages/reports/recon/BankReconWorkspace";
+import LockPeriodOverview from "./pages/accounting-period/LockPeriodOverview";
+
+const AllowedRoute = ({ roles, children }) => (
+  <ProtectedRoute>
+    <RoleRoute allowedRoles={roles}>{children}</RoleRoute>
+  </ProtectedRoute>
+);
 
 const App = () => {
-  
-  useThemeStore.getState().init();
+  const initTheme = useThemeStore((state) => state.init);
+
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
 
     return (
       <>
+        <NonSensitiveAutocomplete />
         <Toast />
         <Routes>
 
           
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}/>
+          <Route path="/" element={<AllowedRoute roles={OPERATIONAL_ROLES}><Dashboard /></AllowedRoute>} />
           
           {/* Journal */}
-          <Route path="/journal/create" element={<ProtectedRoute><CreateJournal /></ProtectedRoute>} />
-          <Route path="/journal/home" element={<ProtectedRoute><JournalOverview /> </ProtectedRoute>} />
-          <Route path="/journal/edit/:journal_id" element={<ProtectedRoute><EditJournal /> </ProtectedRoute>} />
-          <Route path="/journal/view/:journal_id" element={<ProtectedRoute><ViewJournal /> </ProtectedRoute>} />
+          <Route path="/journal/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateJournal /></AllowedRoute>} />
+          <Route path="/journal/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><JournalOverview /> </AllowedRoute>} />
+          <Route path="/journal/edit/:journal_id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditJournal /> </AllowedRoute>} />
+          <Route path="/journal/view/:journal_id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewJournal /> </AllowedRoute>} />
           
           {/* Invoice */}
-          <Route path="/invoice/home" element={<ProtectedRoute><InvoiceOverview /> </ProtectedRoute>} />
-          <Route path="/invoice/create" element={<ProtectedRoute><CreateInvoice /> </ProtectedRoute>} />
-          <Route path="/invoice/edit/:invoice_number" element={<ProtectedRoute><EditInvoice /> </ProtectedRoute>} />
-          <Route path="/invoice/view/:invoice_number" element={<ProtectedRoute><ViewInvoice /> </ProtectedRoute>} />
+          <Route path="/invoice/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><InvoiceOverview /> </AllowedRoute>} />
+          <Route path="/invoice/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateInvoice /> </AllowedRoute>} />
+          <Route path="/invoice/edit/:invoice_number" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditInvoice /> </AllowedRoute>} />
+          <Route path="/invoice/view/:invoice_number" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewInvoice /> </AllowedRoute>} />
 
           {/* Rates */}
-          <Route path="/rate/home" element={<ProtectedRoute><RateOverview /> </ProtectedRoute>} />
-          <Route path="/rate/create" element={<ProtectedRoute><CreateRate /> </ProtectedRoute>} />
-          <Route path="/rate/edit/:id" element={<ProtectedRoute><EditRate /> </ProtectedRoute>} />
+          <Route path="/rate/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><RateOverview /> </AllowedRoute>} />
+          <Route path="/rate/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateRate /> </AllowedRoute>} />
+          <Route path="/rate/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditRate /> </AllowedRoute>} />
 
           {/* Client */}
-          <Route path="/client/home" element={<ProtectedRoute><ClientOverview /> </ProtectedRoute>} />
-          <Route path="/client/create" element={<ProtectedRoute><CreateClient /> </ProtectedRoute>} />
-          <Route path="/client/edit/:id" element={<ProtectedRoute><EditClient /> </ProtectedRoute>} />
-          <Route path="/client/view/:clientId" element={<ProtectedRoute><ViewClient /> </ProtectedRoute>} />
+          <Route path="/client/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ClientOverview /> </AllowedRoute>} />
+          <Route path="/client/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateClient /> </AllowedRoute>} />
+          <Route path="/client/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditClient /> </AllowedRoute>} />
+          <Route path="/client/view/:clientId" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewClient /> </AllowedRoute>} />
 
 
           {/* Project */}
-          <Route path="/project/home" element={<ProtectedRoute><ProjectOverview /> </ProtectedRoute>} />
-          <Route path="/project/create" element={<ProtectedRoute><CreateProject /> </ProtectedRoute>} />
-          <Route path="/project/edit/:id" element={<ProtectedRoute><EditProject /> </ProtectedRoute>} />
-          <Route path="/project/view/:projectId" element={<ProtectedRoute><ViewProject /> </ProtectedRoute>} />
+          <Route path="/project/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ProjectOverview /> </AllowedRoute>} />
+          <Route path="/project/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateProject /> </AllowedRoute>} />
+          <Route path="/project/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditProject /> </AllowedRoute>} />
+          <Route path="/project/view/:projectId" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewProject /> </AllowedRoute>} />
 
 
           {/* Bank */}
-          <Route path="/banks/home" element={<ProtectedRoute><BankOverview /> </ProtectedRoute>} />
-          <Route path="/banks/create" element={<ProtectedRoute><CreateBank /> </ProtectedRoute>} />
-          <Route path="/banks/edit/:id" element={<ProtectedRoute><EditBank /> </ProtectedRoute>} />
-          <Route path="/banks/view/:id" element={<ProtectedRoute><ViewBank /> </ProtectedRoute>} />
+          <Route path="/banks/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><BankOverview /> </AllowedRoute>} />
+          <Route path="/banks/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateBank /> </AllowedRoute>} />
+          <Route path="/banks/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditBank /> </AllowedRoute>} />
+          <Route path="/banks/view/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewBank /> </AllowedRoute>} />
 
 
           {/* Account */}
-          <Route path="/account/home" element={<ProtectedRoute><AccountOverview /> </ProtectedRoute>} />
-          <Route path="/account/create" element={<ProtectedRoute><CreateAccount /> </ProtectedRoute>} />
-          <Route path="/account/edit/:id" element={<ProtectedRoute><EditAccount /> </ProtectedRoute>} />
-          <Route path="/account/view/:accountId" element={<ProtectedRoute><ViewAccount /> </ProtectedRoute>} />
+          <Route path="/account/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><AccountOverview /> </AllowedRoute>} />
+          <Route path="/account/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateAccount /> </AllowedRoute>} />
+          <Route path="/account/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditAccount /> </AllowedRoute>} />
+          <Route path="/account/view/:accountId" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewAccount /> </AllowedRoute>} />
 
 
           {/* Ledger */}
-          <Route path="/ledger/home" element={<ProtectedRoute><LedgerOverview /> </ProtectedRoute>} />
-          <Route path="/ledger/create" element={<ProtectedRoute><CreateLedger /> </ProtectedRoute>} />
-          <Route path="/ledger/edit/:id" element={<ProtectedRoute><EditLedger /> </ProtectedRoute>} />
-          <Route path="/ledger/view/:id" element={<ProtectedRoute><ViewLedger /> </ProtectedRoute>} />
+          <Route path="/ledger/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><LedgerOverview /> </AllowedRoute>} />
+          <Route path="/ledger/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateLedger /> </AllowedRoute>} />
+          <Route path="/ledger/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditLedger /> </AllowedRoute>} />
+          <Route path="/ledger/view/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewLedger /> </AllowedRoute>} />
 
 
           {/* Staff */}
-          <Route path="/staff/home"         element={<ProtectedRoute><StaffOverview /></ProtectedRoute>} />
-          <Route path="/staff/create-staff" element={<ProtectedRoute><CreateStaff /></ProtectedRoute>} />
-          <Route path="/staff/edit/:id"     element={<ProtectedRoute><EditStaff /></ProtectedRoute>} />
-          <Route path="/staff/view/:id"     element={<ProtectedRoute><ViewStaff /></ProtectedRoute>} />
+          <Route path="/staff/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><StaffOverview /></AllowedRoute>} />
+          <Route path="/staff/create-staff" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateStaff /></AllowedRoute>} />
+          <Route path="/staff/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditStaff /></AllowedRoute>} />
+          <Route path="/staff/view/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ViewStaff /></AllowedRoute>} />
 
           {/* Timesheet */}
-          <Route path="/timesheet/home"             element={<ProtectedRoute><TimesheetOverview /></ProtectedRoute>} />
-          <Route path="/timesheet/create-timesheet" element={<ProtectedRoute><CreateTimesheet /></ProtectedRoute>} />
-          <Route path="/timesheet/edit/:id"         element={<ProtectedRoute><EditTimesheet /></ProtectedRoute>} />
-          <Route path="/timesheet/view/:id"         element={<ProtectedRoute><ViewTimesheet /></ProtectedRoute>} />
+          <Route path="/timesheet/home" element={<AllowedRoute roles={TIMESHEET_ROLES}><TimesheetOverview /></AllowedRoute>} />
+          <Route path="/timesheet/create-timesheet" element={<AllowedRoute roles={TIMESHEET_ROLES}><CreateTimesheet /></AllowedRoute>} />
+          <Route path="/timesheet/edit/:id" element={<AllowedRoute roles={TIMESHEET_ROLES}><EditTimesheet /></AllowedRoute>} />
+          <Route path="/timesheet/view/:id" element={<AllowedRoute roles={TIMESHEET_ROLES}><ViewTimesheet /></AllowedRoute>} />
 
 
           {/* Reports */}
-          <Route path="/reports/ledger" element={<ProtectedRoute><LedgerReports /></ProtectedRoute>} />
-          <Route path="/reports/ledger/ledger-statement" element={<ProtectedRoute><LedgerStatement /></ProtectedRoute>} />
-          <Route path="/reports/ledger/general-ledger" element={<ProtectedRoute><GeneralLedger /></ProtectedRoute>} />
-          <Route path="/reports/ledger/trial-balance" element={<ProtectedRoute><TrialBalance /></ProtectedRoute>} />
-          <Route path="/reports/ledger/profit-and-loss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
-          <Route path="/reports/ledger/balance-sheet" element={<ProtectedRoute><BalanceSheet /></ProtectedRoute>} />
-          <Route path="/reports/fx-revaluation" element={<ProtectedRoute><FXRevaluation /></ProtectedRoute>} />
-          <Route path="/reports/invoice-aging" element={<ProtectedRoute><InvoiceAging /></ProtectedRoute>} />
-          <Route path="/reports/timesheet" element={<ProtectedRoute><TimesheetReport /></ProtectedRoute>} />
+          <Route path="/reports/ledger" element={<AllowedRoute roles={OPERATIONAL_ROLES}><LedgerReports /></AllowedRoute>} />
+          <Route path="/reports/ledger/ledger-statement" element={<AllowedRoute roles={OPERATIONAL_ROLES}><LedgerStatement /></AllowedRoute>} />
+          <Route path="/reports/ledger/general-ledger" element={<AllowedRoute roles={OPERATIONAL_ROLES}><GeneralLedger /></AllowedRoute>} />
+          <Route path="/reports/ledger/trial-balance" element={<AllowedRoute roles={OPERATIONAL_ROLES}><TrialBalance /></AllowedRoute>} />
+          <Route path="/reports/ledger/profit-and-loss" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ProfitLoss /></AllowedRoute>} />
+          <Route path="/reports/ledger/balance-sheet" element={<AllowedRoute roles={OPERATIONAL_ROLES}><BalanceSheet /></AllowedRoute>} />
+          <Route path="/reports/fx-revaluation" element={<AllowedRoute roles={OPERATIONAL_ROLES}><FXRevaluation /></AllowedRoute>} />
+          <Route path="/reports/invoice-aging" element={<AllowedRoute roles={OPERATIONAL_ROLES}><InvoiceAging /></AllowedRoute>} />
+          <Route path="/reports/timesheet" element={<AllowedRoute roles={TIMESHEET_ROLES}><TimesheetReport /></AllowedRoute>} />
           
           
           {/* Reports */}
-          <Route path="/reports/bank-recon" element={<ProtectedRoute><BankReconOverview /></ProtectedRoute>} />
-          <Route path="/reports/bank-recon/create" element={<ProtectedRoute><CreateBankRecon /></ProtectedRoute>} />
-          <Route path="/reports/bank-recon/edit/:id" element={<ProtectedRoute><EditBankRecon /></ProtectedRoute>} />
-          <Route path="/reports/bank-recon/workspace/:id" element={<ProtectedRoute><BankReconWorkspace /></ProtectedRoute>} />
+          <Route path="/reports/bank-recon" element={<AllowedRoute roles={OPERATIONAL_ROLES}><BankReconOverview /></AllowedRoute>} />
+          <Route path="/reports/bank-recon/create" element={<AllowedRoute roles={OPERATIONAL_ROLES}><CreateBankRecon /></AllowedRoute>} />
+          <Route path="/reports/bank-recon/edit/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><EditBankRecon /></AllowedRoute>} />
+          <Route path="/reports/bank-recon/workspace/:id" element={<AllowedRoute roles={OPERATIONAL_ROLES}><BankReconWorkspace /></AllowedRoute>} />
+
+          {/* Accounting Controls */}
+          <Route path="/lock-period/home" element={<AllowedRoute roles={OPERATIONAL_ROLES}><LockPeriodOverview /></AllowedRoute>} />
 
           {/* Users */}
-          <Route path="/users/home"         element={<ProtectedRoute><UsersOverview /></ProtectedRoute>} />
-          <Route path="/users/create-user"  element={<ProtectedRoute><CreateUser /></ProtectedRoute>} />
-          <Route path="/users/edit/:id"     element={<ProtectedRoute><EditUser /></ProtectedRoute>} />
-          <Route path="/users/view/:id"     element={<ProtectedRoute><ViewUser /></ProtectedRoute>} />
+          <Route path="/users/home" element={<AllowedRoute roles={ADMIN_ONLY_ROLES}><UsersOverview /></AllowedRoute>} />
+          <Route path="/users/create-user" element={<AllowedRoute roles={ADMIN_ONLY_ROLES}><CreateUser /></AllowedRoute>} />
+          <Route path="/users/edit/:id" element={<AllowedRoute roles={ADMIN_ONLY_ROLES}><EditUser /></AllowedRoute>} />
+          <Route path="/users/view/:id" element={<AllowedRoute roles={ADMIN_ONLY_ROLES}><ViewUser /></AllowedRoute>} />
           <Route path="/users/my-profile"   element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
           
 

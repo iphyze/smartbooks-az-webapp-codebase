@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 import api from '../services/api';
 
@@ -23,6 +22,12 @@ const useFXRevaluationStore = create((set) => ({
     result:  null,
   },
 
+  postingZero: {
+    loading: false,
+    error:   null,
+    result:  null,
+  },
+
   // NEW: reversal state
   reversing: {
     loading: false,
@@ -37,7 +42,6 @@ const useFXRevaluationStore = create((set) => ({
    * Params: { datefrom, dateto, currency, rate_date? }
    */
   fetchRevaluation: async (params) => {
-    const token = useAuthStore.getState().token;
     set((s) => ({ preview: { ...s.preview, loading: true, error: null } }));
 
     try {
@@ -53,9 +57,7 @@ const useFXRevaluationStore = create((set) => ({
 
       const query = new URLSearchParams(queryParams);
 
-      const res = await api.get(`/exchange/get-revaluation?${query}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get(`/exchange/get-revaluation?${query}`);
 
       set({
         preview: {
@@ -84,16 +86,10 @@ const useFXRevaluationStore = create((set) => ({
    * Body: { datefrom, dateto, currency, journal_date, journal_description, cost_center?, rate_date? }
    */
   postRevaluation: async (body) => {
-    const token = useAuthStore.getState().token;
     set((s) => ({ posting: { ...s.posting, loading: true, error: null, result: null } }));
 
     try {
-      const res = await api.post('/exchange/post-revaluation', body, {
-        headers: {
-          Authorization:  `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const res = await api.post('/exchange/post-revaluation', body);
 
       set({
         posting: {
@@ -121,6 +117,30 @@ const useFXRevaluationStore = create((set) => ({
   },
 
   /**
+   * POST /exchange/post-zero-revaluation
+   * Posts a memo-line audit approach where the affected ledgers receive zero-value
+   * audit lines while the net FX effect is recognised in Exchange Gain/Loss.
+   */
+  postZeroRevaluation: async (body) => {
+    set((s) => ({ postingZero: { ...s.postingZero, loading: true, error: null, result: null } }));
+
+    try {
+      const res = await api.post('/exchange/post-zero-revaluation', body);
+      set({ postingZero: { loading: false, error: null, result: res.data } });
+      useToastStore.getState().showToast(
+        `Zero-entry FX audit journal posted — ${res.data.journal_id}`,
+        'success'
+      );
+      return res.data;
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to post zero-entry FX journal';
+      set((s) => ({ postingZero: { ...s.postingZero, loading: false, error: msg } }));
+      useToastStore.getState().showToast(msg, 'error');
+      return null;
+    }
+  },
+
+  /**
    * POST /exchange/reverse-revaluation
    * Body: { journal_id, reversal_date, reversal_description }
    *
@@ -130,16 +150,10 @@ const useFXRevaluationStore = create((set) => ({
    * posted for the same period.
    */
   reverseRevaluation: async (body) => {
-    const token = useAuthStore.getState().token;
     set((s) => ({ reversing: { ...s.reversing, loading: true, error: null, result: null } }));
 
     try {
-      const res = await api.post('/exchange/reverse-revaluation', body, {
-        headers: {
-          Authorization:  `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const res = await api.post('/exchange/reverse-revaluation', body);
 
       set({
         reversing: {

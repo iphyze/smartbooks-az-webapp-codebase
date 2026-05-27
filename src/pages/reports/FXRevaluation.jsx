@@ -402,7 +402,8 @@ const PendingJournals = ({ journals }) => {
 /* ─────────────────────────────────────────────
    POST MODAL
 ───────────────────────────────────────────── */
-const PostModal = ({ open, onClose, onPost, meta, posting, currency, summary }) => {
+const PostModal = ({ open, onClose, onPost, meta, posting, currency, summary, method = "standard" }) => {
+  const zeroEntryMethod = method === "zero-entry";
   const [journalDate,   setJournalDate]   = useState(null);
   const [description,   setDescription]   = useState("");
   const [costCenter,    setCostCenter]    = useState("");
@@ -453,10 +454,10 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency, summary }) 
       >
         <div className="fx-modal-header">
           <div className="fx-modal-title-wrap">
-            <div className="fx-modal-icon"><i className="fas fa-file-pen" /></div>
+            <div className="fx-modal-icon"><i className={`fas ${zeroEntryMethod ? "fa-note-sticky" : "fa-file-pen"}`} /></div>
             <div>
-              <h3 className="fx-modal-title">Post FX Revaluation Journal</h3>
-              <p className="fx-modal-sub">This will create journal entries in the system. This action cannot be undone.</p>
+              <h3 className="fx-modal-title">{zeroEntryMethod ? "Post Zero-Entry Audit Journal" : "Post FX Revaluation Journal"}</h3>
+              <p className="fx-modal-sub">{zeroEntryMethod ? "Creates memo lines for affected ledgers and recognises only the net FX effect." : "This will create journal entries in the system. This action cannot be undone."}</p>
             </div>
           </div>
           <button className="fx-modal-close" onClick={onClose}><i className="fas fa-xmark" /></button>
@@ -495,25 +496,23 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency, summary }) 
               placeholder="Cost centre code" />
           </div>
 
-          {/* FIX: warning now accurately states which contra accounts are used */}
           <div className="fx-modal-warning">
             <i className="fas fa-triangle-exclamation" />
             <div>
-              <span>Journal entries will be posted to the revalued ledgers and the following contra accounts:</span>
-              <ul className="fx-modal-contra-list">
-                {hasGain && (
-                  <li>
-                    <strong>Exchange Gain — 72000002</strong> (Revenue / Other Income):
-                    will receive a <strong>Credit</strong> for all FX gains.
-                  </li>
-                )}
-                {hasLoss && (
-                  <li>
-                    <strong>Exchange Loss — 65000003</strong> (Expense / Finance Cost):
-                    will receive a <strong>Debit</strong> for all FX losses.
-                  </li>
-                )}
-              </ul>
+              {zeroEntryMethod ? (
+                <>
+                  <span>Zero-entry method posts visible memo lines with zero NGN value to affected ledgers, while the net FX result is recognised in Exchange Gain.</span>
+                  <ul className="fx-modal-contra-list"><li><strong>Exchange Gain — 72000002</strong> receives the net recognised amount.</li></ul>
+                </>
+              ) : (
+                <>
+                  <span>Journal entries will be posted to the revalued ledgers and the following contra accounts:</span>
+                  <ul className="fx-modal-contra-list">
+                    {hasGain && <li><strong>Exchange Gain — 72000002</strong> receives a <strong>Credit</strong> for all FX gains.</li>}
+                    {hasLoss && <li><strong>Exchange Loss — 65000003</strong> receives a <strong>Debit</strong> for all FX losses.</li>}
+                  </ul>
+                </>
+              )}
               <span>Ensure the accounting period is not locked before posting.</span>
             </div>
           </div>
@@ -524,7 +523,7 @@ const PostModal = ({ open, onClose, onPost, meta, posting, currency, summary }) 
           <button className="fx-modal-post" onClick={handlePost} disabled={posting}>
             {posting
               ? <><div className="fx-btn-loader fx-btn-loader--sm" /> Posting...</>
-              : <><i className="fas fa-check" /> Confirm & Post</>}
+              : <><i className="fas fa-check" /> {zeroEntryMethod ? "Post Zero-Entry" : "Confirm & Post"}</>}
           </button>
         </div>
       </motion.div>
@@ -682,6 +681,7 @@ const FXRevaluation = () => {
   const [nav,           setNav]           = useState(false);
   const [hasCalculated, setHasCalculated] = useState(false);
   const [showModal,     setShowModal]     = useState(false);
+  const [showZeroModal, setShowZeroModal] = useState(false);
   const [showReverseModal, setShowReverseModal] = useState(false);
   const [errors,        setErrors]        = useState({});
   const [rateDate,      setRateDate]      = useState(null);
@@ -691,7 +691,7 @@ const FXRevaluation = () => {
   const [currency,  setCurrency]  = useState(null);
 
   const { theme } = useThemeStore();
-  const { preview, posting, reversing, fetchRevaluation, postRevaluation, reverseRevaluation } = useFXRevaluationStore();
+  const { preview, posting, postingZero, reversing, fetchRevaluation, postRevaluation, postZeroRevaluation, reverseRevaluation } = useFXRevaluationStore();
   const { rates, searchRates, isLoading: ratesLoading } = useRateSearchStore();
 
   useEffect(() => { document.title = "Smartbooks | FX Gain / Loss"; }, []);
@@ -754,6 +754,19 @@ const FXRevaluation = () => {
       });
     }
   }, [postRevaluation, fetchRevaluation, dateFrom, dateTo, currency, rateDate]);
+
+  const handleZeroPost = useCallback(async (body) => {
+    const result = await postZeroRevaluation({ ...body, rate_date: rateDate });
+    if (result) {
+      setShowZeroModal(false);
+      await fetchRevaluation({
+        datefrom: toLocalISO(dateFrom),
+        dateto: toLocalISO(dateTo),
+        currency: currency.value,
+        rate_date: rateDate,
+      });
+    }
+  }, [postZeroRevaluation, fetchRevaluation, dateFrom, dateTo, currency, rateDate]);
 
   const handleReverse = useCallback(async (body) => {
     const result = await reverseRevaluation(body);
@@ -856,16 +869,26 @@ const FXRevaluation = () => {
                           </button>
                         </>
                       ) : (
-                        <button
-                          className="fx-post-btn"
-                          onClick={() => setShowModal(true)}
-                          disabled={!canPost}
-                          title={postBtnTitle}
-                        >
-                          {periodIsLocked
-                            ? <><i className="fas fa-lock" /> Period Locked</>
-                            : <><i className="fas fa-file-pen" /> Post Journal</>}
-                        </button>
+                        <>
+                          <button
+                            className="fx-post-btn fx-post-btn--secondary"
+                            onClick={() => setShowZeroModal(true)}
+                            disabled={!canPost || postingZero.loading}
+                            title={postBtnTitle || "Post memo-line audit journal"}
+                          >
+                            <i className="fas fa-note-sticky" /> Zero-Entry Method
+                          </button>
+                          <button
+                            className="fx-post-btn"
+                            onClick={() => setShowModal(true)}
+                            disabled={!canPost}
+                            title={postBtnTitle}
+                          >
+                            {periodIsLocked
+                              ? <><i className="fas fa-lock" /> Period Locked</>
+                              : <><i className="fas fa-file-pen" /> Post Journal</>}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -919,6 +942,19 @@ const FXRevaluation = () => {
             posting={posting.loading}
             currency={currency?.value}
             summary={preview.summary}
+          />
+        )}
+
+        {showZeroModal && (
+          <PostModal
+            open={showZeroModal}
+            onClose={() => setShowZeroModal(false)}
+            onPost={handleZeroPost}
+            meta={preview.meta}
+            posting={postingZero.loading}
+            currency={currency?.value}
+            summary={preview.summary}
+            method="zero-entry"
           />
         )}
 

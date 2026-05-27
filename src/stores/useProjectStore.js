@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as XLSX from 'xlsx';
-import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 import api from '../services/api';
 
@@ -39,13 +38,10 @@ const useProjectStore = create(
          Fetch Next Project Code
       ═════════════════════════════════════════════════════════════════════ */
       fetchNextProjectCode: async () => {
-        const token = useAuthStore.getState().token;
         set({ fetchingNextCode: true, nextCodeError: null });
 
         try {
-          const response = await api.get('/projects/fetch-last-project-id', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.get('/projects/fetch-last-project-id');
 
           set({
             nextProjectCode: response.data.project_code + 1,
@@ -66,7 +62,6 @@ const useProjectStore = create(
       ═════════════════════════════════════════════════════════════════════ */
       fetchData: async () => {
         const { currentPage, itemsPerPage, sortBy, sortOrder, searchQuery } = get();
-        const token = useAuthStore.getState().token;
 
         set({ loading: true, error: null });
 
@@ -80,9 +75,7 @@ const useProjectStore = create(
 
           if (searchQuery) params.append('search', searchQuery);
 
-          const response = await api.get(`/projects/filtered-request?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.get(`/projects/filtered-request?${params}`);
 
           set({
             data: response.data.data,
@@ -106,14 +99,11 @@ const useProjectStore = create(
          Fetch Single Project
       ═════════════════════════════════════════════════════════════════════ */
       fetchSingleProject: async (projectId) => {
-        const token = useAuthStore.getState().token;
         
         set({ fetchingSingle: true, singleProjectError: null, singleProject: null, singleProjectInvoices: [], singleProjectSummary: null });
 
         try {
-          const response = await api.get(`/projects/fetch-single-project?projectId=${projectId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.get(`/projects/fetch-single-project?projectId=${projectId}`);
 
           set({
             singleProject: response.data.data.project,
@@ -146,7 +136,6 @@ const useProjectStore = create(
          Create Project
       ═════════════════════════════════════════════════════════════════════ */
       createProject: async (projectData) => {
-        const token = useAuthStore.getState().token;
 
         try {
           await api.post(
@@ -154,9 +143,6 @@ const useProjectStore = create(
             {
               project_name: projectData.project_name,
               project_code: projectData.project_code,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
             }
           );
 
@@ -173,7 +159,6 @@ const useProjectStore = create(
          Edit Project
       ═════════════════════════════════════════════════════════════════════ */
       editProject: async (projectData) => {
-        const token = useAuthStore.getState().token;
 
         try {
           await api.put(
@@ -182,9 +167,6 @@ const useProjectStore = create(
               id: projectData.id,
               project_name: projectData.project_name,
               project_code: projectData.project_code,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
             }
           );
 
@@ -202,11 +184,9 @@ const useProjectStore = create(
       ═════════════════════════════════════════════════════════════════════ */
       deleteSelectedItems: async () => {
         const { selectedItems } = get();
-        const token = useAuthStore.getState().token;
 
         try {
-          await api.delete('/project/delete-project', {
-            headers: { Authorization: `Bearer ${token}` },
+          await api.delete('/projects/delete-project', {
             data: { projectIds: selectedItems },
           });
 

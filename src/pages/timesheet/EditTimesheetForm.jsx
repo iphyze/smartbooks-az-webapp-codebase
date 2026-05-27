@@ -4,9 +4,8 @@ import { AnimatePresence, motion } from "framer-motion"; // Added AnimatePresenc
 import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useTimesheetStore from "../../stores/useTimesheetStore";
-import useStaffSearchStore from "../../stores/useStaffSearchStore";
-import useClientSearchStore from "../../stores/useClientSearchStore";
-import useProjectSearchStore from "../../stores/useProjectSearchStore"; // Assuming this exists based on CreateInvoiceForm
+import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
+import useAuthStore from "../../stores/useAuthStore";
 import useToastStore from "../../stores/useToastStore";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
@@ -24,9 +23,9 @@ import CreateProjectModal from "../../components/modals/CreateProjectModal";
 const EditTimesheetForm = ({ timesheetId, timesheet }) => {
   const { theme } = useThemeStore();
   const { updateTimesheet } = useTimesheetStore();
-  const { staff, searchStaff } = useStaffSearchStore();
-  const { clients, searchClients } = useClientSearchStore();
-  const { projects, searchProjects } = useProjectSearchStore(); // Assuming usage
+  const { staff, clients, projects, searchStaff, searchClients, searchProjects } = useTimesheetReferenceStore();
+  const { user } = useAuthStore();
+  const isTimesheetUser = user?.integrity === "Timesheet";
   const { showToast } = useToastStore();
   const navigate = useNavigate();
 
@@ -263,7 +262,8 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                         placeholder="Search staff..."
                         className={`form-input-select ${errors.staff_name ? "input-error" : ""}`}
                         classNamePrefix="form-input-select"
-                        isClearable
+                        isClearable={!isTimesheetUser}
+                        isDisabled={isTimesheetUser}
                         inputId="staff_name"
                         menuPortalTarget={document.body}
                         styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
@@ -273,9 +273,11 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                   </div>
                   {errors.staff_name && <div className="input-error-message">{errors.staff_name}</div>}
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateStaffModal(true)} title="Add New Staff">
-                  <span className="fas fa-plus"></span>
-                </button>
+                {!isTimesheetUser && (
+                  <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateStaffModal(true)} title="Add New Staff">
+                    <span className="fas fa-plus"></span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -306,9 +308,11 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                   </div>
                   {errors.clients_name && <div className="input-error-message">{errors.clients_name}</div>}
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client">
-                  <span className="fas fa-plus"></span>
-                </button>
+                {!isTimesheetUser && (
+                  <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client">
+                    <span className="fas fa-plus"></span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -356,9 +360,11 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                     </div>
                   </div>
                 </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateProjectModal(true)} title="Add New Project">
-                  <span className="fas fa-plus"></span>
-                </button>
+                {!isTimesheetUser && (
+                  <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateProjectModal(true)} title="Add New Project">
+                    <span className="fas fa-plus"></span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -456,21 +462,21 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
 
       {/* ── MODALS ── */}
       <AnimatePresence>
-        {showCreateStaffModal && (
+        {!isTimesheetUser && showCreateStaffModal && (
           <CreateStaffModal 
             isOpen={showCreateStaffModal} 
             onClose={() => setShowCreateStaffModal(false)} 
             onStaffCreated={handleStaffCreated} 
           />
         )}
-        {showCreateClientModal && (
+        {!isTimesheetUser && showCreateClientModal && (
           <CreateClientsModal 
             isOpen={showCreateClientModal} 
             onClose={() => setShowCreateClientModal(false)} 
             onClientCreated={handleClientCreated} 
           />
         )}
-        {showCreateProjectModal && (
+        {!isTimesheetUser && showCreateProjectModal && (
           <CreateProjectModal 
             isOpen={showCreateProjectModal} 
             onClose={() => setShowCreateProjectModal(false)} 

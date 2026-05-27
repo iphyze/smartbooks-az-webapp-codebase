@@ -9,7 +9,9 @@ import Header from '../Header';
 import PageNav from '../../components/PageNav';
 import useThemeStore from '../../stores/useThemeStore';
 import useTimesheetReportStore from '../../stores/useTimesheetReportStore';
-import useStaffSearchStore from '../../stores/useStaffSearchStore';
+import useTimesheetReferenceStore from '../../stores/useTimesheetReferenceStore';
+import useAuthStore from '../../stores/useAuthStore';
+import { isTimesheetOnly } from '../../utils/permissions';
 import DownloadTimesheetReport from './DownloadTimesheetReport';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
 import './TimesheetReport.css';
@@ -91,9 +93,10 @@ const FilterBar = ({
   errors,
   loading,
   onSearch,
+  isTimesheetUser,
 }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
-  const { staff, searchStaff } = useStaffSearchStore();
+  const { staff, searchStaff } = useTimesheetReferenceStore();
 
   useEffect(() => {
     searchStaff('');
@@ -114,8 +117,14 @@ const FilterBar = ({
       })
       .filter(Boolean);
 
-    return [ALL_STAFF_OPTION, ...mapped];
-  }, [staff]);
+    return isTimesheetUser ? mapped : [ALL_STAFF_OPTION, ...mapped];
+  }, [staff, isTimesheetUser]);
+
+  useEffect(() => {
+    if (isTimesheetUser && staffOptions.length > 0) {
+      setStaffFilter(staffOptions[0]);
+    }
+  }, [isTimesheetUser, staffOptions, setStaffFilter]);
 
   return (
     <div className="tsr-filter-bar">
@@ -167,7 +176,7 @@ const FilterBar = ({
           <div className="form-wrapper">
             <Select
               options={staffOptions}
-              value={staffFilter || ALL_STAFF_OPTION}
+              value={isTimesheetUser ? (staffOptions[0] || null) : (staffFilter || ALL_STAFF_OPTION)}
               onChange={(opt) => setStaffFilter(opt || ALL_STAFF_OPTION)}
               onInputChange={(inputValue, actionMeta) => {
                 if (actionMeta.action === 'input-change') {
@@ -181,6 +190,7 @@ const FilterBar = ({
               className="form-input-select"
               classNamePrefix="form-input-select"
               isClearable={false}
+              isDisabled={isTimesheetUser}
               menuPortalTarget={document.body}
               styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
               onMenuOpen={() => setOpenMenuId('staff')}
@@ -413,15 +423,22 @@ const TimesheetReport = () => {
   const [pageLimit] = useState(DEFAULT_LIMIT);
 
   const { theme } = useThemeStore();
+  const { user } = useAuthStore();
+  const isTimesheetUser = isTimesheetOnly(user);
   const { timesheetReport, fetchPaginatedTimesheetReport, fetchTimesheetReportForExport, downloadTimesheetExcel } = useTimesheetReportStore();
 
   useEffect(() => { document.title = 'Smartbooks | Timesheet Report'; }, []);
 
-  const links = [
-    { label: 'Home', to: '/', active: true },
-    { label: 'Reports', to: '/reports/ledger', active: true },
-    { label: 'Timesheet Report', to: '/reports/timesheet', active: false },
-  ];
+  const links = isTimesheetUser
+    ? [
+        { label: 'Timesheets', to: '/timesheet/home', active: true },
+        { label: 'Timesheet Report', to: '/reports/timesheet', active: false },
+      ]
+    : [
+        { label: 'Home', to: '/', active: true },
+        { label: 'Reports & Analytics', to: '/reports/ledger', active: true },
+        { label: 'Timesheet Report', to: '/reports/timesheet', active: false },
+      ];
 
   const validate = useCallback(() => {
     const e = {};
@@ -436,11 +453,11 @@ const TimesheetReport = () => {
   const buildParams = useCallback((page = 1) => ({
     datefrom: toLocalISO(dateFrom),
     dateto: toLocalISO(dateTo),
-    staff: staffFilter?.value || 'All Staff',
+    staff: isTimesheetUser ? 'My Timesheet' : (staffFilter?.value || 'All Staff'),
     search: search.trim(),
     page,
     limit: pageLimit,
-  }), [dateFrom, dateTo, staffFilter, search, pageLimit]);
+  }), [dateFrom, dateTo, staffFilter, search, pageLimit, isTimesheetUser]);
 
   const handleSearch = useCallback(async (targetPage = 1) => {
     const errs = validate();
@@ -514,6 +531,7 @@ const TimesheetReport = () => {
               errors={errors}
               loading={timesheetReport.loading}
               onSearch={handleSearch}
+              isTimesheetUser={isTimesheetUser}
             />
 
             <AnimatePresence mode="wait">

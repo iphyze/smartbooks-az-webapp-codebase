@@ -4,14 +4,14 @@ import useAuthStore from '../stores/useAuthStore';
 
 const WebSocketStatus = () => {
   const [status, setStatus] = useState('Disconnected');
-  const token = useAuthStore(state => state.token);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isAuthenticated) return;
 
     // Initial connection
     if (websocketService.getStatus() === 'Disconnected') {
-      websocketService.connect(token);
+      websocketService.connect();
     }
 
     const checkConnection = () => {
@@ -24,7 +24,7 @@ const WebSocketStatus = () => {
     const interval = setInterval(checkConnection, 2000);
 
     return () => clearInterval(interval);
-  }, [token]);
+  }, [isAuthenticated]);
 
   const getStatusColor = () => {
     switch (status) {

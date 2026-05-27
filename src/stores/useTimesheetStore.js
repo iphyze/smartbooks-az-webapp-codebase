@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 import api from '../services/api';
 
@@ -27,7 +26,6 @@ const useTimesheetStore = create(
       ═══════════════════════════════════════════════════════════════ */
       fetchData: async () => {
         const { currentPage, itemsPerPage, sortBy, sortOrder, searchQuery } = get();
-        const token = useAuthStore.getState().token;
 
         set({ loading: true, error: null });
 
@@ -40,9 +38,7 @@ const useTimesheetStore = create(
           });
           if (searchQuery) params.append('search', searchQuery);
 
-          const response = await api.get(`/timesheet/filtered-request?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.get(`/timesheet/filtered-request?${params}`);
 
           set({
             data: response.data.data,
@@ -63,12 +59,8 @@ const useTimesheetStore = create(
          fetchSingleTimesheet  —  for Edit / View pages
       ═══════════════════════════════════════════════════════════════ */
       fetchSingleTimesheet: async (id) => {
-        const token = useAuthStore.getState().token;
         try {
-          const response = await api.get(
-            `/timesheet/fetch-single-timesheet?id=${id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          const response = await api.get(`/timesheet/fetch-single-timesheet?id=${id}`);
           return response.data.data ?? null;
         } catch (error) {
           const message = error.response?.data?.message || `Failed to fetch timesheet #${id}`;
@@ -81,11 +73,8 @@ const useTimesheetStore = create(
          createTimesheet  —  batch POST (arrays of entries per date)
       ═══════════════════════════════════════════════════════════════ */
       createTimesheet: async (payload) => {
-        const token = useAuthStore.getState().token;
         try {
-          const response = await api.post('/timesheet/create-timesheet', payload, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.post('/timesheet/create-timesheet', payload);
           useToastStore.getState().showToast('Timesheet entries created successfully', 'success');
           return { success: true, data: response.data.data };
         } catch (error) {
@@ -99,11 +88,8 @@ const useTimesheetStore = create(
          updateTimesheet  —  single row PUT
       ═══════════════════════════════════════════════════════════════ */
       updateTimesheet: async (payload) => {
-        const token = useAuthStore.getState().token;
         try {
-          const response = await api.put('/timesheet/edit-timesheet', payload, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await api.put('/timesheet/edit-timesheet', payload);
           useToastStore.getState().showToast('Timesheet updated successfully', 'success');
           return { success: true, data: response.data.data };
         } catch (error) {
@@ -162,13 +148,26 @@ const useTimesheetStore = create(
 
       clearSelection: () => set({ selectedItems: [], selectedItemsData: {} }),
 
+      deleteSingleItem: async (id) => {
+        try {
+          await api.delete('/timesheet/delete-single-timesheet', { data: { id } });
+          await get().fetchData();
+          set({ selectedItems: [], selectedItemsData: {} });
+          useToastStore.getState().showToast('Timesheet entry deleted successfully', 'success');
+          return true;
+        } catch (error) {
+          const message = error.response?.data?.message || error.message;
+          set({ error: message });
+          useToastStore.getState().showToast(`Failed to delete: ${message}`, 'error');
+          return false;
+        }
+      },
+
       deleteSelectedItems: async () => {
         const { selectedItems } = get();
-        const token = useAuthStore.getState().token;
 
         try {
           await api.delete('/timesheet/delete-timesheet', {
-            headers: { Authorization: `Bearer ${token}` },
             data: { ids: selectedItems },
           });
 

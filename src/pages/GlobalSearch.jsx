@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import useInvoiceStore   from "../stores/useInvoiceStore";
 import useJournalStore   from "../stores/useJournalStore";
@@ -6,6 +7,8 @@ import useClientStore    from "../stores/useClientStore";
 import useLedgerStore    from "../stores/useLedgerStore";
 import useProjectStore   from "../stores/useProjectStore";
 import useAccountStore   from "../stores/useAccountStore";
+import useAuthStore from "../stores/useAuthStore";
+import { canManageUsers, isTimesheetOnly } from "../utils/permissions";
 import './GlobalSearch.css';
 
 /* ─────────────────────────────────────────────
@@ -27,14 +30,20 @@ const PAGE_INDEX = [
   { label: "Staff",               path: "/staff/home",                  category: "Pages", icon: "fa-id-badge",            keywords: ["staff","employee"] },
   { label: "Projects",            path: "/project/home",                category: "Pages", icon: "fa-diagram-project",     keywords: ["project"] },
   { label: "Timesheets",          path: "/timesheet/home",              category: "Pages", icon: "fa-clock",               keywords: ["timesheet","hours"] },
-  { label: "Ledger Reports",      path: "/reports/ledger",              category: "Pages", icon: "fa-chart-line",          keywords: ["report","analytics","ledger statement"] },
+  { label: "Reports & Analytics",      path: "/reports/ledger",              category: "Pages", icon: "fa-chart-line",          keywords: ["report","analytics","ledger statement"] },
   { label: "Balance Sheet",       path: "/reports/ledger/balance-sheet",category: "Pages", icon: "fa-scale-balanced",      keywords: ["balance sheet"] },
-  { label: "Profit & Loss",       path: "/reports/ledger/profit-loss",  category: "Pages", icon: "fa-file-lines",          keywords: ["p&l","profit","loss"] },
+  { label: "Profit & Loss",       path: "/reports/ledger/profit-and-loss",  category: "Pages", icon: "fa-file-lines",          keywords: ["p&l","profit","loss"] },
   { label: "Trial Balance",       path: "/reports/ledger/trial-balance",category: "Pages", icon: "fa-list-check",          keywords: ["trial balance"] },
   { label: "General Ledger",      path: "/reports/ledger/general-ledger", category: "Pages", icon: "fa-book",             keywords: ["general ledger"] },
   { label: "Users",               path: "/users/home",                  category: "Pages", icon: "fa-users-gear",          keywords: ["user","admin"] },
   { label: "Settings",            path: "/settings/general",            category: "Pages", icon: "fa-sliders",             keywords: ["settings"] },
   { label: "Lock Periods",        path: "/lock-period/home",            category: "Pages", icon: "fa-calendar-xmark",      keywords: ["lock period"] },
+];
+
+const TIMESHEET_PAGE_INDEX = [
+  { label: "Timesheets", path: "/timesheet/home", category: "Pages", icon: "fa-clock", keywords: ["timesheet", "hours"] },
+  { label: "Log Time", path: "/timesheet/create-timesheet", category: "Pages", icon: "fa-plus", keywords: ["new time", "entry"] },
+  { label: "Timesheet Report", path: "/reports/timesheet", category: "Pages", icon: "fa-business-time", keywords: ["report", "hours"] },
 ];
 
 /* ─────────────────────────────────────────────
@@ -179,7 +188,7 @@ const PageCard = ({ item, query, onClick }) => (
 /* ─────────────────────────────────────────────
    MODAL
 ───────────────────────────────────────────── */
-const SearchModal = ({ isDark, onClose }) => {
+const SearchModal = ({ isDark, onClose, isTimesheetUser, canAdministerUsers }) => {
   const [query,       setQuery]       = useState("");
   const [liveResults, setLiveResults] = useState({});
   const [searching,   setSearching]   = useState(false);
@@ -197,22 +206,31 @@ const SearchModal = ({ isDark, onClose }) => {
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+
   /* Static page search */
   const pageMatches = useMemo(() => {
     if (!query.trim() || query.length < 1) return [];
     const q = query.toLowerCase();
-    return PAGE_INDEX
+    const permittedPages = isTimesheetUser
+      ? TIMESHEET_PAGE_INDEX
+      : (canAdministerUsers ? PAGE_INDEX : PAGE_INDEX.filter((page) => !page.path.startsWith("/users/")));
+    return permittedPages
       .filter(p =>
         p.label.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q) ||
         p.keywords?.some(k => k.includes(q))
       )
       .slice(0, 4);
-  }, [query]);
+  }, [query, isTimesheetUser, canAdministerUsers]);
 
   /* Live data search — debounced */
   const runLiveSearch = useCallback(async (q) => {
-    if (!q || q.length < 2) { setLiveResults({}); return; }
+    if (isTimesheetUser || !q || q.length < 2) { setLiveResults({}); setSearching(false); return; }
     setSearching(true);
 
     // Set search query in all stores simultaneously
@@ -234,10 +252,15 @@ const SearchModal = ({ isDark, onClose }) => {
     ]);
 
     setSearching(false);
-  }, []);
+  }, [isTimesheetUser]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
+    if (isTimesheetUser) {
+      setLiveResults({});
+      setSearching(false);
+      return;
+    }
     if (query.length < 2) {
       setLiveResults({});
       setSearching(false);
@@ -246,10 +269,12 @@ const SearchModal = ({ isDark, onClose }) => {
     setSearching(true);
     debounceRef.current = setTimeout(() => runLiveSearch(query), 320);
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [query, isTimesheetUser, runLiveSearch]);
 
   // Collect live results from stores
-  const live = useMemo(() => ({
+  const live = useMemo(() => isTimesheetUser ? ({
+    invoices: [], journals: [], clients: [], ledgers: [], projects: [], accounts: [],
+  }) : ({
     invoices: (invoiceStore.data || []).slice(0, 3),
     journals: (journalStore.data || []).slice(0, 3),
     clients:  (clientStore.data  || []).slice(0, 3),
@@ -257,11 +282,12 @@ const SearchModal = ({ isDark, onClose }) => {
     projects: (projectStore.data || []).slice(0, 3),
     accounts: (accountStore.data || []).slice(0, 3),
   }), [
+    isTimesheetUser,
     invoiceStore.data, journalStore.data, clientStore.data,
     ledgerStore.data, projectStore.data, accountStore.data,
   ]);
 
-  const hasLiveResults = query.length >= 2 && (
+  const hasLiveResults = !isTimesheetUser && query.length >= 2 && (
     live.invoices.length + live.journals.length + live.clients.length +
     live.ledgers.length + live.projects.length + live.accounts.length > 0
   );
@@ -288,7 +314,7 @@ const SearchModal = ({ isDark, onClose }) => {
 
   const hasAnyResults = pageMatches.length > 0 || hasLiveResults;
 
-  return (
+  return createPortal(
     <div
       className={`sb-gsearch__overlay ${isDark ? "sb-gsearch--dark" : "sb-gsearch--light"}`}
       onClick={(e) => e.target === e.currentTarget && handleClose()}
@@ -302,7 +328,7 @@ const SearchModal = ({ isDark, onClose }) => {
           <input
             ref={inputRef} type="text"
             className="sb-gsearch__input"
-            placeholder="Search pages, clients, ledgers, invoices…"
+            placeholder={isTimesheetUser ? "Search timesheets and reports…" : "Search pages, clients, ledgers, invoices…"}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -321,7 +347,7 @@ const SearchModal = ({ isDark, onClose }) => {
         <div className="sb-gsearch__results">
 
           {/* Live data results */}
-          {query.length >= 2 && (
+          {!isTimesheetUser && query.length >= 2 && (
             <>
               {live.clients.length > 0 && (
                 <div className="sb-gsearch__group">
@@ -435,14 +461,18 @@ const SearchModal = ({ isDark, onClose }) => {
             <div className="sb-gsearch__suggestions">
               <div className="sb-gsearch__sugg-label">Quick links</div>
               <div className="sb-gsearch__sugg-grid">
-                {[
+                {(isTimesheetUser ? [
+                  { label: "Timesheets", path: "/timesheet/home", icon: "fa-clock" },
+                  { label: "Log Time", path: "/timesheet/create-timesheet", icon: "fa-plus" },
+                  { label: "Reports", path: "/reports/timesheet", icon: "fa-chart-line" },
+                ] : [
                   { label: "Dashboard",   path: "/",                icon: "fa-gauge-high" },
                   { label: "Invoices",    path: "/invoice/home",    icon: "fa-file-invoice-dollar" },
                   { label: "Journal",     path: "/journal/home",    icon: "fa-book" },
                   { label: "Clients",     path: "/client/home",     icon: "fa-users" },
                   { label: "Ledgers",     path: "/ledger/home",     icon: "fa-book-open" },
                   { label: "Reports",     path: "/reports/ledger",  icon: "fa-chart-line" },
-                ].map(s => (
+                ]).map(s => (
                   <button key={s.path} className="sb-gsearch__sugg-item" onClick={() => go(s.path)}>
                     <i className={`fas ${s.icon}`} />
                     <span>{s.label}</span>
@@ -458,13 +488,16 @@ const SearchModal = ({ isDark, onClose }) => {
           <span><kbd>↵</kbd> Go</span>
           <span><kbd>Esc</kbd> Close</span>
           <span className="sb-gsearch__footer-tip">
-            {query.length >= 2
-              ? `Searching across clients, invoices, ledgers, journals & more`
-              : `Type 2+ characters for live results`}
+            {isTimesheetUser
+              ? `Search Timesheets pages and your reports`
+              : (query.length >= 2
+                ? `Searching across clients, invoices, ledgers, journals & more`
+                : `Type 2+ characters for live results`)}
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -473,6 +506,9 @@ const SearchModal = ({ isDark, onClose }) => {
 ───────────────────────────────────────────── */
 const GlobalSearch = ({ isDark }) => {
   const [open, setOpen] = useState(false);
+  const { user } = useAuthStore();
+  const isTimesheetUser = isTimesheetOnly(user);
+  const canAdministerUsers = canManageUsers(user);
 
   useEffect(() => {
     const handler = (e) => {
@@ -503,7 +539,7 @@ const GlobalSearch = ({ isDark }) => {
         <i className="fas fa-magnifying-glass" />
       </button>
 
-      {open && <SearchModal isDark={isDark} onClose={() => setOpen(false)} />}
+      {open && <SearchModal isDark={isDark} onClose={() => setOpen(false)} isTimesheetUser={isTimesheetUser} canAdministerUsers={canAdministerUsers} />}
     </>
   );
 };

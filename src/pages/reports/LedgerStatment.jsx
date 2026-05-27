@@ -577,7 +577,7 @@ const LedgerStatement = () => {
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Reports", to: "/reports/ledger", active: true },
+    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
     { label: "Ledger Statement", to: "/reports/ledger/ledger-statement", active: false },
   ];
 

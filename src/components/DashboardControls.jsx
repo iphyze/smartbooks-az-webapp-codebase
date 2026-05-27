@@ -62,15 +62,16 @@ const MiniCalendar = ({ value, onChange, minDate, maxDate, onClose }) => {
   return (
     <div className="db-cal">
       <div className="db-cal__nav">
-        <button className="db-cal__arrow" onClick={prevMonth}><i className="fas fa-chevron-left" /></button>
+        <button type="button" className="db-cal__arrow" onClick={prevMonth}><i className="fas fa-chevron-left" /></button>
         <span className="db-cal__heading">{MONTHS[viewMonth]} {viewYear}</span>
-        <button className="db-cal__arrow" onClick={nextMonth}><i className="fas fa-chevron-right" /></button>
+        <button type="button" className="db-cal__arrow" onClick={nextMonth}><i className="fas fa-chevron-right" /></button>
       </div>
       <div className="db-cal__grid">
         {DAYS.map(d => <div key={d} className="db-cal__dow">{d}</div>)}
         {cells.map((d, i) => (
           <button
             key={i}
+            type="button"
             className={`db-cal__day
               ${!d ? "db-cal__day--empty" : ""}
               ${isSelected(d) ? "db-cal__day--sel" : ""}
@@ -83,7 +84,7 @@ const MiniCalendar = ({ value, onChange, minDate, maxDate, onClose }) => {
         ))}
       </div>
       <div className="db-cal__footer">
-        <button className="db-cal__today-btn" onClick={() => { onChange(today()); onClose?.(); }}>Today</button>
+        <button type="button" className="db-cal__today-btn" onClick={() => { onChange(today()); onClose?.(); }}>Today</button>
       </div>
     </div>
   );
@@ -92,7 +93,7 @@ const MiniCalendar = ({ value, onChange, minDate, maxDate, onClose }) => {
 /* ══════════════════════════════════════
    Date Input
 ══════════════════════════════════════ */
-const DateInput = ({ label, value, onChange, minDate, maxDate }) => {
+const DateInput = ({ label, value, onChange, minDate, maxDate, invalid = false, placeholder = "Select date" }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -104,13 +105,13 @@ const DateInput = ({ label, value, onChange, minDate, maxDate }) => {
 
   const display = value
     ? `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,"0")}-${String(value.getDate()).padStart(2,"0")}`
-    : "Select date";
+    : placeholder;
 
   return (
     <div className="db-date-input" ref={ref}>
-      <button className="db-date-input__btn" onClick={() => setOpen(p => !p)}>
+      <button type="button" className={`db-date-input__btn ${invalid ? "is-invalid" : ""}`} onClick={() => setOpen(p => !p)} aria-expanded={open}>
         <i className="fas fa-calendar-days db-date-input__icon" />
-        <span className="db-date-input__label">{label}</span>
+        {label && <span className="db-date-input__label">{label}</span>}
         <span className={`db-date-input__val ${!value ? "db-date-input__val--empty" : ""}`}>{display}</span>
         <i className={`fas fa-chevron-down db-date-input__chevron ${open ? "open" : ""}`} />
       </button>
@@ -158,12 +159,12 @@ const DashboardControls = ({
           minDate={dateFrom}
           maxDate={maxTo}
         />
-        <button className="db-controls__apply" onClick={onApply}>
+        <button type="button" className="db-controls__apply" onClick={onApply}>
           <i className="fas fa-filter" />
           <span>Apply</span>
         </button>
         {isFiltered && (
-          <button className="db-controls__clear" onClick={onClear} title="Reset to year-to-date">
+          <button type="button" className="db-controls__clear" onClick={onClear} title="Reset to year-to-date">
             <i className="fas fa-rotate-left" />
           </button>
         )}
@@ -176,6 +177,7 @@ const DashboardControls = ({
         {["NGN","USD","GBP","EUR"].map(c => (
           <button
             key={c}
+            type="button"
             className={`db-cur-btn ${activeCur === c ? "active" : ""}`}
             onClick={() => onCurChange(c)}
           >{c}</button>
@@ -186,4 +188,4 @@ const DashboardControls = ({
 };
 
 export default DashboardControls;
-export { toISO, today, yearStart, parseISO };
+export { DateInput, MiniCalendar, toISO, today, yearStart, parseISO };

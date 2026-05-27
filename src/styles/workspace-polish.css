@@ -1,0 +1,793 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SMARTBOOKS — WORKSPACE POLISH LAYER
+   Harmonises existing pages with the Lock Period interface language.
+   This stylesheet is intentionally broad: legacy operational pages, tables,
+   reports, forms and modal workflows receive a consistent surface treatment.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Shared content width and spacing ─────────────────────────────────── */
+.theme-light .db-page,
+.theme-dark .db-page,
+.theme-light .lp-page,
+.theme-dark .lp-page,
+.theme-light .lr-page,
+.theme-dark .lr-page,
+.theme-light .ls-page,
+.theme-dark .ls-page,
+.theme-light .gl-page,
+.theme-dark .gl-page,
+.theme-light .tb-page,
+.theme-dark .tb-page,
+.theme-light .pl-page,
+.theme-dark .pl-page,
+.theme-light .bs-page,
+.theme-dark .bs-page,
+.theme-light .ia-page,
+.theme-dark .ia-page,
+.theme-light .tsr-page,
+.theme-dark .tsr-page,
+.theme-light .fx-page,
+.theme-dark .fx-page,
+.theme-light .br-page,
+.theme-dark .br-page {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: clamp(18px, 2.4vw, 30px) clamp(14px, 2.3vw, 30px) 52px;
+}
+
+.theme-light .db-root,
+.theme-dark .db-root,
+.theme-light .lr-root,
+.theme-dark .lr-root,
+.theme-light .ls-root,
+.theme-dark .ls-root,
+.theme-light .gl-root,
+.theme-dark .gl-root,
+.theme-light .tb-root,
+.theme-dark .tb-root,
+.theme-light .pl-root,
+.theme-dark .pl-root,
+.theme-light .bs-root,
+.theme-dark .bs-root,
+.theme-light .ia-root,
+.theme-dark .ia-root,
+.theme-light .tsr-root,
+.theme-dark .tsr-root,
+.theme-light .fx-root,
+.theme-dark .fx-root,
+.theme-light .br-root,
+.theme-dark .br-root {
+  min-height: calc(100vh - 64px);
+  background: var(--sb-bg);
+  color: var(--sb-text-1);
+}
+
+/* ── Cards and operational sections ───────────────────────────────────── */
+.theme-light .main-table-box,
+.theme-dark .main-table-box,
+.theme-light .invoice-form-box,
+.theme-dark .invoice-form-box,
+.theme-light .view-content-box,
+.theme-dark .view-content-box,
+.theme-light .db-card,
+.theme-dark .db-card,
+.theme-light .lr-card,
+.theme-dark .lr-card,
+.theme-light .br-card,
+.theme-dark .br-card {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  box-shadow: var(--sb-shadow-sm);
+  transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease, transform .18s ease;
+}
+
+.theme-light .main-table-box,
+.theme-dark .main-table-box {
+  padding: 12px;
+  overflow: hidden;
+}
+
+.theme-light .invoice-form-box,
+.theme-dark .invoice-form-box,
+.theme-light .view-content-box,
+.theme-dark .view-content-box {
+  margin: 16px 0 34px;
+}
+
+.theme-light .db-card:hover,
+.theme-dark .db-card:hover,
+.theme-light .lr-card:hover,
+.theme-dark .lr-card:hover {
+  border-color: var(--sb-brand-ring);
+  box-shadow: var(--sb-shadow);
+}
+
+.theme-light .top-action-wrapper,
+.theme-dark .top-action-wrapper {
+  margin: 0 0 16px;
+  gap: 10px;
+}
+
+/* ── Primary / secondary actions ───────────────────────────────────────── */
+.theme-light .create-new-invoice-btn,
+.theme-dark .create-new-invoice-btn,
+.theme-light .create-new-btn,
+.theme-dark .create-new-btn,
+.theme-light .invoice-submit-btn,
+.theme-dark .invoice-submit-btn,
+.theme-light .form-submit-btn,
+.theme-dark .form-submit-btn,
+.theme-light .data-create-button,
+.theme-dark .data-create-button {
+  min-height: 44px;
+  padding-inline: 18px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--sb-brand), var(--sb-brand-alt));
+  box-shadow: 0 12px 22px rgba(9, 158, 145, .17);
+  font-weight: 650;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+
+.theme-light .create-new-invoice-btn:hover,
+.theme-dark .create-new-invoice-btn:hover,
+.theme-light .create-new-btn:hover,
+.theme-dark .create-new-btn:hover,
+.theme-light .invoice-submit-btn:hover,
+.theme-dark .invoice-submit-btn:hover,
+.theme-light .form-submit-btn:hover,
+.theme-dark .form-submit-btn:hover,
+.theme-light .data-create-button:hover,
+.theme-dark .data-create-button:hover {
+  opacity: 1;
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 29px rgba(9, 158, 145, .23);
+}
+
+.theme-light .btn-cancel,
+.theme-dark .btn-cancel,
+.theme-light .export-button,
+.theme-dark .export-button,
+.theme-light .year-select-action,
+.theme-dark .year-select-action {
+  min-height: 42px;
+  border-radius: 11px;
+  border: 1px solid var(--sb-border);
+  color: var(--sb-text-2);
+  background: var(--sb-surface-2);
+  box-shadow: none;
+}
+
+.theme-light .btn-cancel:hover:not(:disabled),
+.theme-dark .btn-cancel:hover:not(:disabled),
+.theme-light .export-button:hover:not(:disabled),
+.theme-dark .export-button:hover:not(:disabled),
+.theme-light .year-select-action:hover:not(:disabled),
+.theme-dark .year-select-action:hover:not(:disabled) {
+  color: var(--sb-brand);
+  border-color: var(--sb-brand-ring);
+  background: var(--sb-brand-dim);
+}
+
+/* ── Table toolbars and tables ─────────────────────────────────────────── */
+.theme-light .table-controls,
+.theme-dark .table-controls,
+.theme-light .filters-section,
+.theme-dark .filters-section {
+  margin: 0;
+  padding: 9px 8px 18px;
+  border: 0;
+  background: transparent;
+}
+
+.theme-light .table-search-input,
+.theme-dark .table-search-input,
+.theme-light .data-search-input,
+.theme-dark .data-search-input,
+.theme-light .items-per-page-select,
+.theme-dark .items-per-page-select,
+.theme-light .year-selection-box,
+.theme-dark .year-selection-box {
+  min-height: 44px;
+  padding-inline: 14px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface-2);
+  color: var(--sb-text-1);
+}
+
+.theme-light .table-search-input:focus,
+.theme-dark .table-search-input:focus,
+.theme-light .data-search-input:focus,
+.theme-dark .data-search-input:focus,
+.theme-light .items-per-page-select:focus,
+.theme-dark .items-per-page-select:focus,
+.theme-light .year-selection-box:focus,
+.theme-dark .year-selection-box:focus {
+  border-color: var(--sb-brand);
+  box-shadow: 0 0 0 4px var(--sb-brand-dim);
+  background: var(--sb-surface);
+}
+
+.theme-light .table-box,
+.theme-dark .table-box,
+.theme-light .data-table-wrapper,
+.theme-dark .data-table-wrapper {
+  border-radius: 14px;
+  overflow-x: auto;
+}
+
+.theme-light .data-table,
+.theme-dark .data-table,
+.theme-light .datatable-table,
+.theme-dark .datatable-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  background: transparent;
+}
+
+.theme-light .data-table thead th,
+.theme-dark .data-table thead th,
+.theme-light .datatable-table thead th,
+.theme-dark .datatable-table thead th {
+  height: 48px;
+  padding: 0 16px;
+  background: var(--sb-surface-2);
+  border-bottom: 1px solid var(--sb-border);
+  color: var(--sb-text-3);
+  letter-spacing: .075em;
+}
+
+.theme-light .data-table thead th:first-child,
+.theme-dark .data-table thead th:first-child,
+.theme-light .datatable-table thead th:first-child,
+.theme-dark .datatable-table thead th:first-child { border-radius: 12px 0 0 12px; }
+.theme-light .data-table thead th:last-child,
+.theme-dark .data-table thead th:last-child,
+.theme-light .datatable-table thead th:last-child,
+.theme-dark .datatable-table thead th:last-child { border-radius: 0 12px 12px 0; }
+
+.theme-light .data-table tbody td,
+.theme-dark .data-table tbody td,
+.theme-light .datatable-table tbody td,
+.theme-dark .datatable-table tbody td {
+  padding: 15px 16px;
+  color: var(--sb-text-2);
+  border-bottom: 1px solid var(--sb-border-light);
+}
+
+.theme-light .data-table tbody tr:hover,
+.theme-dark .data-table tbody tr:hover,
+.theme-light .datatable-table tbody tr:hover,
+.theme-dark .datatable-table tbody tr:hover {
+  background: var(--sb-surface-2);
+}
+
+.theme-light .data-table tbody tr.selected,
+.theme-dark .data-table tbody tr.selected,
+.theme-light .datatable-table tbody tr.selected,
+.theme-dark .datatable-table tbody tr.selected {
+  background: var(--sb-brand-dim);
+}
+
+.theme-light .data-table-bold-text,
+.theme-dark .data-table-bold-text,
+.theme-light .tab-box-name,
+.theme-dark .tab-box-name,
+.theme-light .tab-box-bankname,
+.theme-dark .tab-box-bankname {
+  color: var(--sb-text-1) !important;
+}
+
+.theme-light .number-tab,
+.theme-dark .number-tab {
+  color: var(--sb-brand) !important;
+}
+
+.theme-light .action-buttons button,
+.theme-dark .action-buttons button,
+.theme-light .action-btns button,
+.theme-dark .action-btns button {
+  border-radius: 10px;
+}
+
+/* Pagination */
+.theme-light .pagination-container,
+.theme-dark .pagination-container,
+.theme-light .pagination-box,
+.theme-dark .pagination-box {
+  margin-top: 0;
+  padding: 16px 8px 6px;
+  color: var(--sb-text-3);
+}
+
+.theme-light .pagination-btn,
+.theme-dark .pagination-btn,
+.theme-light .pagination button,
+.theme-dark .pagination button {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid var(--sb-border);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  color: var(--sb-text-2);
+}
+.theme-light .pagination-btn:hover:not(:disabled),
+.theme-dark .pagination-btn:hover:not(:disabled),
+.theme-light .pagination button:hover:not(:disabled),
+.theme-dark .pagination button:hover:not(:disabled) {
+  border-color: var(--sb-brand-ring);
+  color: var(--sb-brand);
+  background: var(--sb-brand-dim);
+}
+.theme-light .pagination-btn.active,
+.theme-dark .pagination-btn.active,
+.theme-light .pagination button.active,
+.theme-dark .pagination button.active {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, var(--sb-brand), var(--sb-brand-alt));
+}
+
+/* ── Forms, pickers, selects ───────────────────────────────────────────── */
+.theme-light .invoice-form-f-container,
+.theme-dark .invoice-form-f-container {
+  padding: clamp(18px, 2.4vw, 30px) clamp(16px, 2.4vw, 30px) 6px;
+}
+
+.theme-light .invoice-form-header,
+.theme-dark .invoice-form-header { margin-bottom: 25px; }
+.theme-light .invoice-form-htxt,
+.theme-dark .invoice-form-htxt { color: var(--sb-text-1); font-size: 18px; letter-spacing: -.03em; }
+.theme-light .invoice-form-sub-htxt,
+.theme-dark .invoice-form-sub-htxt { color: var(--sb-text-3); font-size: 13px; }
+.theme-light .input-form-label,
+.theme-dark .input-form-label,
+.theme-light .main-form-group label,
+.theme-dark .main-form-group label,
+.theme-light .form-group label,
+.theme-dark .form-group label {
+  color: var(--sb-text-2);
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.theme-light .form-input,
+.theme-dark .form-input,
+.theme-light .form-input-no-padding,
+.theme-dark .form-input-no-padding,
+.theme-light .main-form-group input,
+.theme-dark .main-form-group input,
+.theme-light .main-form-group textarea,
+.theme-dark .main-form-group textarea,
+.theme-light .gaps-input,
+.theme-dark .gaps-input,
+.theme-light .gaps-textarea,
+.theme-dark .gaps-textarea,
+.theme-light .tsr-input,
+.theme-dark .tsr-input {
+  min-height: 46px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  color: var(--sb-text-1);
+  background: var(--sb-surface-2);
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+.theme-light .form-input:focus,
+.theme-dark .form-input:focus,
+.theme-light .form-input-no-padding:focus,
+.theme-dark .form-input-no-padding:focus,
+.theme-light .main-form-group input:focus,
+.theme-dark .main-form-group input:focus,
+.theme-light .main-form-group textarea:focus,
+.theme-dark .main-form-group textarea:focus,
+.theme-light .gaps-input:focus,
+.theme-dark .gaps-input:focus,
+.theme-light .gaps-textarea:focus,
+.theme-dark .gaps-textarea:focus,
+.theme-light .tsr-input:focus,
+.theme-dark .tsr-input:focus {
+  background: var(--sb-surface);
+  border-color: var(--sb-brand);
+  box-shadow: 0 0 0 4px var(--sb-brand-dim);
+}
+
+.theme-light .form-input-select .form-input-select__control,
+.theme-dark .form-input-select .form-input-select__control,
+.theme-light .react-select__control,
+.theme-dark .react-select__control {
+  min-height: 46px !important;
+  border: 1px solid var(--sb-border) !important;
+  border-radius: 12px !important;
+  background: var(--sb-surface-2) !important;
+}
+.theme-light .form-input-select .form-input-select__control--is-focused,
+.theme-dark .form-input-select .form-input-select__control--is-focused,
+.theme-light .react-select__control--is-focused,
+.theme-dark .react-select__control--is-focused {
+  background: var(--sb-surface) !important;
+  border-color: var(--sb-brand) !important;
+  box-shadow: 0 0 0 4px var(--sb-brand-dim) !important;
+}
+.theme-light .form-input-select .form-input-select__menu,
+.theme-dark .form-input-select .form-input-select__menu,
+.theme-light .react-select__menu,
+.theme-dark .react-select__menu {
+  border: 1px solid var(--sb-border) !important;
+  border-radius: 13px !important;
+  background: var(--sb-surface) !important;
+  box-shadow: var(--sb-shadow-popover) !important;
+  overflow: hidden;
+}
+.theme-light .form-input-select .form-input-select__option--is-focused,
+.theme-dark .form-input-select .form-input-select__option--is-focused,
+.theme-light .react-select__option--is-focused,
+.theme-dark .react-select__option--is-focused { background: var(--sb-brand-dim) !important; color: var(--sb-brand) !important; }
+.theme-light .form-input-select .form-input-select__option--is-selected,
+.theme-dark .form-input-select .form-input-select__option--is-selected,
+.theme-light .react-select__option--is-selected,
+.theme-dark .react-select__option--is-selected { background: var(--sb-brand) !important; color: #fff !important; }
+
+
+.theme-light .chart-select-display,
+.theme-dark .chart-select-display {
+  min-height: 44px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface-2);
+  color: var(--sb-text-2);
+}
+.theme-light .chart-select-display:hover,
+.theme-dark .chart-select-display:hover,
+.theme-light .chart-select-wrapper.open .chart-select-display,
+.theme-dark .chart-select-wrapper.open .chart-select-display {
+  border-color: var(--sb-brand);
+  background: var(--sb-surface);
+  box-shadow: 0 0 0 4px var(--sb-brand-dim);
+}
+.theme-light .chart-select-dropdown,
+.theme-dark .chart-select-dropdown {
+  border: 1px solid var(--sb-border);
+  border-radius: 13px;
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-popover);
+}
+.theme-light .chart-select-option:hover,
+.theme-dark .chart-select-option:hover,
+.theme-light .chart-select-option.highlight-option,
+.theme-dark .chart-select-option.highlight-option {
+  background: var(--sb-brand-dim);
+  color: var(--sb-brand);
+}
+
+/* ── Modal system ──────────────────────────────────────────────────────── */
+.theme-light .modal-overlay,
+.theme-dark .modal-overlay,
+.theme-light .view-modal-overlay,
+.theme-dark .view-modal-overlay {
+  background: rgba(6, 13, 26, .56);
+  backdrop-filter: blur(7px);
+}
+.theme-dark .modal-overlay,
+.theme-dark .view-modal-overlay { background: rgba(1, 5, 12, .7); }
+
+.theme-light .modal-content,
+.theme-dark .modal-content,
+.theme-light .modal-content-scrollable,
+.theme-dark .modal-content-scrollable,
+.theme-light .view-modal,
+.theme-dark .view-modal,
+.theme-light .edit-modal,
+.theme-dark .edit-modal {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: 20px;
+  color: var(--sb-text-1);
+  box-shadow: var(--sb-shadow-popover);
+}
+.theme-light .modal-header,
+.theme-dark .modal-header,
+.theme-light .view-modal-header,
+.theme-dark .view-modal-header {
+  border-bottom: 1px solid var(--sb-border-light);
+  background: var(--sb-surface);
+}
+.theme-light .modal-footer,
+.theme-dark .modal-footer,
+.theme-light .edit-modal-footer,
+.theme-dark .edit-modal-footer {
+  border-top: 1px solid var(--sb-border-light);
+  background: var(--sb-surface-2);
+}
+.theme-light .modal-title,
+.theme-dark .modal-title,
+.theme-light .view-modal-ht,
+.theme-dark .view-modal-ht { color: var(--sb-text-1); }
+.theme-light .modal-text,
+.theme-dark .modal-text,
+.theme-light .modal-text-confirm,
+.theme-dark .modal-text-confirm,
+.theme-light .view-modal-subtext,
+.theme-dark .view-modal-subtext { color: var(--sb-text-2); }
+.theme-light .modal-close-btn,
+.theme-dark .modal-close-btn,
+.theme-light .view-modal-close,
+.theme-dark .view-modal-close {
+  color: var(--sb-text-3);
+  background: var(--sb-surface-2);
+  border: 1px solid var(--sb-border);
+  border-radius: 10px;
+}
+
+/* ── Report workspaces ─────────────────────────────────────────────────── */
+body.theme-light :is(.ls-filter-bar,.gl-filter-bar,.tb-filter-bar,.pl-filter-bar,.bs-filter-bar,.ia-filter-bar,.tsr-filter-bar,.fx-filter-bar,.br-card),
+body.theme-dark :is(.ls-filter-bar,.gl-filter-bar,.tb-filter-bar,.pl-filter-bar,.bs-filter-bar,.ia-filter-bar,.tsr-filter-bar,.fx-filter-bar,.br-card) {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: 20px;
+  box-shadow: var(--sb-shadow-sm);
+  padding: clamp(18px, 2vw, 25px);
+  margin-bottom: 18px;
+}
+
+body.theme-light :is(.ls-search-btn,.gl-search-btn,.tb-search-btn,.pl-search-btn,.bs-search-btn,.ia-search-btn,.tsr-search-btn,.fx-preview-btn),
+body.theme-dark :is(.ls-search-btn,.gl-search-btn,.tb-search-btn,.pl-search-btn,.bs-search-btn,.ia-search-btn,.tsr-search-btn,.fx-preview-btn) {
+  min-height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--sb-brand), var(--sb-brand-alt));
+  box-shadow: 0 12px 22px rgba(9, 158, 145, .18);
+}
+
+/* Keep report export links elegant and understated rather than loud blocks. */
+body.theme-light :is(.ls-excel-btn,.gl-excel-btn,.tb-excel-btn,.pl-excel-btn,.bs-excel-btn,.ia-excel-btn,.tsr-excel-btn),
+body.theme-dark :is(.ls-excel-btn,.gl-excel-btn,.tb-excel-btn,.pl-excel-btn,.bs-excel-btn,.ia-excel-btn,.tsr-excel-btn) {
+  min-height: 42px;
+  border: 1px solid rgba(7, 132, 95, .19);
+  border-radius: 11px;
+  color: var(--sb-positive);
+  background: var(--sb-positive-bg);
+  box-shadow: none;
+}
+body.theme-light :is(.tb-pdf-btn,.pl-pdf-btn,.bs-pdf-btn,.tsr-pdf-btn),
+body.theme-dark :is(.tb-pdf-btn,.pl-pdf-btn,.bs-pdf-btn,.tsr-pdf-btn) {
+  min-height: 42px;
+  border: 1px solid rgba(207, 69, 85, .19);
+  border-radius: 11px;
+  color: var(--sb-danger);
+  background: var(--sb-danger-bg);
+  box-shadow: none;
+}
+body.theme-light :is(.ls-excel-btn,.gl-excel-btn,.tb-excel-btn,.pl-excel-btn,.bs-excel-btn,.ia-excel-btn,.tsr-excel-btn,.tb-pdf-btn,.pl-pdf-btn,.bs-pdf-btn,.tsr-pdf-btn):hover:not(:disabled),
+body.theme-dark :is(.ls-excel-btn,.gl-excel-btn,.tb-excel-btn,.pl-excel-btn,.bs-excel-btn,.ia-excel-btn,.tsr-excel-btn,.tb-pdf-btn,.pl-pdf-btn,.bs-pdf-btn,.tsr-pdf-btn):hover:not(:disabled) {
+  opacity: 1;
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+body.theme-light :is(.ls-results-count,.gl-results-count,.tb-results-count,.pl-results-badge,.bs-results-badge,.ia-results-badge,.tsr-results-badge,.fx-results-badge,.gl-period-badge,.tb-period-badge,.pl-period-badge,.bs-period-badge),
+body.theme-dark :is(.ls-results-count,.gl-results-count,.tb-results-count,.pl-results-badge,.bs-results-badge,.ia-results-badge,.tsr-results-badge,.fx-results-badge,.gl-period-badge,.tb-period-badge,.pl-period-badge,.bs-period-badge) {
+  border: 1px solid var(--sb-brand-ring);
+  border-radius: 999px;
+  color: var(--sb-brand);
+  background: var(--sb-brand-dim);
+}
+
+body.theme-light :is(.ls-report-paper,.gl-report-paper,.tb-report-paper,.pl-report-paper,.bs-report-paper,.ia-report-paper,.tsr-report-paper,.fx-report-paper,.fx-preview-card),
+body.theme-dark :is(.ls-report-paper,.gl-report-paper,.tb-report-paper,.pl-report-paper,.bs-report-paper,.ia-report-paper,.tsr-report-paper,.fx-report-paper,.fx-preview-card) {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: 20px;
+  box-shadow: var(--sb-shadow-sm);
+  overflow: hidden;
+}
+
+body.theme-light :is(.ls-empty-prompt,.gl-empty-prompt,.tb-empty-prompt,.pl-empty-prompt,.bs-empty-prompt,.ia-empty-prompt,.tsr-empty-prompt,.fx-empty-prompt),
+body.theme-dark :is(.ls-empty-prompt,.gl-empty-prompt,.tb-empty-prompt,.pl-empty-prompt,.bs-empty-prompt,.ia-empty-prompt,.tsr-empty-prompt,.fx-empty-prompt) {
+  background: var(--sb-surface);
+  border: 1px dashed var(--sb-border);
+  border-radius: 20px;
+  margin-top: 15px;
+}
+
+/* Report index cards */
+.theme-light .lr-card,
+.theme-dark .lr-card {
+  padding: 22px 22px 22px 28px;
+  border-radius: 18px;
+}
+.theme-light .lr-card__title,
+.theme-dark .lr-card__title { color: var(--sb-text-1); }
+.theme-light .lr-card__desc,
+.theme-dark .lr-card__desc { color: var(--sb-text-2); }
+.theme-light .lr-card__tag,
+.theme-dark .lr-card__tag { background: var(--sb-surface-2); border: 1px solid var(--sb-border); color: var(--sb-text-2); }
+.theme-light .lr-card__arrow,
+.theme-dark .lr-card__arrow { color: var(--sb-brand); }
+.theme-light .lr-hero-badge,
+.theme-dark .lr-hero-badge { border-color: var(--sb-brand-ring); color: var(--sb-brand); background: var(--sb-brand-dim); }
+
+/* ── Dashboard and data visualization surfaces ─────────────────────────── */
+body.theme-light .db-root,
+.main-container.theme-light .db-root,
+.db-root.theme-light {
+  --db-bg: var(--sb-bg);
+  --db-surface: var(--sb-surface);
+  --db-surface-2: var(--sb-surface-2);
+  --db-surface-3: var(--sb-surface-3);
+  --db-border: var(--sb-border);
+  --db-border-light: var(--sb-border-light);
+  --db-text-1: var(--sb-text-1);
+  --db-text-2: var(--sb-text-2);
+  --db-text-3: var(--sb-text-3);
+  --db-text-4: var(--sb-text-4);
+  --db-brand: var(--sb-brand);
+  --db-brand-dim: var(--sb-brand-dim);
+  --db-shadow: var(--sb-shadow-sm);
+  --db-shadow-lg: var(--sb-shadow);
+}
+body.theme-dark .db-root,
+.main-container.theme-dark .db-root,
+.db-root.theme-dark {
+  --db-bg: var(--sb-bg);
+  --db-surface: var(--sb-surface);
+  --db-surface-2: var(--sb-surface-2);
+  --db-surface-3: var(--sb-surface-3);
+  --db-border: var(--sb-border);
+  --db-border-light: var(--sb-border-light);
+  --db-text-1: var(--sb-text-1);
+  --db-text-2: var(--sb-text-2);
+  --db-text-3: var(--sb-text-3);
+  --db-text-4: var(--sb-text-4);
+  --db-brand: var(--sb-brand);
+  --db-brand-dim: var(--sb-brand-dim);
+  --db-shadow: var(--sb-shadow-sm);
+  --db-shadow-lg: var(--sb-shadow);
+}
+body.theme-light :is(.db-stat,.db-bank-row,.db-inv-row),
+body.theme-dark :is(.db-stat,.db-bank-row,.db-inv-row) {
+  border-radius: 15px;
+}
+
+/* ── Status and information badges ─────────────────────────────────────── */
+.theme-light .badge-success,
+.theme-dark .badge-success { background: var(--sb-positive-bg); border-color: rgba(7,132,95,.18); color: var(--sb-positive); }
+.theme-light .badge-warning,
+.theme-dark .badge-warning { background: var(--sb-warning-bg); border-color: rgba(194,120,24,.17); color: var(--sb-warning); }
+.theme-light .badge-danger,
+.theme-dark .badge-danger { background: var(--sb-danger-bg); border-color: rgba(207,69,85,.18); color: var(--sb-danger); }
+.theme-light .badge-info,
+.theme-dark .badge-info { background: var(--sb-info-bg); border-color: rgba(37,99,235,.16); color: var(--sb-info); }
+.theme-light .badge-secondary,
+.theme-dark .badge-secondary { background: var(--sb-surface-2); border-color: var(--sb-border); color: var(--sb-text-3); }
+
+/* ── Legacy / payments page surface bridge ─────────────────────────────── */
+body.theme-light :is(.data-table-wrapper,.inner-data-table-box,.edit-modal-content,.view-modal-content,.gaps-form,.report-header),
+body.theme-dark :is(.data-table-wrapper,.inner-data-table-box,.edit-modal-content,.view-modal-content,.gaps-form,.report-header) {
+  background: var(--sb-surface);
+  border: 1px solid var(--sb-border);
+  border-radius: 18px;
+  box-shadow: var(--sb-shadow-sm);
+}
+body.theme-light :is(.content-header,.data-table-header),
+body.theme-dark :is(.content-header,.data-table-header) {
+  color: var(--sb-text-1);
+  border-bottom: 1px solid var(--sb-border-light);
+}
+body.theme-light :is(.ccht-titletext,.data-table-title,.view-info-ht,.vmc-ht),
+body.theme-dark :is(.ccht-titletext,.data-table-title,.view-info-ht,.vmc-ht) { color: var(--sb-text-1); }
+body.theme-light :is(.view-info-text,.filters-page-show-text,.empty-state-subtext),
+body.theme-dark :is(.view-info-text,.filters-page-show-text,.empty-state-subtext) { color: var(--sb-text-2); }
+body.theme-light :is(.ccht-titlelink,.ccht-arrow),
+body.theme-dark :is(.ccht-titlelink,.ccht-arrow) { color: var(--sb-brand); }
+
+
+/* ── Row actions and invoice/detail workspaces ─────────────────────────── */
+body.theme-light :is(.btn-view,.btn-edit,.btns-delete),
+body.theme-dark :is(.btn-view,.btn-edit,.btns-delete) {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  transition: transform .16s ease, background-color .16s ease, color .16s ease;
+}
+body.theme-light .btn-view,
+body.theme-dark .btn-view { color: var(--sb-brand); background: var(--sb-brand-dim); }
+body.theme-light .btn-edit,
+body.theme-dark .btn-edit { color: var(--sb-info); background: var(--sb-info-bg); }
+body.theme-light .btns-delete,
+body.theme-dark .btns-delete { color: var(--sb-danger); background: var(--sb-danger-bg); }
+body.theme-light :is(.btn-view,.btn-edit,.btns-delete):hover,
+body.theme-dark :is(.btn-view,.btn-edit,.btns-delete):hover { transform: translateY(-1px); filter: brightness(1.02); }
+
+body.theme-light :is(.vc-view-content-box,.vcc-payment-details-box,.invoice-summary-grid),
+body.theme-dark :is(.vc-view-content-box,.vcc-payment-details-box,.invoice-summary-grid) {
+  color: var(--sb-text-1);
+  background: var(--sb-surface);
+  border-color: var(--sb-border);
+  border-radius: 18px;
+}
+body.theme-light :is(.vcc-table-header,.invoice-table-header,.journal-table-header),
+body.theme-dark :is(.vcc-table-header,.invoice-table-header,.journal-table-header) {
+  color: var(--sb-text-3);
+  background: var(--sb-surface-2);
+  border-color: var(--sb-border);
+}
+body.theme-light :is(.vcc-header-title,.vcc-boldtext,.vcc-payment-heading,.invoice-total-value),
+body.theme-dark :is(.vcc-header-title,.vcc-boldtext,.vcc-payment-heading,.invoice-total-value) { color: var(--sb-text-1); }
+body.theme-light :is(.vcc-header-text,.vcc-payment-text,.vcc-signature-text),
+body.theme-dark :is(.vcc-header-text,.vcc-payment-text,.vcc-signature-text) { color: var(--sb-text-2); }
+
+/* ── Bank reconciliation report alignment ──────────────────────────────── */
+body.theme-light :is(.br-card,.br-workspace,.br-kpi-strip,.br-modal),
+body.theme-dark :is(.br-card,.br-workspace,.br-kpi-strip,.br-modal) {
+  color: var(--sb-text-1);
+  background: var(--sb-surface);
+  border-color: var(--sb-border);
+  box-shadow: var(--sb-shadow-sm);
+}
+body.theme-light :is(.br-card-head,.br-filter-bar,.br-banner,.br-flat-head,.br-col-hd,.br-line,.br-divider,.br-hcard,.br-hint,.br-action-chip,.br-mode-bar,.br-bulk-bar),
+body.theme-dark :is(.br-card-head,.br-filter-bar,.br-banner,.br-flat-head,.br-col-hd,.br-line,.br-divider,.br-hcard,.br-hint,.br-action-chip,.br-mode-bar,.br-bulk-bar) {
+  background: var(--sb-surface-2);
+  border-color: var(--sb-border);
+}
+body.theme-light :is(.br-card-head-text h2,.br-flat-head h3,.br-kpi-val,.br-hcard-company,.br-line-desc,.br-mode-copy strong,.br-bulk-metrics strong),
+body.theme-dark :is(.br-card-head-text h2,.br-flat-head h3,.br-kpi-val,.br-hcard-company,.br-line-desc,.br-mode-copy strong,.br-bulk-metrics strong) { color: var(--sb-text-1); }
+body.theme-light :is(.br-label,.br-card-head-text p,.br-empty-text,.br-help-text,.br-line-sub),
+body.theme-dark :is(.br-label,.br-card-head-text p,.br-empty-text,.br-help-text,.br-line-sub) { color: var(--sb-text-2); }
+body.theme-light :is(.br-btn-primary,.br-mode-btn--active),
+body.theme-dark :is(.br-btn-primary,.br-mode-btn--active) {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--sb-brand), var(--sb-brand-alt));
+  box-shadow: 0 12px 22px rgba(9, 158, 145, .18);
+}
+body.theme-light :is(.br-btn-ghost,.br-btn-ghost-sm,.br-mode-switch,.br-mode-btn),
+body.theme-dark :is(.br-btn-ghost,.br-btn-ghost-sm,.br-mode-switch,.br-mode-btn) {
+  color: var(--sb-text-2);
+  background: var(--sb-surface-2);
+  border-color: var(--sb-border);
+}
+body.theme-light .br-btn-excel,
+body.theme-dark .br-btn-excel { color: var(--sb-positive); background: var(--sb-positive-bg); border: 1px solid rgba(7, 132, 95, .19); box-shadow: none; }
+body.theme-light .br-btn-pdf,
+body.theme-dark .br-btn-pdf { color: var(--sb-danger); background: var(--sb-danger-bg); border: 1px solid rgba(207, 69, 85, .19); box-shadow: none; }
+
+/* ── Responsive refinements ────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .theme-light .db-page,
+  .theme-dark .db-page,
+  .theme-light .lr-page,
+  .theme-dark .lr-page,
+  .theme-light .ls-page,
+  .theme-dark .ls-page,
+  .theme-light .gl-page,
+  .theme-dark .gl-page,
+  .theme-light .tb-page,
+  .theme-dark .tb-page,
+  .theme-light .pl-page,
+  .theme-dark .pl-page,
+  .theme-light .bs-page,
+  .theme-dark .bs-page,
+  .theme-light .ia-page,
+  .theme-dark .ia-page,
+  .theme-light .tsr-page,
+  .theme-dark .tsr-page,
+  .theme-light .fx-page,
+  .theme-dark .fx-page,
+  .theme-light .br-page,
+  .theme-dark .br-page { padding: 17px 14px 36px; }
+}
+
+@media (max-width: 768px) {
+  .theme-light .main-table-box,
+  .theme-dark .main-table-box { padding: 8px; border-radius: 16px; }
+  .theme-light .table-controls,
+  .theme-dark .table-controls { padding: 6px 4px 14px; }
+  body.theme-light :is(.ls-filter-bar,.gl-filter-bar,.tb-filter-bar,.pl-filter-bar,.bs-filter-bar,.ia-filter-bar,.tsr-filter-bar,.fx-filter-bar,.br-card),
+  body.theme-dark :is(.ls-filter-bar,.gl-filter-bar,.tb-filter-bar,.pl-filter-bar,.bs-filter-bar,.ia-filter-bar,.tsr-filter-bar,.fx-filter-bar,.br-card) { border-radius: 16px; padding: 16px; }
+}

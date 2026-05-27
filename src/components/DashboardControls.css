@@ -99,6 +99,11 @@
   transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
   min-width: 160px;
 }
+.db-date-input__btn.is-invalid {
+  border-color: var(--db-red);
+  box-shadow: 0 0 0 3px var(--db-red-dim);
+}
+
 .db-date-input__btn:hover,
 .db-date-input__btn:focus-within {
   border-color: var(--db-brand);

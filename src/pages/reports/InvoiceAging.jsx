@@ -351,7 +351,7 @@ const InvoiceAging = () => {
 
   const links = [
     { label: "Home",            to: "/",                    active: true  },
-    { label: "Reports",         to: "/reports/ledger",      active: true  },
+    { label: "Reports & Analytics", to: "/reports/ledger",      active: true  },
     { label: "Invoice Aging",   to: "/reports/invoice-aging", active: false },
   ];
 

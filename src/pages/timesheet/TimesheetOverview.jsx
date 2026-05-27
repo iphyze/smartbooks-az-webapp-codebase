@@ -23,11 +23,12 @@ const TimesheetOverview = () => {
     sortBy, sortOrder, searchQuery, selectedItems,
     fetchData, setCurrentPage, setItemsPerPage, setSearchQuery,
     setSorting, toggleItemSelection, clearSelection,
-    deleteSelectedItems, getTotalPages,
+    deleteSelectedItems, deleteSingleItem, getTotalPages,
   } = useTimesheetStore();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const links = [
     { label: "Home", to: "/", active: true },
@@ -78,19 +79,27 @@ const TimesheetOverview = () => {
 
   const handleActionChange = (actionId) => {
     setSelectedAction(actionId);
-    if (actionId === "delete") setShowDeleteModal(true);
+    if (actionId === "delete") {
+      setDeleteTarget(null);
+      setShowDeleteModal(true);
+    }
   };
 
   const handleDelete = async () => {
-    await deleteSelectedItems();
+    if (deleteTarget) {
+      await deleteSingleItem(deleteTarget);
+    } else {
+      await deleteSelectedItems();
+    }
     setShowDeleteModal(false);
     setSelectedAction("");
+    setDeleteTarget(null);
     clearSelection();
   };
 
   const handleDeleteRow = (id) => {
     if (id !== "") {
-      useTimesheetStore.setState({ selectedItems: [id] });
+      setDeleteTarget(id);
       setShowDeleteModal(true);
     }
   };
@@ -391,10 +400,11 @@ const TimesheetOverview = () => {
                   onClose={() => {
                     setShowDeleteModal(false);
                     setSelectedAction("");
+                    setDeleteTarget(null);
                     clearSelection();
                   }}
                   onConfirm={handleDelete}
-                  count={selectedItems.length}
+                  count={deleteTarget ? 1 : selectedItems.length}
                   page="timesheet"
                 />
               )}

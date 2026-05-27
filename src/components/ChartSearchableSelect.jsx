@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const ChartSearchableSelect = ({ options, value, onChange, className = "" }) => {
+const ChartSearchableSelect = ({ options, value, onChange, className = "", reserveMenuSpace = false, isDisabled = false }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const dropdownRef = useRef(null);
@@ -18,12 +18,14 @@ const ChartSearchableSelect = ({ options, value, onChange, className = "" }) => 
   }, []);
 
   const handleSelect = (option) => {
+    if (isDisabled) return;
     onChange(option.id);
     setShowDropdown(false);
     setHighlightIndex(-1);
   };
 
   const handleKeyDown = (e) => {
+    if (isDisabled) return;
     if (!showDropdown && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
       setShowDropdown(true);
       return;
@@ -55,15 +57,16 @@ const ChartSearchableSelect = ({ options, value, onChange, className = "" }) => 
 
   return (
     <div
-      className={`chart-select-wrapper ${className}`}
+      className={`chart-select-wrapper ${reserveMenuSpace && showDropdown ? "chart-select-wrapper--reserve-menu" : ""} ${isDisabled ? "disabled" : ""} ${className}`.trim()}
       ref={dropdownRef}
-      tabIndex={0} // make it keyboard focusable
+      tabIndex={isDisabled ? -1 : 0} // make it keyboard focusable unless disabled
+      aria-disabled={isDisabled}
       onKeyDown={handleKeyDown}
     >
       {/* Display box */}
       <div
         className="chart-select-display"
-        onClick={() => setShowDropdown(prev => !prev)}
+        onClick={() => !isDisabled && setShowDropdown(prev => !prev)}
       >
         {options.find(opt => opt.id === value)?.label || "Select"}
         <span className={`chart-select-icon fas fa-angle-${showDropdown ? "up" : "down"}`}></span>

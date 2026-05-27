@@ -194,3 +194,23 @@
     font-size: 12.5px;
   }
 }
+/* Workspace theme integration */
+body.theme-light .sb-toast {
+  color: #102033;
+  border-color: #e3e9f1;
+  border-radius: 16px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 18px 42px rgba(15,23,42,.11);
+}
+body.theme-dark .sb-toast {
+  color: #eef3fb;
+  border-color: #233047;
+  border-radius: 16px;
+  background: rgba(15,23,39,.96);
+  box-shadow: 0 20px 46px rgba(0,0,0,.38);
+}
+body.theme-dark .sb-toast__message { color: #b0bdd0; }
+body.theme-dark .sb-toast__close { color: #7d8da5; }
+body.theme-dark .sb-toast__close:hover { color: #eef3fb; background: rgba(125,141,165,.12); }
+body.theme-light .sb-toast--success .sb-toast__strip,
+body.theme-dark .sb-toast--success .sb-toast__strip { background: #13c0ad; }

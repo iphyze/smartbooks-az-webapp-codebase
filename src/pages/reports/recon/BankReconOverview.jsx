@@ -31,7 +31,7 @@ const BankReconOverview = () => {
 
   const links = [
     { label: 'Home', to: '/', active: true },
-    { label: 'Reports', to: '/reports/ledger', active: true },
+    { label: 'Reports & Analytics', to: '/reports/ledger', active: true },
     { label: 'Bank Reconciliations', to: '/reports/bank-recon', active: false },
   ];
 

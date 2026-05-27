@@ -1,4 +1,5 @@
 import api from './api';
+
 class WebSocketService {
   constructor() {
     this.eventSource = null;
@@ -6,40 +7,28 @@ class WebSocketService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.isConnecting = false;
-    this.token = null;
     this.reconnectTimeout = null;
     this.lastKeepAliveTime = null;
     this.keepAliveInterval = null;
   }
 
-  connect(token) {
+  connect() {
     if (this.isConnecting) return;
     this.isConnecting = true;
-    this.token = token;
 
     try {
-      if (this.eventSource) {
-        this.eventSource.close();
-      }
+      this.eventSource?.close();
 
-      const baseUrl = api.defaults.baseURL;
-      const url = `${baseUrl}/websocket/handler/${encodeURIComponent(token)}/${Date.now()}`;
+      // This service currently consumes Server-Sent Events; the auth cookie is
+      // sent by the browser and is never placed in a URL or JavaScript state.
+      const url = `${api.defaults.baseURL}/websocket/handler?ts=${Date.now()}`;
+      this.eventSource = new EventSource(url, { withCredentials: true });
 
-
-      console.log('Connecting to SSE:', url);
-
-      this.eventSource = new EventSource(url, {
-        withCredentials: false
-      });
-
-      const eventTypes = ['newLog', 'newResponse', 'reminder', 'reminderError'];
-      eventTypes.forEach(eventType => {
+      ['newLog', 'newResponse', 'reminder', 'reminderError'].forEach((eventType) => {
         this.eventSource.addEventListener(eventType, this.createEventHandler(eventType));
       });
 
-      // Connection handling
-      this.eventSource.addEventListener('connection', (event) => {
-        console.log('Connection established:', event.data);
+      this.eventSource.addEventListener('connection', () => {
         this.reconnectAttempts = 0;
         this.isConnecting = false;
         this.startKeepAliveMonitor();
@@ -49,30 +38,18 @@ class WebSocketService {
         }
       });
 
-      // Error handling
       this.eventSource.onerror = this.handleError.bind(this);
-
-      // Handle general messages
       this.eventSource.onmessage = (event) => {
-        try {
-          // Update keepalive timestamp for any message
-          this.lastKeepAliveTime = Date.now();
-          
-          if (event.data.startsWith('keepalive')) {
-            return; // Don't process keepalive as regular message
-          }
+        this.lastKeepAliveTime = Date.now();
+        if (event.data.startsWith('keepalive')) return;
 
-          console.log('Message received:', event.data);
+        try {
           const data = JSON.parse(event.data);
-          if (this.listeners.has(event.type)) {
-            this.listeners.get(event.type).forEach(callback => callback(data));
-          }
+          this.listeners.get(event.type)?.forEach((callback) => callback(data));
         } catch (error) {
           console.error('Error processing message:', error);
         }
       };
-
-
     } catch (error) {
       console.error('Error creating connection:', error);
       this.isConnecting = false;
@@ -80,126 +57,71 @@ class WebSocketService {
     }
   }
 
-
   startKeepAliveMonitor() {
     this.lastKeepAliveTime = Date.now();
-    
-    // Clear existing interval if any
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval);
-    }
+    clearInterval(this.keepAliveInterval);
 
-    // Monitor for keepalive messages
     this.keepAliveInterval = setInterval(() => {
-      const timeSinceLastKeepAlive = Date.now() - this.lastKeepAliveTime;
-      if (timeSinceLastKeepAlive > 30000) { // 30 seconds
-        console.log('No keepalive received, reconnecting...');
+      if (Date.now() - this.lastKeepAliveTime > 30000) {
         this.reconnect();
       }
-    }, 5000); // Check every 5 seconds
+    }, 5000);
   }
-
 
   getStatus() {
     if (!this.eventSource) return 'Disconnected';
-    switch (this.eventSource.readyState) {
-      case EventSource.CONNECTING:
-        return 'Connecting';
-      case EventSource.OPEN:
-        return 'Connected';
-      case EventSource.CLOSED:
-        return 'Disconnected';
-      default:
-        return 'Unknown';
-    }
+    if (this.eventSource.readyState === EventSource.CONNECTING) return 'Connecting';
+    if (this.eventSource.readyState === EventSource.OPEN) return 'Connected';
+    return 'Disconnected';
   }
-
 
   createEventHandler(eventType) {
     return (event) => {
       try {
-        console.log(`${eventType} event received:`, event.data);
         const data = JSON.parse(event.data);
-        if (this.listeners.has(eventType)) {
-          this.listeners.get(eventType).forEach(callback => {
-            try {
-              callback(data);
-            } catch (callbackError) {
-              console.error(`Error in ${eventType} callback:`, callbackError);
-            }
-          });
-        }
+        this.listeners.get(eventType)?.forEach((callback) => callback(data));
       } catch (error) {
         console.error(`Error processing ${eventType} event:`, error);
       }
     };
   }
 
-  handleError(error) {
-    console.error('EventSource error:', error);
+  handleError() {
     this.isConnecting = false;
-
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval);
-      this.keepAliveInterval = null;
-    }
-
-    if (this.eventSource?.readyState === EventSource.CLOSED) {
-      console.log('Connection closed, attempting reconnect...');
-      this.scheduleReconnect();
-    } else {
-      console.log('Connection error but not closed, waiting for recovery...');
-      // Schedule reconnect anyway after a timeout
-      setTimeout(() => {
-        if (this.eventSource?.readyState !== EventSource.OPEN) {
-          this.scheduleReconnect();
-        }
-      }, 5000);
-    }
+    clearInterval(this.keepAliveInterval);
+    this.keepAliveInterval = null;
+    this.scheduleReconnect();
   }
 
   addEventListener(type, callback) {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, new Set());
-    }
+    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
     this.listeners.get(type).add(callback);
   }
 
   removeEventListener(type, callback) {
-    if (this.listeners.has(type)) {
-      this.listeners.get(type).delete(callback);
-    }
+    this.listeners.get(type)?.delete(callback);
   }
 
   scheduleReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      setTimeout(() => this.reconnect(), 1000 * Math.min(this.reconnectAttempts + 1, 30));
+      this.reconnectTimeout = setTimeout(
+        () => this.reconnect(),
+        1000 * Math.min(this.reconnectAttempts + 1, 30)
+      );
     }
   }
 
   reconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
-      return;
-    }
-
-    this.reconnectAttempts++;
-    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-    
-    if (this.token) {
-      this.connect(this.token);
-    }
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
+    this.reconnectAttempts += 1;
+    this.connect();
   }
 
   disconnect() {
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval);
-      this.keepAliveInterval = null;
-    }
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-    }
+    clearInterval(this.keepAliveInterval);
+    clearTimeout(this.reconnectTimeout);
+    this.eventSource?.close();
+    this.eventSource = null;
     this.listeners.clear();
   }
 }

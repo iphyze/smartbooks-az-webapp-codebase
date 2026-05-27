@@ -1,80 +1,103 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { isTokenExpired } from '../utils/jwtUtils';
 import api from '../services/api';
 
-const useAuthStore = create(
-  persist(
-    (set, get) => ({
+const removeLegacyBrowserTokens = () => {
+  localStorage.removeItem('auth-storage');
+  localStorage.removeItem('token');
+};
+
+/**
+ * Authentication state contains no JWT.
+ * The API issues the JWT only as an HttpOnly cookie; JavaScript retains user UI state only.
+ */
+const useAuthStore = create((set, get) => ({
+  token: null, // Legacy compatibility only. A JWT is never stored here.
+  user: null,
+  isAuthenticated: false,
+  authReady: false,
+  isInitializing: false,
+
+  initialize: async () => {
+    removeLegacyBrowserTokens();
+    const { authReady, isInitializing } = get();
+    if (authReady || isInitializing) return;
+
+    set({ isInitializing: true });
+
+    try {
+      // Bootstrap the anti-CSRF header value; it is not an authentication credential.
+      await api.get('/auth/csrf');
+
+      const response = await api.get('/auth/me');
+      set({
+        user: response.data.data,
+        isAuthenticated: true,
+        authReady: true,
+        isInitializing: false,
+        token: null,
+      });
+    } catch {
+      set({
+        user: null,
+        isAuthenticated: false,
+        authReady: true,
+        isInitializing: false,
+        token: null,
+      });
+    }
+  },
+
+  login: async (email, password) => {
+    removeLegacyBrowserTokens();
+    try {
+      await api.get('/auth/csrf');
+      const response = await api.post('/auth/login', { email, password });
+
+      if (response.data.status === 'Success') {
+        // Login rotates the CSRF cookie; fetch the matching in-memory header value.
+        await api.get('/auth/csrf');
+        set({
+          user: response.data.data,
+          isAuthenticated: true,
+          authReady: true,
+          token: null,
+        });
+        return { success: true, user: response.data.data };
+      }
+
+      return { success: false, error: 'Invalid credentials' };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Login failed. Please try again.',
+      };
+    }
+  },
+
+  logout: async () => {
+    removeLegacyBrowserTokens();
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // The local authenticated UI state must still be cleared if the server cookie expired.
+    } finally {
+      set({
+        token: null,
+        user: null,
+        isAuthenticated: false,
+        authReady: true,
+      });
+    }
+  },
+
+  clearSession: () => {
+    set({
       token: null,
       user: null,
-
-      /**
-       * Login action — calls /auth/login and stores token + user.
-       * Returns { success: true } or { success: false, error: string }.
-       */
-      login: async (email, password) => {
-        try {
-          const response = await api.post('/auth/login', { email, password });
-
-          if (response.data.status === 'Success') {
-            const { token, ...userData } = response.data.data;
-
-            set({ token, user: userData });
-
-            return { success: true };
-          }
-
-          return { success: false, error: 'Invalid credentials' };
-        } catch (error) {
-          console.error('Login error:', error);
-          return {
-            success: false,
-            error: error.response?.data?.message || 'Login failed. Please try again.',
-          };
-        }
-      },
-
-      /**
-       * Logout action — wipes state and persisted storage.
-       */
-      logout: () => {
-        set({ token: null, user: null });
-      },
-
-      /**
-       * init — validates the persisted token on app start.
-       * Called once after the store is created.
-       * If the token is expired it clears state; otherwise it's a no-op
-       * because zustand/persist already rehydrated the values.
-       */
-      init: () => {
-        const { token } = get();
-        if (token && isTokenExpired(token)) {
-          set({ token: null, user: null });
-        }
-      },
-
-      /**
-       * isAuthenticated helper — returns true when there is a valid, unexpired token.
-       */
-      isAuthenticated: () => {
-        const { token } = get();
-        return !!token && !isTokenExpired(token);
-      },
-    }),
-    {
-      name: 'auth-storage',
-      // Persist only the minimal state needed; functions are re-created on hydration.
-      partialize: (state) => ({
-        token: state.token,
-        user: state.user,
-      }),
-    }
-  )
-);
-
-// Run token validation once after the store is created (e.g. on page load).
-useAuthStore.getState().init();
+      isAuthenticated: false,
+      authReady: true,
+    });
+  },
+}));
 
 export default useAuthStore;

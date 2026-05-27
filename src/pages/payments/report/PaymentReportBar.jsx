@@ -17,7 +17,7 @@ import Select from "react-select";
 import { formatWithDecimals } from "../../../utils/helper";
 
 const PaymentReportBar = () => {
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { theme } = useThemeStore();
   const [table, setTable] = useState("supplier_fund_request_table");
   const [year, setYear] = useState(new Date().getFullYear());
@@ -42,8 +42,7 @@ const PaymentReportBar = () => {
       try {
         setIsLoading(true);
         const res = await api.get(
-          `/reports/paymentStatusBar?table=${table}&year=${year}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `/reports/paymentStatusBar?table=${table}&year=${year}`
         );
         setData(res.data.data || []);
       } catch (err) {
@@ -53,8 +52,8 @@ const PaymentReportBar = () => {
       }
     };
 
-    if (token) fetchReport();
-  }, [table, year, token]);
+    if (isAuthenticated) fetchReport();
+  }, [table, year, isAuthenticated]);
 
   const COLORS = {
     pending: "rgb(224, 160, 87)",

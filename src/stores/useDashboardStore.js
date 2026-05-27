@@ -1,72 +1,75 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
 import api from '../services/api';
+
+const dateToISO = (date) => {
+  const value = date instanceof Date ? date : new Date(date);
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+};
+
+let inFlightKey = null;
+let inFlightRequest = null;
+
+const defaultFilters = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return {
+    dateFrom: dateToISO(start),
+    dateTo: dateToISO(now),
+    basis: 'NGN_EQUIVALENT',
+  };
+};
 
 const useDashboardStore = create(
   persist(
     (set, get) => ({
-      // ── Data (Transient) ────────────────────────────────
       data: null,
       loading: false,
       error: null,
+      filters: defaultFilters(),
 
-      // ── Filters (Persistent) ─────────────────────────────
-      dateFrom: '',
-      dateTo: '',
+      fetchDashboardData: async (overrideFilters = null) => {
+        const filters = { ...get().filters, ...(overrideFilters || {}) };
+        set({ loading: true, error: null, filters });
 
-      /* ═════════════════════════════════════════════════════════════════════
-         Fetch Data
-      ═════════════════════════════════════════════════════════════════════ */
-      fetchDashboardData: async () => {
-        const token = useAuthStore.getState().token;
-        set({ loading: true, error: null });
+        const requestKey = `${filters.dateFrom}|${filters.dateTo}|${filters.basis}`;
 
         try {
-          // ✅ UNCOMMENTED - Get dates from store
-          const { dateFrom, dateTo } = get();
-          
-          const params = new URLSearchParams();
-          
-          // ✅ UNCOMMENTED - Append date parameters to request
-          if (dateFrom) params.append('date_from', dateFrom);
-          if (dateTo) params.append('date_to', dateTo);
+          if (!inFlightRequest || inFlightKey !== requestKey) {
+            inFlightKey = requestKey;
+            inFlightRequest = api.get('/reports/dashboard-analytics', {
+              params: {
+                date_from: filters.dateFrom,
+                date_to: filters.dateTo,
+                basis: filters.basis,
+              },
+            }).finally(() => {
+              if (inFlightKey === requestKey) {
+                inFlightKey = null;
+                inFlightRequest = null;
+              }
+            });
+          }
 
-          const response = await api.get(`/reports?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          set({
-            data: response.data,
-            loading: false,
-          });
-
+          const response = await inFlightRequest;
+          set({ data: response.data, loading: false, error: null });
+          return true;
         } catch (error) {
-          const message = error.response?.data?.message || error.message;
-          set({
-            error: message,
-            loading: false,
-          });
-          useToastStore.getState().showToast('Failed to fetch dashboard data', 'error');
+          const message = error.response?.data?.message || 'Unable to load dashboard analytics.';
+          set({ error: message, loading: false });
+          useToastStore.getState().showToast(message, 'error');
+          return false;
         }
       },
 
-      // Helper to set dates
-      setDateFilter: (from, to) => {
-        set({ dateFrom: from, dateTo: to });
-        get().fetchDashboardData();
-      },
+      applyFilters: async (nextFilters) => get().fetchDashboardData(nextFilters),
+      resetFilters: async () => get().fetchDashboardData(defaultFilters()),
     }),
-    
-    // ── Persist Configuration ──────────────────────────────────────────────
     {
-      name: 'dashboard-storage',
+      name: 'smartbooks-dashboard-filters',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        dateFrom: state.dateFrom,
-        dateTo: state.dateTo,
-      }),
+      partialize: (state) => ({ filters: state.filters }),
     }
   )
 );

@@ -420,8 +420,8 @@ const ProfitLoss = () => {
 
   const links = [
     { label: "Home",       to: "/",active: true },
-    { label: "Reports",    to: "/reports/ledger", active: true },
-    { label: "Profit & Loss", to: "/reports/ledger/profit-loss", active: false },
+    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
+    { label: "Profit & Loss", to: "/reports/ledger/profit-and-loss", active: false },
   ];
 
   const validate = () => {

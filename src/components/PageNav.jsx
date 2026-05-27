@@ -6,24 +6,28 @@ import "./PageNav.css";
 
 const PageNav = ({ pageTitle, links = [] }) => {
   const { theme } = useThemeStore();
+  const visibleLinks = links.filter((link, index) => !(index === 0 && link.label?.toLowerCase() === "home"));
 
   return (
     <motion.div
       className={`pn-root ${theme === "dark" ? "pn-root--dark" : "pn-root--light"}`}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.28, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="pn-left">
+        <span className="pn-eyebrow"><i className="fas fa-layer-group" /> Smartbooks workspace</span>
         <h1 className="pn-title">{pageTitle}</h1>
       </div>
 
       <nav className="pn-breadcrumb" aria-label="Breadcrumb">
-        <i className="fas fa-house pn-home-icon" />
-        {links.map((link, index) => {
-          const isLast = index === links.length - 1;
+        <Link to="/" className="pn-home-link" aria-label="Return to dashboard">
+          <i className="fas fa-house pn-home-icon" />
+        </Link>
+        {visibleLinks.map((link, index) => {
+          const isLast = index === visibleLinks.length - 1;
           return (
-            <React.Fragment key={index}>
+            <React.Fragment key={`${link.label}-${index}`}>
               <i className="fas fa-chevron-right pn-sep" />
               {link.active && !isLast ? (
                 <Link to={link.to} className="pn-crumb pn-crumb--link">

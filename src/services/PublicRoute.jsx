@@ -1,17 +1,22 @@
-import { Navigate } from "react-router-dom";
-import useAuthStore from "../stores/useAuthStore";
-import { isTokenExpired } from "../utils/jwtUtils";
+import { useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import useAuthStore from '../stores/useAuthStore';
+import { defaultRouteForRole } from '../utils/permissions';
+import AppLoader from '../components/AppLoader';
 
-/**
- * PublicRoute — only accessible when NOT authenticated.
- * If the user has a valid, unexpired token they are redirected to the dashboard.
- */
 const PublicRoute = ({ children }) => {
-  const { token } = useAuthStore();
+  const { initialize, authReady, isAuthenticated, user } = useAuthStore();
 
-  // Treat an expired token the same as no token — let them stay on the public page
-  if (token && !isTokenExpired(token)) {
-    return <Navigate to="/" replace />;
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  if (!authReady) {
+    return <AppLoader />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={defaultRouteForRole(user)} replace />;
   }
 
   return children;

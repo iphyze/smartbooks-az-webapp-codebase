@@ -59,7 +59,7 @@
 .ia-search-btn {
   display: flex; align-items: center; justify-content: center; gap: 9px;
   height: 42px; padding: 0 22px;
-  background: var(--sb-brand, #00b196); color: #fff;
+  background: var(--sb-brand, #099e91); color: #fff;
   border: none; border-radius: 10px;
   font-size: 13.5px; font-weight: 700; font-family: 'DM Sans', sans-serif;
   cursor: pointer; white-space: nowrap;
@@ -108,11 +108,11 @@
   width: 72px; height: 72px; border-radius: 18px;
   background: rgba(0,177,150,0.07); border: 1px solid rgba(0,177,150,0.18);
   display: flex; align-items: center; justify-content: center;
-  font-size: 28px; color: var(--sb-brand, #00b196);
+  font-size: 28px; color: var(--sb-brand, #099e91);
 }
 .ia-empty-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--sb-text-1, #0d1f1b); margin: 0; }
 .ia-empty-sub   { font-size: 13.5px; color: var(--sb-text-3, #7aada6); max-width: 400px; margin: 0; line-height: 1.6; }
-.ia-empty-sub strong { color: var(--sb-brand, #00b196); font-weight: 700; }
+.ia-empty-sub strong { color: var(--sb-brand, #099e91); font-weight: 700; }
 
 /* ─────────────────────────────────────────────
    ACTION BAR
@@ -132,7 +132,7 @@
 .ia-results-badge {
   background: rgba(0,177,150,0.07);
   border: 1px solid rgba(0,177,150,0.18);
-  color: var(--sb-brand, #00b196);
+  color: var(--sb-brand, #099e91);
 }
 .ia-currency-badge {
   background: var(--sb-surface, #fff);
@@ -173,7 +173,7 @@
   text-transform: uppercase; letter-spacing: 0.09em;
   color: var(--sb-text-3, #7aada6);
 }
-.ia-summary-cell--total .ia-summary-cell-label { color: var(--sb-brand, #00b196); }
+.ia-summary-cell--total .ia-summary-cell-label { color: var(--sb-brand, #099e91); }
 
 .ia-summary-cell-value {
   font-family: 'Sora', sans-serif;
@@ -189,11 +189,11 @@
 }
 
 /* Colour the bucket pills by risk level */
-.ia-pill--fresh   { background: rgba(0,177,150,0.1);  color: var(--sb-brand, #00b196); }
+.ia-pill--fresh   { background: rgba(0,177,150,0.1);  color: var(--sb-brand, #099e91); }
 .ia-pill--watch   { background: rgba(234,179,8,0.1);   color: #ca8a04; }
 .ia-pill--concern { background: rgba(249,115,22,0.1);  color: #ea580c; }
 .ia-pill--overdue { background: rgba(244,124,124,0.12); color: #f47c7c; }
-.ia-pill--total   { background: rgba(0,177,150,0.1);   color: var(--sb-brand, #00b196); }
+.ia-pill--total   { background: rgba(0,177,150,0.1);   color: var(--sb-brand, #099e91); }
 
 /* ─────────────────────────────────────────────
    REPORT PAPER
@@ -233,7 +233,7 @@
 
 /* Thead */
 .ia-table thead tr {
-  background: var(--sb-brand, #00b196);
+  background: var(--sb-brand, #099e91);
 }
 .ia-table thead th {
   padding: 11px 14px;
@@ -282,7 +282,7 @@
 /* tfoot */
 .ia-tfoot-row {
   background: rgba(0,177,150,0.06) !important;
-  border-top: 2px solid var(--sb-brand, #00b196) !important;
+  border-top: 2px solid var(--sb-brand, #099e91) !important;
 }
 .ia-tfoot-row td {
   padding: 12px 14px;
@@ -290,7 +290,7 @@
 .ia-tfoot-label {
   font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--sb-brand, #00b196);
+  color: var(--sb-brand, #099e91);
 }
 .ia-tfoot-val {
   font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700;
@@ -303,30 +303,30 @@
    DARK MODE
 ───────────────────────────────────────────── */
 .theme-dark .ia-filter-bar,
-.theme-dark .ia-report-paper { background: #161b22; border-color: #30363d; }
+.theme-dark .ia-report-paper { background: #0f1727; border-color: #233047; }
 
-.theme-dark .ia-filter-label       { color: #8b949e; }
+.theme-dark .ia-filter-label       { color: #7d8da5; }
 .theme-dark .ia-filter-label--err  { color: #f47c7c !important; }
-.theme-dark .ia-empty-title        { color: #e6edf3; }
-.theme-dark .ia-results-badge      { background: rgba(0,201,170,0.08); border-color: rgba(0,201,170,0.18); color: #00c9aa; }
-.theme-dark .ia-currency-badge     { background: #1c2128; border-color: #30363d; color: #8b949e; }
-.theme-dark .ia-summary-strip      { background: #161b22; border-color: #30363d; }
-.theme-dark .ia-summary-cell       { border-right-color: #30363d; }
+.theme-dark .ia-empty-title        { color: #eef3fb; }
+.theme-dark .ia-results-badge      { background: rgba(0,201,170,0.08); border-color: rgba(0,201,170,0.18); color: #13c0ad; }
+.theme-dark .ia-currency-badge     { background: #141e31; border-color: #233047; color: #7d8da5; }
+.theme-dark .ia-summary-strip      { background: #0f1727; border-color: #233047; }
+.theme-dark .ia-summary-cell       { border-right-color: #233047; }
 .theme-dark .ia-summary-cell--total{ background: rgba(0,201,170,0.05); }
 .theme-dark .ia-summary-cell-label { color: #4d7a72; }
-.theme-dark .ia-summary-cell--total .ia-summary-cell-label { color: #00c9aa; }
-.theme-dark .ia-summary-cell-value { color: #e6edf3; }
-.theme-dark .ia-report-paper-header{ border-bottom-color: #30363d; }
-.theme-dark .ia-report-title       { color: #e6edf3; }
+.theme-dark .ia-summary-cell--total .ia-summary-cell-label { color: #13c0ad; }
+.theme-dark .ia-summary-cell-value { color: #eef3fb; }
+.theme-dark .ia-report-paper-header{ border-bottom-color: #233047; }
+.theme-dark .ia-report-title       { color: #eef3fb; }
 .theme-dark .ia-report-sub         { color: #4d7a72; }
 .theme-dark .ia-table thead tr     { background: #00956e; }
-.theme-dark .ia-table tbody tr     { border-bottom-color: #21262d; }
-.theme-dark .ia-table tbody tr:hover { background: #1c2128; }
-.theme-dark .ia-table tbody td     { color: #8b949e; }
+.theme-dark .ia-table tbody tr     { border-bottom-color: #1a263b; }
+.theme-dark .ia-table tbody tr:hover { background: #141e31; }
+.theme-dark .ia-table tbody td     { color: #7d8da5; }
 .theme-dark .ia-client-name        { color: #c9d1d9; }
 .theme-dark .ia-tfoot-row          { background: rgba(0,201,170,0.04) !important; border-top-color: rgba(0,201,170,0.25) !important; }
-.theme-dark .ia-tfoot-label        { color: #00c9aa; }
-.theme-dark .ia-tfoot-val          { color: #e6edf3; }
+.theme-dark .ia-tfoot-label        { color: #13c0ad; }
+.theme-dark .ia-tfoot-val          { color: #eef3fb; }
 
 /* ─────────────────────────────────────────────
    RESPONSIVE
@@ -406,11 +406,11 @@
   line-height: 1.35;
 }
 
-.theme-dark .ia-kpi-card { background: #161b22; border-color: #30363d; }
+.theme-dark .ia-kpi-card { background: #0f1727; border-color: #233047; }
 .theme-dark .ia-kpi-card--primary { background: rgba(0,201,170,0.05); border-color: rgba(0,201,170,0.18); }
 .theme-dark .ia-kpi-card--risk { background: rgba(234,179,8,0.05); border-color: rgba(234,179,8,0.18); }
 .theme-dark .ia-kpi-card--danger { background: rgba(244,124,124,0.06); border-color: rgba(244,124,124,0.2); }
-.theme-dark .ia-kpi-value { color: #e6edf3; }
+.theme-dark .ia-kpi-value { color: #eef3fb; }
 
 @media (max-width: 1100px) {
   .ia-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

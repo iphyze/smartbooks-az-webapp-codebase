@@ -392,7 +392,7 @@ const GeneralLedger = () => {
 
   const links = [
     { label: "Home",            to: "/", active: true },
-    { label: "Reports",         to: "/reports/ledger", active: true },
+    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
     { label: "General Ledger",  to: "/reports/ledger/general-ledger", active: false },
   ];
 
