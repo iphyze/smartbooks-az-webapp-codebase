@@ -24,7 +24,37 @@ import { findEffectiveRateId } from "../../utils/helper";
    Helpers
 ───────────────────────────────────────────── */
 let _itemCounter = 0;
-function createEmptyItem(defaultDescription = "") {
+
+function parseDateValue(value, fallback = new Date()) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+
+  if (typeof value === "string" && value.trim()) {
+    const clean = value.trim().slice(0, 10);
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+    if (iso) {
+      return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  return fallback instanceof Date && !Number.isNaN(fallback.getTime()) ? fallback : new Date();
+}
+
+function formatDateForApi(value) {
+  const date = parseDateValue(value);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function sameDateKey(a, b) {
+  return formatDateForApi(a) === formatDateForApi(b);
+}
+
+function createEmptyItem(defaultDescription = "", journalDate = new Date()) {
   _itemCounter++;
   return {
     id: `item_${Date.now()}_${_itemCounter}`,
@@ -35,6 +65,8 @@ function createEmptyItem(defaultDescription = "") {
     ledger_sub_class: "",
     ledger_type: "",
     journal_description: defaultDescription,
+    journal_date: parseDateValue(journalDate),
+    journal_date_touched: false,
     sides: "",
     jcurrency: "NGN",
     jrate: "",
@@ -55,6 +87,13 @@ const formatNumber = (num) =>
   });
 
 const EPSILON = 0.001;
+
+const DATE_PICKER_PORTAL_PROPS = {
+  portalId: "smartbooks-datepicker-portal",
+  popperClassName: "smartbooks-datepicker-popper",
+  calendarClassName: "smartbooks-datepicker-calendar",
+  popperPlacement: "bottom-start",
+};
 
 /* ─────────────────────────────────────────────
    Static Option Arrays
@@ -173,8 +212,8 @@ const CreateJournalForm = () => {
 
   /* ── Row state ── */
   const [journalItems, setJournalItems] = useState(() => {
-    const item = createEmptyItem();
-    const effectiveId = findEffectiveRateId(rates, item.jcurrency, new Date());
+    const item = createEmptyItem("", journalDetails.journal_date);
+    const effectiveId = findEffectiveRateId(rates, item.jcurrency, journalDetails.journal_date);
     const found = effectiveId ? rates.find((r) => String(r.id) === effectiveId) : null;
     if (found) {
       item.jrate = effectiveId;
@@ -280,6 +319,7 @@ const CreateJournalForm = () => {
     journalItems.map((item) => {
       const e = {};
       if (!item.ledger_name) e.ledger_name = "Ledger required";
+      if (!item.journal_date) e.journal_date = "Date required";
       if (!item.journal_description?.trim()) e.journal_description = "Description required";
       if (!item.sides) e.sides = "Dr/Cr required";
       if (!item.jcurrency) e.jcurrency = "Currency required";
@@ -306,14 +346,40 @@ const CreateJournalForm = () => {
   /* ─────────────────────────────────────────────
      Handlers
   ───────────────────────────────────────────── */
-  const handleDetailChange = (field, value) =>
+  const handleDetailChange = (field, value) => {
+    if (field === "journal_date") {
+      const nextDate = parseDateValue(value, journalDetails.journal_date);
+      const previousHeaderDate = journalDetails.journal_date;
+
+      setJournalItems((items) =>
+        items.map((item) => {
+          const shouldInheritHeaderDate =
+            !item.journal_date_touched || sameDateKey(item.journal_date, previousHeaderDate);
+
+          return shouldInheritHeaderDate
+            ? { ...item, journal_date: nextDate, journal_date_touched: false }
+            : item;
+        })
+      );
+
+      setJournalDetails((prev) => ({ ...prev, journal_date: nextDate }));
+      return;
+    }
+
     setJournalDetails((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleItemChange = (id, field, value) => {
     setJournalItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
         const updated = { ...item, [field]: value };
+
+        if (field === "journal_date") {
+          updated.journal_date = parseDateValue(value, journalDetails.journal_date);
+          updated.journal_date_touched = !sameDateKey(updated.journal_date, journalDetails.journal_date);
+          return updated;
+        }
 
         if (field === "ledger_name") {
           const found = ledgers.find((l) => l.ledger_name === value);
@@ -353,7 +419,7 @@ const CreateJournalForm = () => {
   /* ── Add row — inherit master rate at NGN (default) ── */
   const addItem = () => {
     setJournalItems((prev) => {
-      const newItem = createEmptyItem(journalDetails.main_journal_description);
+      const newItem = createEmptyItem(journalDetails.main_journal_description, journalDetails.journal_date);
       const found = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
       if (found) {
         const curr = newItem.jcurrency.toLowerCase();
@@ -415,7 +481,8 @@ const CreateJournalForm = () => {
 
     const payload = {
       ...journalDetails,
-      journal_date: journalDetails.journal_date.toISOString().split("T")[0],
+      journal_date: formatDateForApi(journalDetails.journal_date),
+      journal_line_date: journalItems.map((i) => formatDateForApi(i.journal_date || journalDetails.journal_date)),
       total_debit_ngn: totals.total_debit_ngn,
       total_credit_ngn: totals.total_credit_ngn,
       total_debit_usd: totals.total_debit_usd,
@@ -457,7 +524,7 @@ const CreateJournalForm = () => {
         });
         setMasterRateId("");
 
-        const resetItem = createEmptyItem();
+        const resetItem = createEmptyItem("", new Date());
         const effectiveId = findEffectiveRateId(rates, resetItem.jcurrency, new Date());
         const found = effectiveId ? rates.find((r) => String(r.id) === effectiveId) : null;
         if (found) {
@@ -514,6 +581,7 @@ const CreateJournalForm = () => {
                       className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`}
                       dateFormat="yyyy-MM-dd"
                       wrapperClassName="input-date-picker"
+                      {...DATE_PICKER_PORTAL_PROPS}
                       id="journal_date"
                       showMonthDropdown
                       showYearDropdown
@@ -608,12 +676,13 @@ const CreateJournalForm = () => {
           <div className="invoice-form-full">
             <div className="invoice-items-table journal-items-table">
               <div className="invoice-table-header journal-table-header">
-                <div className="invoice-table-cell">Ledger Name</div>
-                <div className="invoice-table-cell">Description</div>
-                <div className="invoice-table-cell cell-small">DR / CR</div>
-                <div className="invoice-table-cell cell-small">Currency</div>
-                <div className="invoice-table-cell">Rate Date</div>
-                <div className="invoice-table-cell">Amount</div>
+                <div className="invoice-table-cell journal-cell-ledger">Ledger Name</div>
+                <div className="invoice-table-cell journal-cell-description">Description</div>
+                <div className="invoice-table-cell journal-cell-date">Journal Date</div>
+                <div className="invoice-table-cell cell-small journal-cell-side">DR / CR</div>
+                <div className="invoice-table-cell cell-small journal-cell-currency">Currency</div>
+                <div className="invoice-table-cell journal-cell-rate">Rate Date</div>
+                <div className="invoice-table-cell journal-cell-amount">Amount</div>
                 <div className="invoice-table-cell cell-action">Action</div>
               </div>
 
@@ -627,7 +696,7 @@ const CreateJournalForm = () => {
                   <div key={item.id} className="invoice-table-row">
 
                     {/* Ledger */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-ledger">
                       <div className="inv-form-flex">
                         <div className="input-form-wrapper inv-form-flex-wrap">
                           <div className={`input-form-group ${rowErr.ledger_name ? "input-form-error" : ""}`}>
@@ -658,7 +727,7 @@ const CreateJournalForm = () => {
                     </div>
 
                     {/* Description */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-description">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.journal_description ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">
@@ -669,8 +738,34 @@ const CreateJournalForm = () => {
                       </div>
                     </div>
 
+
+                    {/* Journal Date */}
+                    <div className="invoice-table-cell journal-cell-date">
+                      <div className="input-form-wrapper" style={{ margin: 0 }}>
+                        <div className={`input-form-group ${rowErr.journal_date ? "input-form-error" : ""}`}>
+                          <label className={`input-form-label ${rowErr.journal_date ? "input-label-message" : ""}`} htmlFor={`line_date_${item.id}`}>Date</label>
+                          <div className="form-wrapper">
+                            <DatePicker
+                              selected={parseDateValue(item.journal_date, journalDetails.journal_date)}
+                              onChange={(date) => handleItemChange(item.id, "journal_date", date)}
+                              className={`form-input ${rowErr.journal_date ? "input-error" : ""}`}
+                              dateFormat="yyyy-MM-dd"
+                              wrapperClassName="input-date-picker"
+                              {...DATE_PICKER_PORTAL_PROPS}
+                              id={`line_date_${item.id}`}
+                              showMonthDropdown
+                              showYearDropdown
+                              dropdownMode="select"
+                            />
+                            <span className={`chevron-input-icon fas fa-calendar ${rowErr.journal_date ? "input-icon-error" : ""}`} />
+                          </div>
+                        </div>
+                        {rowErr.journal_date && <div className="input-error-message">{rowErr.journal_date}</div>}
+                      </div>
+                    </div>
+
                     {/* DR / CR */}
-                    <div className="invoice-table-cell cell-small">
+                    <div className="invoice-table-cell cell-small journal-cell-side">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.sides ? "input-form-error" : ""}`}>
                           <label className={`input-form-label ${rowErr.sides ? "input-label-message" : ""}`} htmlFor={sideId}>Side</label>
@@ -684,7 +779,7 @@ const CreateJournalForm = () => {
                     </div>
 
                     {/* Currency */}
-                    <div className="invoice-table-cell cell-small">
+                    <div className="invoice-table-cell cell-small journal-cell-currency">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.jcurrency ? "input-form-error" : ""}`}>
                           <label className={`input-form-label ${rowErr.jcurrency ? "input-label-message" : ""}`} htmlFor={currId}>Currency</label>
@@ -698,7 +793,7 @@ const CreateJournalForm = () => {
                     </div>
 
                     {/* Rate Date — Select using masterRateOptions, auto-filled & styled consistently */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-rate">
                       <div className="inv-form-flex">
                         <div className="input-form-wrapper inv-form-flex-wrap" style={{ margin: 0 }}>
                           <div className={`input-form-group ${rowErr.jrate ? "input-form-error" : ""}`}>
@@ -741,7 +836,7 @@ const CreateJournalForm = () => {
                     </div>
 
                     {/* Amount */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-amount">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">

@@ -25,7 +25,36 @@ import { findEffectiveRateId } from "../../utils/helper";
 ───────────────────────────────────────────── */
 let _itemCounter = 0;
 
-function createEmptyItem(defaultDescription = "") {
+function parseDateValue(value, fallback = new Date()) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+
+  if (typeof value === "string" && value.trim()) {
+    const clean = value.trim().slice(0, 10);
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+    if (iso) {
+      return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  return fallback instanceof Date && !Number.isNaN(fallback.getTime()) ? fallback : new Date();
+}
+
+function formatDateForApi(value) {
+  const date = parseDateValue(value);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function sameDateKey(a, b) {
+  return formatDateForApi(a) === formatDateForApi(b);
+}
+
+function createEmptyItem(defaultDescription = "", journalDate = new Date()) {
   _itemCounter++;
   return {
     id: `item_${Date.now()}_${_itemCounter}`,
@@ -33,6 +62,8 @@ function createEmptyItem(defaultDescription = "") {
     ledger_name: "", ledger_number: "", ledger_class: "",
     ledger_class_code: "", ledger_sub_class: "", ledger_type: "",
     journal_description: defaultDescription,
+    journal_date: parseDateValue(journalDate),
+    journal_date_touched: false,
     sides: "", jcurrency: "NGN",
     jrate: "", currencyRate: "", amount: "",
     rate_date: "", ngn_rate: "", usd_rate: "", eur_rate: "", gbp_rate: "",
@@ -62,6 +93,8 @@ function createItemFromDb(row) {
     ledger_class: row.ledger_class || "", ledger_class_code: row.ledger_class_code || "",
     ledger_sub_class: row.ledger_sub_class || "", ledger_type: row.ledger_type || "",
     journal_description: row.journal_description || "",
+    journal_date: parseDateValue(row.journal_date),
+    journal_date_touched: !sameDateKey(row.journal_date, row.header_journal_date || row.journal_date),
     sides: effectiveDebit > 0 ? "Debit" : "Credit",
     jcurrency: row.journal_currency || "NGN",
     jrate: "",
@@ -117,6 +150,13 @@ const formatNumber = (num) =>
   Number(num || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const EPSILON = 0.001;
+
+const DATE_PICKER_PORTAL_PROPS = {
+  portalId: "smartbooks-datepicker-portal",
+  popperClassName: "smartbooks-datepicker-popper",
+  calendarClassName: "smartbooks-datepicker-calendar",
+  popperPlacement: "bottom-start",
+};
 
 /* ─────────────────────────────────────────────
    Static Option Arrays
@@ -247,7 +287,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     if (!journal) return;
 
     setJournalDetails({
-      journal_date:             journal.journal_date ? new Date(journal.journal_date) : new Date(),
+      journal_date:             parseDateValue(journal.journal_date),
       journal_type:             journal.journal_type             || "",
       journal_currency:         journal.journal_currency         || "NGN",
       transaction_type:         journal.transaction_type         || "",
@@ -256,7 +296,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     });
 
     if (journal.items && journal.items.length > 0) {
-      const seeded = journal.items.map(createItemFromDb);
+      const seeded = journal.items.map((row) => createItemFromDb({ ...row, header_journal_date: journal.journal_date }));
       const resolved = rates && rates.length > 0
         ? seeded.map((item) => resolveItemRate(item, rates))
         : seeded;
@@ -298,15 +338,14 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   /* ── Auto-update rate when journal date changes by user ── */
 const initialJournalDateRef = useRef(
   journal?.journal_date
-    ? new Date(journal.journal_date).toISOString().slice(0, 10)
+    ? formatDateForApi(journal.journal_date)
     : null
 );
 
 useEffect(() => {
   if (!journalDetails.journal_date || !rates.length) return;
 
-  const currentDate =
-    journalDetails.journal_date.toISOString().slice(0, 10);
+  const currentDate = formatDateForApi(journalDetails.journal_date);
 
   // Prevent overwriting existing saved rate on first load
   if (currentDate === initialJournalDateRef.current) return;
@@ -385,6 +424,7 @@ useEffect(() => {
     journalItems.map((item) => {
       const e = {};
       if (!item.ledger_name)                 e.ledger_name         = "Ledger required";
+      if (!item.journal_date)                e.journal_date        = "Date required";
       if (!item.journal_description?.trim()) e.journal_description = "Description required";
       if (!item.sides)                       e.sides               = "Dr/Cr required";
       if (!item.jcurrency)                   e.jcurrency           = "Currency required";
@@ -411,14 +451,40 @@ useEffect(() => {
   /* ─────────────────────────────────────────────
      Handlers
   ───────────────────────────────────────────── */
-  const handleDetailChange = (field, value) =>
+  const handleDetailChange = (field, value) => {
+    if (field === "journal_date") {
+      const nextDate = parseDateValue(value, journalDetails.journal_date);
+      const previousHeaderDate = journalDetails.journal_date;
+
+      setJournalItems((items) =>
+        items.map((item) => {
+          const shouldInheritHeaderDate =
+            !item.journal_date_touched || sameDateKey(item.journal_date, previousHeaderDate);
+
+          return shouldInheritHeaderDate
+            ? { ...item, journal_date: nextDate, journal_date_touched: false }
+            : item;
+        })
+      );
+
+      setJournalDetails((prev) => ({ ...prev, journal_date: nextDate }));
+      return;
+    }
+
     setJournalDetails((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleItemChange = (id, field, value) => {
     setJournalItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
         const updated = { ...item, [field]: value };
+
+        if (field === "journal_date") {
+          updated.journal_date = parseDateValue(value, journalDetails.journal_date);
+          updated.journal_date_touched = !sameDateKey(updated.journal_date, journalDetails.journal_date);
+          return updated;
+        }
 
         if (field === "ledger_name") {
           const found = ledgers.find((l) => l.ledger_name === value);
@@ -457,7 +523,7 @@ useEffect(() => {
 
   const addItem = () => {
     setJournalItems((prev) => {
-      const newItem = createEmptyItem(journalDetails.main_journal_description);
+      const newItem = createEmptyItem(journalDetails.main_journal_description, journalDetails.journal_date);
       const found   = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
       if (found) {
         const curr = newItem.jcurrency.toLowerCase();
@@ -537,7 +603,8 @@ useEffect(() => {
     const payload = {
       journal_id:          journalId,
       ...journalDetails,
-      journal_date:        journalDetails.journal_date.toISOString().split("T")[0],
+      journal_date:        formatDateForApi(journalDetails.journal_date),
+      journal_line_date:   journalItems.map((i) => formatDateForApi(i.journal_date || journalDetails.journal_date)),
       total_debit_ngn:     totals.total_debit_ngn,
       total_credit_ngn:    totals.total_credit_ngn,
       total_debit_usd:     totals.total_debit_usd,
@@ -610,7 +677,7 @@ useEffect(() => {
                 <div className={`input-form-group ${headerErrors.journal_date ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${headerErrors.journal_date ? "input-label-message" : ""}`} htmlFor="journal_date">Journal Date</label>
                   <div className="form-wrapper">
-                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="journal_date" showMonthDropdown showYearDropdown dropdownMode="select" />
+                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" {...DATE_PICKER_PORTAL_PROPS} id="journal_date" showMonthDropdown showYearDropdown dropdownMode="select" />
                     <span className={`chevron-input-icon fas fa-calendar ${headerErrors.journal_date ? "input-icon-error" : ""}`} />
                   </div>
                 </div>
@@ -700,12 +767,13 @@ useEffect(() => {
           <div className="invoice-form-full">
             <div className="invoice-items-table journal-items-table">
               <div className="invoice-table-header journal-table-header">
-                <div className="invoice-table-cell">Ledger Name</div>
-                <div className="invoice-table-cell">Description</div>
-                <div className="invoice-table-cell cell-small">DR / CR</div>
-                <div className="invoice-table-cell cell-small">Currency</div>
-                <div className="invoice-table-cell">Rate Date</div>
-                <div className="invoice-table-cell">Amount</div>
+                <div className="invoice-table-cell journal-cell-ledger">Ledger Name</div>
+                <div className="invoice-table-cell journal-cell-description">Description</div>
+                <div className="invoice-table-cell journal-cell-date">Journal Date</div>
+                <div className="invoice-table-cell cell-small journal-cell-side">DR / CR</div>
+                <div className="invoice-table-cell cell-small journal-cell-currency">Currency</div>
+                <div className="invoice-table-cell journal-cell-rate">Rate Date</div>
+                <div className="invoice-table-cell journal-cell-amount">Amount</div>
                 <div className="invoice-table-cell cell-action">Action</div>
               </div>
 
@@ -719,7 +787,7 @@ useEffect(() => {
                   <div key={item.id} className="invoice-table-row">
 
                     {/* Ledger */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-ledger">
                       <div className="inv-form-flex">
                         <div className="input-form-wrapper inv-form-flex-wrap">
                           <div className={`input-form-group ${rowErr.ledger_name ? "input-form-error" : ""}`}>
@@ -750,7 +818,7 @@ useEffect(() => {
                     </div>
 
                     {/* Description */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-description">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.journal_description ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">
@@ -761,8 +829,34 @@ useEffect(() => {
                       </div>
                     </div>
 
+
+                    {/* Journal Date */}
+                    <div className="invoice-table-cell journal-cell-date">
+                      <div className="input-form-wrapper" style={{ margin: 0 }}>
+                        <div className={`input-form-group ${rowErr.journal_date ? "input-form-error" : ""}`}>
+                          <label className={`input-form-label ${rowErr.journal_date ? "input-label-message" : ""}`} htmlFor={`line_date_${item.id}`}>Date</label>
+                          <div className="form-wrapper">
+                            <DatePicker
+                              selected={parseDateValue(item.journal_date, journalDetails.journal_date)}
+                              onChange={(date) => handleItemChange(item.id, "journal_date", date)}
+                              className={`form-input ${rowErr.journal_date ? "input-error" : ""}`}
+                              dateFormat="yyyy-MM-dd"
+                              wrapperClassName="input-date-picker"
+                              {...DATE_PICKER_PORTAL_PROPS}
+                              id={`line_date_${item.id}`}
+                              showMonthDropdown
+                              showYearDropdown
+                              dropdownMode="select"
+                            />
+                            <span className={`chevron-input-icon fas fa-calendar ${rowErr.journal_date ? "input-icon-error" : ""}`} />
+                          </div>
+                        </div>
+                        {rowErr.journal_date && <div className="input-error-message">{rowErr.journal_date}</div>}
+                      </div>
+                    </div>
+
                     {/* DR / CR */}
-                    <div className="invoice-table-cell cell-small">
+                    <div className="invoice-table-cell cell-small journal-cell-side">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.sides ? "input-form-error" : ""}`}>
                           <label className={`input-form-label ${rowErr.sides ? "input-label-message" : ""}`} htmlFor={sideId}>Side</label>
@@ -776,7 +870,7 @@ useEffect(() => {
                     </div>
 
                     {/* Currency */}
-                    <div className="invoice-table-cell cell-small">
+                    <div className="invoice-table-cell cell-small journal-cell-currency">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.jcurrency ? "input-form-error" : ""}`}>
                           <label className={`input-form-label ${rowErr.jcurrency ? "input-label-message" : ""}`} htmlFor={currId}>Currency</label>
@@ -790,7 +884,7 @@ useEffect(() => {
                     </div>
 
                     {/* Rate Date — Select using masterRateOptions, auto-filled & styled consistently */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-rate">
                       <div className="inv-form-flex">
                         <div className="input-form-wrapper inv-form-flex-wrap" style={{ margin: 0 }}>
                           <div className={`input-form-group ${rowErr.jrate ? "input-form-error" : ""}`}>
@@ -833,7 +927,7 @@ useEffect(() => {
                     </div>
 
                     {/* Amount */}
-                    <div className="invoice-table-cell">
+                    <div className="invoice-table-cell journal-cell-amount">
                       <div className="input-form-wrapper" style={{ margin: 0 }}>
                         <div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}>
                           <div className="form-wrapper">

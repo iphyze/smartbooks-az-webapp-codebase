@@ -159,3 +159,32 @@
   .pagination-controls { gap: 3px; }
   .pagination-btn       { min-width: 28px; height: 28px; font-size: 11.5px; }
 }
+
+/* Journal dynamic rows need extra room for row-level dates and usable selects. */
+@media (max-width: 960px) {
+  .journal-items-table {
+    min-width: 1850px;
+  }
+
+  .journal-items-table .invoice-table-header,
+  .journal-items-table .invoice-table-row {
+    min-width: 1850px;
+  }
+}
+
+@media (max-width: 480px) {
+  .journal-items-table .journal-cell-date {
+    flex: 0 0 190px;
+    min-width: 190px;
+  }
+
+  .journal-items-table .journal-cell-side {
+    flex: 0 0 155px;
+    min-width: 155px;
+  }
+
+  .journal-items-table .journal-cell-currency {
+    flex: 0 0 165px;
+    min-width: 165px;
+  }
+}
