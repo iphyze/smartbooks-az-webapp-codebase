@@ -10,6 +10,7 @@ import BankReconClassifiedItemsTable from './BankReconClassifiedItemsTable';
 
 const BankReconResultsPanel = ({ id }) => {
   const { current, fetchSingle, downloadExcel } = useBankReconStore();
+  const downloadingExcelId = useBankReconStore((s) => s.downloadingExcelId);
 
   useEffect(() => { fetchSingle(id); }, [id, fetchSingle]);
 
@@ -23,6 +24,7 @@ const BankReconResultsPanel = ({ id }) => {
   if (!recon) return null;
 
   const acctSub = [recon.bank_name, recon.account_name, recon.account_number].filter(Boolean).join(' · ');
+  const excelLoading = downloadingExcelId === String(recon.id);
 
   return (
     <motion.div variants={fadeUp} initial="hidden" animate="show">
@@ -34,7 +36,24 @@ const BankReconResultsPanel = ({ id }) => {
           {acctSub && <span className="br-action-chip"><i className="fas fa-wallet" />{acctSub}</span>}
         </div>
         <div className="br-action-right">
-          <button className="br-btn-excel" onClick={() => downloadExcel(recon.id, recon.recon_number)}><i className="fas fa-file-excel" />Excel</button>
+          <button
+            className={`br-btn-excel${excelLoading ? ' br-btn-loading' : ''}`}
+            onClick={() => downloadExcel(recon.id, recon.recon_number)}
+            disabled={excelLoading}
+            aria-busy={excelLoading}
+          >
+            {excelLoading ? (
+              <>
+                <span className="br-spinner br-spinner--sm" aria-hidden="true" />
+                Preparing Excel…
+              </>
+            ) : (
+              <>
+                <i className="fas fa-file-excel" />
+                Excel
+              </>
+            )}
+          </button>
           <PDFDownloadLink document={pdfDoc} fileName={`${recon.recon_number}.pdf`}>
             {({ loading }) => <button className="br-btn-pdf" disabled={loading}><i className="fas fa-file-pdf" />{loading ? 'PDF…' : 'PDF'}</button>}
           </PDFDownloadLink>

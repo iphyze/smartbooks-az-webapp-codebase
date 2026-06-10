@@ -23,6 +23,7 @@ const BankReconWorkspace = () => {
   const [nav, setNav] = useState(false);
 
   const { fetchSingle, downloadExcel, resetCurrent, appendLines, addLine } = useBankReconStore();
+  const downloadingExcelId = useBankReconStore((s) => s.downloadingExcelId);
   const [showAppend,  setShowAppend]  = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
   const current = useBankReconStore((s) => s.current);
@@ -56,6 +57,7 @@ const BankReconWorkspace = () => {
   if (!recon) return null;
 
   const acctSub = [recon.bank_name, recon.account_name, recon.account_number].filter(Boolean).join(' · ');
+  const excelLoading = downloadingExcelId === String(recon.id);
   // const pdfDoc  = <DownloadBankRecon recon={recon} bankLines={current.bank_lines || []} ledgerLines={current.ledger_lines || []} />;
 
   return (
@@ -91,8 +93,23 @@ const BankReconWorkspace = () => {
                   <button className="br-btn-ghost" style={{ height: 34, padding: '0 14px', fontSize: 12 }} onClick={() => setShowAppend(true)}>
                     <i className="fas fa-file-arrow-up" />Append Lines
                   </button>
-                  <button className="br-btn-excel" onClick={() => downloadExcel(recon.id, recon.recon_number)}>
-                    <i className="fas fa-file-excel" />Excel
+                  <button
+                    className={`br-btn-excel${excelLoading ? ' br-btn-loading' : ''}`}
+                    onClick={() => downloadExcel(recon.id, recon.recon_number)}
+                    disabled={excelLoading}
+                    aria-busy={excelLoading}
+                  >
+                    {excelLoading ? (
+                      <>
+                        <span className="br-spinner br-spinner--sm" aria-hidden="true" />
+                        Preparing Excel…
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-file-excel" />
+                        Excel
+                      </>
+                    )}
                   </button>
                   {/* <PDFDownloadLink document={pdfDoc} fileName={`${recon.recon_number}.pdf`}>
                     {({ loading }) => (

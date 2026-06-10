@@ -56,15 +56,22 @@ export const AUTO_LEDGERS = {
   Other:                 { dr: 'Suspense',                  cr: 'Bank Ledger' },
 };
 
-// Mode-agnostic: both directions always shown per column now.
-// MATCH_MODES only controls which pairing is validated for the Match button.
+// Internal direction is stored as cash-flow direction:
+//   OUT = money paid out of the bank account
+//   IN  = money received into the bank account
+// Accounting presentation is side-specific:
+//   Bank:   OUT = Debit,  IN = Credit
+//   Ledger: OUT = Credit, IN = Debit
+// Therefore the correct recon pairs are Bank Debit ↔ Ledger Credit and
+// Bank Credit ↔ Ledger Debit. The stored direction remains the same on both
+// sides so matching and auto-matching can compare OUT with OUT, IN with IN.
 export const MATCH_MODES = {
   BANK_DEBIT_LEDGER_CREDIT: {
     key: 'BANK_DEBIT_LEDGER_CREDIT',
     label: 'Bank Debit ↔ Ledger Credit',
     shortLabel: 'Bank Dr ↔ Ledger Cr',
     bankDir: 'OUT',
-    ledgerDir: 'IN',
+    ledgerDir: 'OUT',
     hint: 'Use this when the bank statement is debited and the ledger has the matching credit entry.',
   },
   BANK_CREDIT_LEDGER_DEBIT: {
@@ -72,15 +79,48 @@ export const MATCH_MODES = {
     label: 'Bank Credit ↔ Ledger Debit',
     shortLabel: 'Bank Cr ↔ Ledger Dr',
     bankDir: 'IN',
-    ledgerDir: 'OUT',
+    ledgerDir: 'IN',
     hint: 'Use this when the bank statement is credited and the ledger has the matching debit entry.',
   },
 };
 
-export const directionLabel = (side, direction) => {
-  if (side === 'bank') return direction === 'OUT' ? 'Bank Debit' : 'Bank Credit';
-  return direction === 'OUT' ? 'Ledger Debit' : 'Ledger Credit';
+export const entrySide = (side, direction) => {
+  if (side === 'ledger') return direction === 'OUT' ? 'Cr' : 'Dr';
+  return direction === 'OUT' ? 'Dr' : 'Cr';
 };
+
+export const entrySideLong = (side, direction) => (entrySide(side, direction) === 'Dr' ? 'Debit' : 'Credit');
+
+export const directionLabel = (side, direction) => {
+  const source = side === 'ledger' ? 'Ledger' : 'Bank';
+  return `${source} ${entrySideLong(side, direction)}`;
+};
+
+export const directionPillClass = (side, direction) => (entrySide(side, direction) === 'Dr' ? 'br-dir-out' : 'br-dir-in');
+
+export const directionTabsFor = (side) => ([
+  { key: 'all', label: 'All' },
+  ...(side === 'ledger'
+    ? [{ key: 'IN', label: 'Dr' }, { key: 'OUT', label: 'Cr' }]
+    : [{ key: 'OUT', label: 'Dr' }, { key: 'IN', label: 'Cr' }]),
+]);
+
+export const directionSortOptionsFor = (side) => ([
+  { key: 'date_asc',  label: 'Date ↑',   icon: 'fa-arrow-up-wide-short' },
+  { key: 'date_desc', label: 'Date ↓',   icon: 'fa-arrow-down-wide-short' },
+  { key: 'amt_desc',  label: 'Amount ↓', icon: 'fa-arrow-down-9-1' },
+  { key: 'amt_asc',   label: 'Amount ↑', icon: 'fa-arrow-up-1-9' },
+  ...(side === 'ledger'
+    ? [
+        { key: 'dir_in',  label: 'Debits first',  icon: 'fa-arrow-down-left' },
+        { key: 'dir_out', label: 'Credits first', icon: 'fa-arrow-up-right' },
+      ]
+    : [
+        { key: 'dir_out', label: 'Debits first',  icon: 'fa-arrow-up-right' },
+        { key: 'dir_in',  label: 'Credits first', icon: 'fa-arrow-down-left' },
+      ]),
+  { key: 'desc_az', label: 'A → Z', icon: 'fa-arrow-down-a-z' },
+]);
 
 /** Returns true if this classification affects the reconciliation balance. */
 export const affectsBalance = (classification) => classification !== 'Prior Period Item';

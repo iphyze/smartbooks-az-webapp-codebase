@@ -39,6 +39,7 @@ const useBankReconStore = create(
       ui: { ...emptyUi },
       creating: false,
       saving: false,
+      downloadingExcelId: null,
 
       // ── Pagination / sort (persisted) ──────────────────────────────────
       currentPage: 1,
@@ -457,9 +458,19 @@ const useBankReconStore = create(
       },
 
       downloadExcel: async (id, filename = 'Bank_Reconciliation') => {
+        const reconId = id ? String(id) : '';
+        if (!reconId) {
+          useToastStore.getState().showToast('Reconciliation ID is required.', 'error');
+          return false;
+        }
+
+        if (get().downloadingExcelId === reconId) return false;
+
         const token = useAuthStore.getState().token;
+        set({ downloadingExcelId: reconId });
+
         try {
-          const res = await api.get(`/bank-recon/export-excel?id=${id}`, {
+          const res = await api.get(`/bank-recon/export-excel?id=${encodeURIComponent(reconId)}`, {
             headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
             responseType: 'blob',
           });
@@ -471,10 +482,13 @@ const useBankReconStore = create(
           a.click();
           a.remove();
           window.URL.revokeObjectURL(url);
+          useToastStore.getState().showToast('Excel file is ready.', 'success');
           return true;
         } catch (err) {
-          useToastStore.getState().showToast('Failed to download Excel', 'error');
+          useToastStore.getState().showToast(err.response?.data?.message || 'Failed to download Excel', 'error');
           return false;
+        } finally {
+          set({ downloadingExcelId: null });
         }
       },
 

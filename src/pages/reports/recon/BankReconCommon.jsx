@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { fmtDate, fmtAmt, safe } from './BankReconUtils';
+import { fmtDate, fmtAmt, safe, entrySide, directionPillClass } from './BankReconUtils';
 
 export const Field = ({ label, required, error, children, className = '' }) => (
   <div className={`br-field ${className}`}>
@@ -92,17 +92,9 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
         )}
 
         <span className="br-line-date">{fmtDate(line.txn_date)}</span>
-        <span className={`br-dir-badge ${
-          side === 'ledger'
-            // ? (isOut ? 'br-dir-in' : 'br-dir-out')   // ledger: OUT=Cr(green), IN=Dr(red)
-            ? (isOut ? 'br-dir-out' : 'br-dir-in')   // ledger: OUT=Cr(green), IN=Dr(red)
-            : (isOut ? 'br-dir-out' : 'br-dir-in')   // bank:   OUT=Dr(red),  IN=Cr(green)
-        }`}>
+        <span className={`br-dir-badge ${directionPillClass(side, line.direction)}`}>
           <i className={`fas ${isOut ? 'fa-arrow-up-right' : 'fa-arrow-down-left'}`} />
-          {side === 'ledger'
-            // ? (isOut ? 'Cr' : 'Dr')
-            ? (isOut ? 'Dr' : 'Cr')
-            : (isOut ? 'Dr' : 'Cr')}
+          {entrySide(side, line.direction)}
         </span>
         <StatusPill status={line.match_status} />
 

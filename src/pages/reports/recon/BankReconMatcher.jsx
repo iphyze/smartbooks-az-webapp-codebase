@@ -3,6 +3,8 @@ import { AnimatePresence } from 'framer-motion';
 import useBankReconStore from '../../../stores/useBankReconStore';
 import {
   MATCH_MODES,
+  directionTabsFor,
+  directionSortOptionsFor,
   fmtAmt,
   sumSelected,
 } from './BankReconUtils';
@@ -10,30 +12,12 @@ import { LineCard } from './BankReconCommon';
 import BankReconClassifyModal from './BankReconClassifyModal';
 import BankReconEditLineModal from './BankReconEditLineModal';
 
-/* ── Sort options ──────────────────────────────────────────── */
-const SORT_OPTIONS = [
-  { key: 'date_asc',    label: 'Date ↑',     icon: 'fa-arrow-up-wide-short' },
-  { key: 'date_desc',   label: 'Date ↓',     icon: 'fa-arrow-down-wide-short' },
-  { key: 'amt_desc',    label: 'Amount ↓',   icon: 'fa-arrow-down-9-1' },
-  { key: 'amt_asc',     label: 'Amount ↑',   icon: 'fa-arrow-up-1-9' },
-  { key: 'dir_out',     label: 'Debits first', icon: 'fa-arrow-up-right' },
-  { key: 'dir_in',      label: 'Credits first',icon: 'fa-arrow-down-left' },
-  { key: 'desc_az',     label: 'A → Z',      icon: 'fa-arrow-down-a-z' },
-];
-
 /* ── Status filter tabs ────────────────────────────────────── */
 const STATUS_TABS = [
   { key: 'all',        label: 'All' },
   { key: 'unmatched',  label: 'Unmatched' },
   { key: 'matched',    label: 'Matched' },
   { key: 'classified', label: 'Classified' },
-];
-
-/* ── Direction filter ──────────────────────────────────────── */
-const DIR_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'OUT', label: 'Dr' },
-  { key: 'IN',  label: 'Cr' },
 ];
 
 /* ── Recon classification filter options ──────────────────── */
@@ -88,6 +72,7 @@ const applyFiltersAndSort = (lines, { statusFilter, dirFilter, classFilter, sear
 
 /* ── Column toolbar (search + status tabs + dir tabs + sort) ── */
 const ColumnToolbar = ({
+  side = 'bank',
   search, onSearchChange,
   statusFilter, onStatusChange,
   dirFilter, onDirChange,
@@ -99,7 +84,9 @@ const ColumnToolbar = ({
 }) => {
   const [sortOpen, setSortOpen] = useState(false);
   const [classOpen, setClassOpen] = useState(false);
-  const currentSort = SORT_OPTIONS.find((s) => s.key === sortKey);
+  const directionTabs = directionTabsFor(side);
+  const sortOptions = directionSortOptionsFor(side);
+  const currentSort = sortOptions.find((s) => s.key === sortKey);
   const currentClass = CLASS_OPTIONS.find((c) => c.key === classFilter) || CLASS_OPTIONS[0];
   const sortRef  = useRef(null);
   const classRef = useRef(null);
@@ -146,7 +133,7 @@ const ColumnToolbar = ({
 
         {/* Direction filter */}
         <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-          {DIR_TABS.map((d) => (
+          {directionTabs.map((d) => (
             <button
               key={d.key}
               onClick={() => onDirChange(d.key)}
@@ -235,7 +222,7 @@ const ColumnToolbar = ({
               borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', overflow: 'hidden', minWidth: 140,
             }}
             className="br-sort-menu">
-              {SORT_OPTIONS.map((s) => (
+              {sortOptions.map((s) => (
                 <button
                   key={s.key}
                   type="button"
@@ -415,12 +402,10 @@ const BankReconMatcher = () => {
   // Column header count badges
   const bankDrCnt = bankFiltered.filter((l) => l.direction === 'OUT').length;
   const bankCrCnt = bankFiltered.filter((l) => l.direction === 'IN').length;
-  // Ledger: OUT = Credit (Cr), IN = Debit (Dr) — accounting convention flip
-  const lgCrCnt   = lgFiltered.filter((l) => l.direction === 'IN').length;   // Dr = IN on ledger
-  const lgDrCnt   = lgFiltered.filter((l) => l.direction === 'OUT').length;  // Cr = OUT on ledger
-
-  // const lgDrCnt   = lgFiltered.filter((l) => l.direction === 'IN').length;   // Dr = IN on ledger
-  // const lgCrCnt   = lgFiltered.filter((l) => l.direction === 'OUT').length;  // Cr = OUT on ledger
+  // Ledger side is presented with normal accounting sides:
+  // OUT = Ledger Credit, IN = Ledger Debit.
+  const lgDrCnt   = lgFiltered.filter((l) => l.direction === 'IN').length;
+  const lgCrCnt   = lgFiltered.filter((l) => l.direction === 'OUT').length;
 
   return (
     <div className="br-workspace">
@@ -495,7 +480,7 @@ const BankReconMatcher = () => {
           <i className="fas fa-circle-info" />
           <span>
             Use filters and sort to find transactions, then use <strong>Select All</strong> in each column to bulk-select the filtered results.
-            Match activates when bank and ledger totals are equal within tolerance.
+            Match activates when Bank Debit totals equal Ledger Credit totals and Bank Credit totals equal Ledger Debit totals within tolerance.
           </span>
         </div>
       </div>
@@ -513,6 +498,7 @@ const BankReconMatcher = () => {
             </span>
           </div>
           <ColumnToolbar
+            side="bank"
             search={bankSearch}          onSearchChange={setBankSearch}
             statusFilter={bankStatus}    onStatusChange={setBankStatus}
             dirFilter={bankDir}          onDirChange={setBankDir}
@@ -562,6 +548,7 @@ const BankReconMatcher = () => {
             </span>
           </div>
           <ColumnToolbar
+            side="ledger"
             search={lgSearch}         onSearchChange={setLgSearch}
             statusFilter={lgStatus}   onStatusChange={setLgStatus}
             dirFilter={lgDir}         onDirChange={setLgDir}
