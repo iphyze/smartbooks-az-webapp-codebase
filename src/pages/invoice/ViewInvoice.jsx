@@ -90,7 +90,7 @@ const ViewInvoice = () => {
               <EditLoaderComponent text={'Loading Invoice...'} />
             ) : (
               // Pass the fetched data directly to the child
-              <ViewInvoiceContent invoice={invoiceData} />
+              <ViewInvoiceContent invoice={invoiceData} onRefresh={validateAndFetchInvoice} />
             )}
           </div>
         </div>

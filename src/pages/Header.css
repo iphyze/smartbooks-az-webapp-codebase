@@ -112,7 +112,13 @@
   border: 1px solid transparent; border-radius: 13px; color: var(--hdr-muted); background: transparent;
   cursor: pointer; font-size: 15px; transition: background .16s ease, color .16s ease, border-color .16s ease;
 }
-.sb-header__icon-btn:hover { background: var(--hdr-hover); color: var(--hdr-accent); border-color: var(--hdr-chip-border); }
+.sb-header__icon-btn:hover, .sb-header__icon-btn--open { background: var(--hdr-hover); color: var(--hdr-accent); border-color: var(--hdr-chip-border); }
+.sb-header__notification-wrap { position: relative; }
+.sb-header__notif-badge {
+  position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; display: inline-grid; place-items: center;
+  padding: 0 4px; border: 2px solid var(--hdr-bg); border-radius: 999px; color: #fff; background: var(--hdr-notif);
+  font: 800 7.5px/1 'DM Sans', sans-serif; letter-spacing: -.02em; box-shadow: 0 3px 8px rgba(15, 23, 42, .16);
+}
 .sb-header__notif-dot { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border: 2px solid var(--hdr-bg); border-radius: 50%; background: var(--hdr-notif); }
 
 .sb-header__user-wrap { position: relative; }

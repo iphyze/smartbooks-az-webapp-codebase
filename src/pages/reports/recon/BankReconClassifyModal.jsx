@@ -105,7 +105,7 @@ const BankReconClassifyModal = ({ target, bankLines = [], ledgerLines = [], onCl
             </p>
           </div>
           <button className="br-modal-x" onClick={onClose} disabled={loading}>
-            <i className="fas fa-xmark" />
+            <i className="fas fa-times" />
           </button>
         </div>
 

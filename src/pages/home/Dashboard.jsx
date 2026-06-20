@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { fadeInUp } from '../../utils/animation';
 import {
   Area,
   AreaChart,
@@ -493,7 +494,13 @@ const Dashboard = () => {
       <NavBar setNav={setNav} nav={nav} />
       <main className={`content-container theme-${theme}`}>
         <div className={`analytics-root db-root theme-${theme}`}>
-          <div className="analytics-page">
+          <motion.div
+            className="analytics-page"
+            variants={fadeInUp}
+            initial="hidden"
+            animate="show"
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          >
             <PageNav pageTitle="Executive Dashboard" links={[{ label: 'Analytics', to: '/', active: false }]} />
             <AnalyticsToolbar draft={draft} setDraft={setDraft} onApply={apply} onReset={reset} loading={loading} />
             {error && (
@@ -532,7 +539,7 @@ const Dashboard = () => {
               <RecentInvoices rows={response.recent_invoices || []} currency={currency} loading={loading} />
             </div>
             <RateStrip rates={response.latest_rates} controls={response.period_controls} loading={loading} />
-          </div>
+          </motion.div>
         </div>
       </main>
     </div>

@@ -1,13 +1,50 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { fadeInUp } from "../../utils/animation";
+import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
-import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import DownloadTimesheet from "./DownloadTimesheet"; // Import the PDF component
-import "../ViewJournal.css";
-import "../inputs-styles/Inputs.css";
+import { fadeInUp } from "../../utils/animation";
+import { formatDateLong } from "../../utils/helper";
+import DownloadTimesheet from "./DownloadTimesheet";
+import {
+  EntitySummaryCard,
+  EntitySummaryGrid,
+  EntityViewActions,
+  EntityViewDetail,
+  EntityViewPanel,
+  EntityViewSectionHeading,
+  EntityViewShell,
+} from "../../components/entity-view/EntityView";
+
+const formatTime = (timeValue) => {
+  if (!timeValue) return "Not recorded";
+  const [hours, minutes] = String(timeValue).split(":");
+  if (hours === undefined || minutes === undefined) return "Not recorded";
+
+  const date = new Date();
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+  return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+};
+
+const formatHours = (value) => {
+  const hours = Number(value);
+  if (!Number.isFinite(hours)) return "Not recorded";
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours - wholeHours) * 60);
+  return `${wholeHours}h ${minutes}m`;
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "Not recorded";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not recorded";
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const ViewTimesheetContent = ({ timesheet }) => {
   const { theme } = useThemeStore();
@@ -15,214 +52,133 @@ const ViewTimesheetContent = ({ timesheet }) => {
 
   if (!timesheet) return null;
 
-  // Destructure nested data from backend response
-  const { clients_data, staff_data } = timesheet;
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'long', year: 'numeric',
-    });
-  };
-
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '—';
-    // Backend returns "HH:mm:ss" or "HH:mm"
-    const parts = timeStr.split(':');
-    if (parts.length < 2) return '—';
-    
-    const date = new Date();
-    date.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0);
-    
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatHours = (hours) => {
-    // Handle null/undefined/0
-    if (!hours && hours !== 0) return '—';
-    
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    
-    return `${h}h ${m}m`;
-  };
-
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return `${d.toLocaleDateString('en-GB')} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  };
+  const { clients_data: clientData, staff_data: staffData } = timesheet;
+  const totalHours = formatHours(timesheet.total_hours);
+  const timesheetDocument = <DownloadTimesheet timesheet={timesheet} />;
 
   return (
     <motion.div
       variants={fadeInUp}
       initial="hidden"
       animate="show"
-      transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }}
-      className={`view-content-box theme-${theme}`}
+      transition={{ duration: 0.28, ease: "easeOut" }}
     >
-      <img src={CompanyLogo} alt="Company Logo" className="company-logo" />
-
-      {/* ── Action Buttons ── */}
-      <div className="vc-button-box">
-        <button
-          className="vc-edit-btn"
-          onClick={() => navigate(`/timesheet/edit/${timesheet.id}`)}
+      <EntityViewShell
+        theme={theme}
+        icon="fa-clock"
+        eyebrow="Smartbooks timesheet entry"
+        title={`Timesheet #${timesheet.id || "—"}`}
+        subtitle={timesheet.task || "Review the work entry, linked records, and audit information."}
+        badges={[
+          { label: formatDateLong(timesheet.date), icon: "fa-calendar-day", variant: "brand" },
+          { label: totalHours, icon: "fa-hourglass-half", variant: "success" },
+        ]}
+        actions={(
+          <EntityViewActions
+            onBack={() => navigate("/timesheet/home")}
+            backLabel="Back to timesheets"
+            onEdit={() => navigate(`/timesheet/edit/${timesheet.id}`)}
+            editLabel="Edit entry"
+            pdfDocument={timesheetDocument}
+            fileName={`Timesheet-${timesheet.id || "entry"}.pdf`}
+            printTitle={`Preparing timesheet #${timesheet.id || ""}`}
+          />
+        )}
+        highlights={[
+          { label: "Work date", value: formatDateLong(timesheet.date), icon: "fa-calendar-check" },
+          { label: "Total hours", value: totalHours, icon: "fa-business-time" },
+          { label: "Staff member", value: timesheet.staff_name || "Not assigned", icon: "fa-user-clock" },
+        ]}
+      >
+        <EntityViewPanel
+          icon="fa-list-check"
+          title="Entry context"
+          description="The work assignment and records connected to this entry."
         >
-          <span className="fas fa-pen" /> Edit Entry
-        </button>
-        
-        {/* Download PDF Button */}
-        <PDFDownloadLink
-          document={<DownloadTimesheet timesheet={timesheet} />}
-          fileName={`Timesheet-${timesheet.id}.pdf`}
-          className="vc-export-btn"
+          <EntityViewDetail icon="fa-hashtag" label="Entry ID" value={timesheet.id ? `#${timesheet.id}` : null} />
+          <EntityViewDetail icon="fa-calendar-day" label="Work date" value={formatDateLong(timesheet.date)} />
+          <EntityViewDetail
+            icon="fa-user-clock"
+            label="Staff member"
+            value={timesheet.staff_name}
+            onClick={timesheet.staff_id ? () => navigate(`/staff/view/${timesheet.staff_id}`) : undefined}
+          />
+          <EntityViewDetail
+            icon="fa-address-book"
+            label="Client"
+            value={timesheet.clients_name}
+            onClick={timesheet.clients_id ? () => navigate(`/client/view/${timesheet.clients_id}`) : undefined}
+          />
+          <EntityViewDetail icon="fa-diagram-project" label="Project" value={timesheet.project} />
+          <EntityViewDetail icon="fa-list-check" label="Task" value={timesheet.task} />
+        </EntityViewPanel>
+
+        <EntityViewPanel
+          icon="fa-clock-rotate-left"
+          title="Record history"
+          description="Creation and most recent update information."
         >
-          {({ loading }) => (
-            loading ? 
-            <><span className="fas fa-spinner fa-spin"></span> Preparing...</> : 
-            <><span className="fas fa-file-pdf"></span> Download PDF</>
-          )}
-        </PDFDownloadLink>
-      </div>
+          <EntityViewDetail icon="fa-user-plus" label="Created by" value={timesheet.created_by} subtle />
+          <EntityViewDetail icon="fa-calendar-plus" label="Created at" value={formatDateTime(timesheet.created_at)} />
+          <EntityViewDetail icon="fa-user-pen" label="Updated by" value={timesheet.updated_by} subtle />
+          <EntityViewDetail icon="fa-calendar-check" label="Updated at" value={formatDateTime(timesheet.updated_at)} />
+        </EntityViewPanel>
 
-      {/* ── Header ── */}
-      <div className="vc-header-flexbox">
-        <div className="vc-header-col">
-
-          <div className="vc-header-group">
-            <div className="vc-header-title">Entry ID</div>
-            <div className="vc-header-text">{timesheet.id}</div>
-          </div>
-
-          <div className="vc-header-group">
-            <div className="vc-header-title">Work Date</div>
-            <div className="vc-header-text">{formatDate(timesheet.date)}</div>
-          </div>
-
-          <div className="vc-header-group">
-            <div className="vc-header-title">Staff Member</div>
-            <div
-              className="vc-header-text vc-inv-link"
-              style={{ cursor: 'pointer' }}
-              onClick={() => timesheet.staff_id && navigate(`/staff/view/${timesheet.staff_id}`)}
-            >
-              {timesheet.staff_name || '—'}
-            </div>
-          </div>
-
-          <div className="vc-header-group">
-            <div className="vc-header-title">Client</div>
-            <div
-              className="vc-header-text vc-inv-link"
-              style={{ cursor: 'pointer' }}
-              onClick={() => timesheet.clients_id && navigate(`/client/view/${timesheet.clients_id}`)}
-            >
-              {timesheet.clients_name || '—'}
-            </div>
-          </div>
-
-          <div className="vc-header-group">
-            <div className="vc-header-title">Project</div>
-            <div className="vc-header-text">{timesheet.project || '—'}</div>
-          </div>
-
-          <div className="vc-header-group">
-            <div className="vc-header-title">Task</div>
-            <div className="vc-header-text">{timesheet.task || '—'}</div>
-          </div>
-
+        <div className="entity-view-section">
+          <EntityViewSectionHeading
+            icon="fa-stopwatch"
+            title="Recorded time"
+            description="The start, finish, and calculated duration for this entry."
+          />
+          <EntitySummaryGrid>
+            <EntitySummaryCard
+              title="Time breakdown"
+              subtitle={formatDateLong(timesheet.date)}
+              icon="fa-clock"
+              rows={[
+                { label: "Start time", value: formatTime(timesheet.start_time), variant: "brand" },
+                { label: "Finish time", value: formatTime(timesheet.finish_time), variant: "brand" },
+                { label: "Total hours", value: totalHours, variant: "positive" },
+              ]}
+            />
+          </EntitySummaryGrid>
         </div>
 
-        <div className="vc-header-col vc-header-col-two">
-          <div className="vc-voucher-type">Timesheet Entry</div>
-          <div className="vc-voucher-type-number">#{timesheet.id}</div>
-        </div>
-      </div>
+        {(staffData || clientData) && (
+          <div className="entity-view-section">
+            <EntityViewSectionHeading
+              icon="fa-link"
+              title="Linked record details"
+              description="A quick view of the staff and client information attached to this entry."
+              count={(staffData ? 1 : 0) + (clientData ? 1 : 0)}
+            />
+            <div className="entity-view-content">
+              {staffData && (
+                <EntityViewPanel
+                  icon="fa-id-badge"
+                  title="Staff details"
+                  description="Linked employee information."
+                >
+                  <EntityViewDetail icon="fa-user" label="Name" value={staffData.staff_name} />
+                  <EntityViewDetail icon="fa-envelope" label="Email" value={staffData.staff_email} />
+                </EntityViewPanel>
+              )}
 
-      {/* ── Time Table ── */}
-      <div className="vc-table">
-        <div className="vc-table-wrapper">
-          <div className="vc-table-flexbox vc-table-header">
-            {/* Using vc-tb-inv classes for better flex sizing in a 3-col layout */}
-            <div className="vc-table-data vc-tb-inv-desc">Start Time</div>
-            <div className="vc-table-data vc-tb-inv-desc">Finish Time</div>
-            <div className="vc-table-data vc-tb-inv-amt">Total Hours</div>
-          </div>
-
-          <div className="vc-table-flexbox vc-table-body">
-            <div className="vc-table-data vc-tb-inv-desc">{formatTime(timesheet.start_time)}</div>
-            <div className="vc-table-data vc-tb-inv-desc">{formatTime(timesheet.finish_time)}</div>
-            <div className="vc-table-data vc-tb-inv-amt vc-boldtext">
-              {formatHours(parseFloat(timesheet.total_hours))}
+              {clientData && (
+                <EntityViewPanel
+                  icon="fa-address-book"
+                  title="Client details"
+                  description="Linked customer information."
+                >
+                  <EntityViewDetail icon="fa-building" label="Name" value={clientData.clients_name} />
+                  <EntityViewDetail icon="fa-envelope" label="Email" value={clientData.clients_email} />
+                  <EntityViewDetail icon="fa-location-dot" label="Address" value={clientData.clients_address} />
+                </EntityViewPanel>
+              )}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* ── Staff & Client Detail Cards ── */}
-      {(staff_data || clients_data) && (
-        <div className="vc-summary-table" style={{ marginTop: 30, marginBottom: 30 }}>
-
-          {/* Staff Card */}
-          {staff_data && (
-            <div className="vc-summary-col">
-              <div className="vc-payment-heading">Staff Details</div>
-              <div className="vc-summary-col-flex-box">
-                <div className="vc-summary-col-title">Name</div>
-                <div className="vc-summary-col-text">{staff_data.staff_name || '—'}</div>
-              </div>
-              <div className="vc-summary-col-flex-box">
-                <div className="vc-summary-col-title">Email</div>
-                <div className="vc-summary-col-text">{staff_data.staff_email || '—'}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Client Card */}
-          {clients_data && (
-            <div className="vc-summary-col">
-              <div className="vc-payment-heading">Client Details</div>
-              <div className="vc-summary-col-flex-box">
-                <div className="vc-summary-col-title">Name</div>
-                <div className="vc-summary-col-text">{clients_data.clients_name || '—'}</div>
-              </div>
-              <div className="vc-summary-col-flex-box">
-                <div className="vc-summary-col-title">Email</div>
-                <div className="vc-summary-col-text">{clients_data.clients_email || '—'}</div>
-              </div>
-              <div className="vc-summary-col-flex-box">
-                <div className="vc-summary-col-title">Address</div>
-                <div className="vc-summary-col-text">{clients_data.clients_address || '—'}</div>
-              </div>
-            </div>
-          )}
-
-        </div>
-      )}
-
-      {/* ── Audit Trail ── */}
-      <div className="vc-summary-table">
-        <div className="vc-summary-col">
-          <div className="vc-summary-col-flex-box">
-            <div className="vc-summary-col-title">Created By</div>
-            <div className="vc-summary-col-text">{timesheet.created_by || '—'}</div>
-          </div>
-          <div className="vc-summary-col-flex-box">
-            <div className="vc-summary-col-title">Created At</div>
-            <div className="vc-summary-col-text">{formatDateTime(timesheet.created_at)}</div>
-          </div>
-          <div className="vc-summary-col-flex-box">
-            <div className="vc-summary-col-title">Updated By</div>
-            <div className="vc-summary-col-text">{timesheet.updated_by || '—'}</div>
-          </div>
-          <div className="vc-summary-col-flex-box">
-            <div className="vc-summary-col-title">Updated At</div>
-            <div className="vc-summary-col-text">{formatDateTime(timesheet.updated_at)}</div>
-          </div>
-        </div>
-      </div>
-
+        )}
+      </EntityViewShell>
     </motion.div>
   );
 };

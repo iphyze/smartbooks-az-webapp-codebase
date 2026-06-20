@@ -1,175 +1,165 @@
 import React from "react";
-import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
-import { fadeInUp } from "../../utils/animation";
-import "../inputs-styles/Inputs.css";
-import "../ViewJournal.css";
-import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
 import { useNavigate } from "react-router-dom";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import DownloadLedger from "./DownloadLedger"; 
+import useThemeStore from "../../stores/useThemeStore";
+import { fadeInUp } from "../../utils/animation";
+import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
+import DownloadLedger from "./DownloadLedger";
+import {
+  EntityViewActions,
+  EntityViewDetail,
+  EntityViewEmpty,
+  EntityViewPanel,
+  EntityViewSectionHeading,
+  EntityViewShell,
+  EntityViewTable,
+  EntitySummaryCard,
+  EntitySummaryGrid,
+  EntityTableAction,
+} from "../../components/entity-view/EntityView";
 
 const ViewLedgerContent = ({ ledger, journalEntries = [], summary = {} }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
 
-  if (!ledger) {
-    return null; 
-  }
+  if (!ledger) return null;
 
-  const handleEditLedger = () => {
-    navigate(`/ledger/edit/${ledger.ledger_number}`, { state: { ledger } });
-  };
-
-  const handleViewJournal = (journalId) => {
-    navigate(`/journal/view/${journalId}`);
-  };
+  const currencies = Object.keys(summary || {});
+  const ledgerDocument = <DownloadLedger ledger={ledger} journalEntries={journalEntries} summary={summary} />;
 
   return (
-    <motion.div 
-      variants={fadeInUp} 
-      initial="hidden" 
-      animate="show" 
-      transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }} 
-      className={`view-content-box theme-${theme}`}
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="show"
+      transition={{ duration: 0.28, ease: "easeOut" }}
     >
-      <img src={CompanyLogo} alt="Company Logo" className="company-logo"/>
-
-      <div className="vc-button-box">
-        <button className="vc-edit-btn" onClick={handleEditLedger}>
-          <span className="fas fa-pen"></span> Edit Ledger
-        </button>
-        <PDFDownloadLink
-          document={<DownloadLedger ledger={ledger} journalEntries={journalEntries} summary={summary}/>} 
-          className="vc-export-btn" 
-          fileName={`Ledger - ${ledger?.ledger_name || 'Ledger'}.pdf`}
+      <EntityViewShell
+        theme={theme}
+        icon="fa-book-open"
+        eyebrow="Smartbooks ledger profile"
+        title={ledger.ledger_name || "Ledger"}
+        subtitle="Review the ledger classification, balances, and recent journal activity in one place."
+        badges={[
+          { label: ledger.ledger_class || "No class", icon: "fa-layer-group", variant: "brand" },
+          { label: ledger.ledger_type || "No type", icon: "fa-tag", variant: "neutral" },
+        ]}
+        actions={(
+          <EntityViewActions
+            onBack={() => navigate("/ledger/home")}
+            backLabel="Back to ledgers"
+            onEdit={() => navigate(`/ledger/edit/${ledger.ledger_number}`, { state: { ledger } })}
+            editLabel="Edit ledger"
+            pdfDocument={ledgerDocument}
+            fileName={`Ledger - ${ledger.ledger_name || "Ledger"}.pdf`}
+            printTitle={`Preparing ${ledger.ledger_name || "ledger"} profile`}
+          />
+        )}
+        highlights={[
+          { label: "Ledger number", value: ledger.ledger_number || "Not assigned", icon: "fa-hashtag" },
+          { label: "Recent entries", value: `${journalEntries.length} entr${journalEntries.length === 1 ? "y" : "ies"}`, icon: "fa-receipt" },
+          { label: "Currencies tracked", value: currencies.length ? currencies.join(", ") : "No activity yet", icon: "fa-coins" },
+        ]}
+      >
+        <EntityViewPanel
+          icon="fa-sitemap"
+          title="Ledger classification"
+          description="The chart-of-accounts structure assigned to this ledger."
         >
-          <span className="fas fa-file-pdf"></span> Download Pdf
-        </PDFDownloadLink>
-      </div>
+          <EntityViewDetail icon="fa-book" label="Ledger name" value={ledger.ledger_name} />
+          <EntityViewDetail icon="fa-hashtag" label="Ledger number" value={ledger.ledger_number} />
+          <EntityViewDetail icon="fa-layer-group" label="Ledger class" value={ledger.ledger_class} />
+          <EntityViewDetail icon="fa-code" label="Class code" value={ledger.ledger_class_code} />
+          <EntityViewDetail icon="fa-folder-tree" label="Sub-class" value={ledger.ledger_sub_class} />
+          <EntityViewDetail icon="fa-tag" label="Ledger type" value={ledger.ledger_type} />
+        </EntityViewPanel>
 
-      <div className="vc-header-flexbox">
-        <div className="vc-header-col">
-          <div className="vc-header-group">
-            <div className="vc-header-title">Ledger Name:</div>
-            <div className="vc-header-text">{ledger.ledger_name || 'N/A'}</div>
+        <EntityViewPanel
+          icon="fa-clock-rotate-left"
+          title="Record history"
+          description="Creation and most recent update information."
+        >
+          <EntityViewDetail icon="fa-user-plus" label="Created by" value={ledger.created_by} subtle />
+          <EntityViewDetail icon="fa-calendar-plus" label="Created on" value={formatDateLong(ledger.created_at)} />
+          <EntityViewDetail icon="fa-user-pen" label="Updated by" value={ledger.updated_by} subtle />
+          <EntityViewDetail icon="fa-calendar-check" label="Updated on" value={formatDateLong(ledger.updated_at)} />
+        </EntityViewPanel>
+
+        {currencies.length > 0 && (
+          <div className="entity-view-section">
+            <EntityViewSectionHeading
+              icon="fa-chart-line"
+              title="Financial summary"
+              description="Debit, credit, and net balance totals grouped by currency."
+              count={currencies.length}
+            />
+            <EntitySummaryGrid>
+              {Object.entries(summary).map(([currency, data]) => (
+                <EntitySummaryCard
+                  key={currency}
+                  title={`${currency} summary`}
+                  subtitle={`${data.entry_count || 0} journal entr${Number(data.entry_count) === 1 ? "y" : "ies"}`}
+                  icon="fa-scale-balanced"
+                  rows={[
+                    { label: "Total debit", value: formatCurrencyDecimals(data.total_debit || 0, currency), variant: "warning" },
+                    { label: "Total credit", value: formatCurrencyDecimals(data.total_credit || 0, currency), variant: "positive" },
+                    { label: "Net balance", value: formatCurrencyDecimals(data.net_balance || 0, currency), variant: "brand" },
+                  ]}
+                />
+              ))}
+            </EntitySummaryGrid>
           </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Ledger Number:</div>
-            <div className="vc-header-text">{ledger.ledger_number || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Ledger Class:</div>
-            <div className="vc-header-text">{ledger.ledger_class || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Class Code:</div>
-            <div className="vc-header-text">{ledger.ledger_class_code || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Sub Class:</div>
-            <div className="vc-header-text">{ledger.ledger_sub_class || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Ledger Type:</div>
-            <div className="vc-header-text">{ledger.ledger_type || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Created By:</div>
-            <div className="vc-header-text">{ledger.created_by || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Created On:</div>
-            <div className="vc-header-text">{formatDateLong(ledger.created_at)}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Updated By:</div>
-            <div className="vc-header-text">{ledger.updated_by || 'N/A'}</div>
-          </div>
-          <div className="vc-header-group">
-            <div className="vc-header-title">Updated On:</div>
-            <div className="vc-header-text">{formatDateLong(ledger.updated_at)}</div>
-          </div>
+        )}
+
+        <div className="entity-view-section">
+          <EntityViewSectionHeading
+            icon="fa-receipt"
+            title="Recent journal entries"
+            description="The latest postings recorded against this ledger."
+            count={journalEntries.length}
+          />
+
+          {journalEntries.length > 0 ? (
+            <EntityViewTable
+              minWidth={980}
+              columns={[
+                { key: "sn", label: "S/N" },
+                { key: "journal", label: "Journal ID" },
+                { key: "date", label: "Date" },
+                { key: "description", label: "Description" },
+                { key: "type", label: "Type" },
+                { key: "debit", label: "Debit", align: "right" },
+                { key: "credit", label: "Credit", align: "right" },
+                { key: "action", label: "Action", align: "right" },
+              ]}
+            >
+              {journalEntries.map((entry, index) => (
+                <tr key={entry.id || `${entry.journal_id}-${index}`}>
+                  <td>{index + 1}</td>
+                  <td className="is-brand">{entry.journal_id || "—"}</td>
+                  <td>{formatDateLong(entry.journal_date)}</td>
+                  <td className="is-strong">{entry.journal_description || "Not available"}</td>
+                  <td>{entry.journal_type || "—"}</td>
+                  <td className="is-right is-strong">{formatCurrencyDecimals(entry.debit_ngn || 0, entry.journal_currency || "NGN")}</td>
+                  <td className="is-right is-strong">{formatCurrencyDecimals(entry.credit_ngn || 0, entry.journal_currency || "NGN")}</td>
+                  <td className="is-right">
+                    <EntityTableAction
+                      label="View journal"
+                      onClick={() => navigate(`/journal/view/${entry.journal_id}`)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </EntityViewTable>
+          ) : (
+            <EntityViewEmpty
+              icon="fa-receipt"
+              title="No journal activity"
+              description="Journal entries posted to this ledger will appear here."
+            />
+          )}
         </div>
-
-        <div className="vc-header-col vc-header-col-two">
-          <div className="vc-voucher-type vc-inv-type">LEDGER NUMBER #</div>
-          <div className="vc-voucher-type-number vc-inv-type-number">{ledger.ledger_number || 'N/A'}</div>
-        </div>
-      </div>
-
-      {/* ── FINANCIAL SUMMARY CARDS ── */}
-      {summary && Object.keys(summary).length > 0 && (
-        <div className="vc-client-summary-section">
-          <div className="vc-payment-heading">Financial Summary by currency</div>
-          <div className="vc-client-summary-grid">
-            {Object.entries(summary).map(([currency, data]) => (
-              <div key={currency} className={`vc-client-summary-card theme-${theme}`}>
-                <div className="vc-card-header">{currency} Summary ({data.entry_count || 0} Entries)</div>
-                <div className="vc-card-body">
-                  <div className="vc-card-row pending">
-                    <span>Total Debit</span>
-                    <span>{formatCurrencyDecimals(data.total_debit || 0, currency)}</span>
-                  </div>
-                  <div className="vc-card-row paid">
-                    <span>Total Credit</span>
-                    <span>{formatCurrencyDecimals(data.total_credit || 0, currency)}</span>
-                  </div>
-                  <div className="vc-card-row vc-card-row-two">
-                    <span>Net Balance</span>
-                    <span>{formatCurrencyDecimals(data.net_balance || 0, currency)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── JOURNAL ENTRIES TABLE ── */}
-      <div className="vc-payment-heading">{journalEntries.length} Recent Journal Entries</div>
-      
-      {journalEntries.length > 0 ? (
-        <div className="vc-table">
-          <div className="vc-table-wrapper">
-            <div className="vc-table-flexbox vc-table-header vc-inv-table">
-                <div className="vc-table-data vc-tb-inv-sn">S/N</div>
-                <div className="vc-table-data vc-tb-inv-disc">Journal ID</div>
-                <div className="vc-table-data vc-tb-inv-disc">Date</div>
-                <div className="vc-table-data vc-tb-inv-desc">Description</div>
-                <div className="vc-table-data vc-tb-inv-disc">Type</div>
-                {/* <div className="vc-table-data vc-tb-inv-disc">Currency</div> */}
-                <div className="vc-table-data vc-tb-inv-amt">Debit</div>
-                <div className="vc-table-data vc-tb-inv-amt">Credit</div>
-                <div className="vc-table-data vc-tb-inv-side">Action</div>
-            </div>
-
-            {journalEntries.map((entry, index) => (
-              <div className="vc-table-flexbox vc-table-body vc-inv-table" key={entry.id || index}>
-                <div className="vc-table-data vc-tb-inv-sn">{index + 1}</div>
-                <div className="vc-table-data vc-tb-inv-disc">{entry.journal_id || 'N/A'}</div>
-                <div className="vc-table-data vc-tb-inv-disc">{entry.journal_date}</div>
-                <div className="vc-table-data vc-tb-inv-desc">{entry.journal_description || 'N/A'}</div>
-                <div className="vc-table-data vc-tb-inv-disc">{entry.journal_type || 'N/A'}</div>
-                {/* <div className="vc-table-data vc-tb-inv-disc">{entry.journal_currency || 'N/A'}</div> */}
-                <div className="vc-table-data vc-tb-inv-amt vc-boldtext">{formatCurrencyDecimals(entry.debit_ngn || 0, entry.journal_currency)}</div>
-                <div className="vc-table-data vc-tb-inv-amt vc-boldtext">{formatCurrencyDecimals(entry.credit_ngn || 0, entry.journal_currency)}</div>
-                <div className="vc-table-data vc-tb-inv-side">
-                  <button className="btn-edit" title="View Journal" onClick={() => handleViewJournal(entry.journal_id)}>
-                    <span className="fas fa-eye"></span> 
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="vc-no-invoices-message">
-          No journal entries have been posted to this ledger yet.
-        </div>
-      )}
-
+      </EntityViewShell>
     </motion.div>
   );
 };

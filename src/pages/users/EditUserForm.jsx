@@ -8,6 +8,7 @@ import useUsersStore from "../../stores/useUsersStore";
 import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
 import Select from "react-select";
 import "../inputs-styles/Inputs.css";
+import "./UserPasswordNotice.css";
 
 const ROLE_OPTIONS = [
   { value: "Admin", label: "Admin" },
@@ -45,6 +46,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
   const { updateUser } = useUsersStore();
   const { staff, searchStaff } = useTimesheetReferenceStore();
   const navigate = useNavigate();
+  const temporaryPassword = `Consultancy@${new Date().getFullYear()}`;
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -58,8 +60,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
     phone: "",
     integrity: "",
     staff_id: "",
-    newPassword: "",
-    confirmPassword: "",
+    resetPassword: false,
   });
 
   useEffect(() => {
@@ -72,8 +73,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       phone: user.phone ?? "",
       integrity: user.integrity ?? "",
       staff_id: user.staff_id ?? "",
-      newPassword: "",
-      confirmPassword: "",
+      resetPassword: false,
     });
   }, [user]);
 
@@ -102,10 +102,6 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       e.email = "Enter a valid email address";
     if (!form.integrity) e.integrity = "Role is required";
     if (form.integrity === "Timesheet" && !form.staff_id) e.staff_id = "Assign a staff profile for Timesheet access";
-    if (form.newPassword && form.newPassword.length < 12)
-      e.newPassword = "Password must be at least 12 characters";
-    if (form.newPassword && form.newPassword !== form.confirmPassword)
-      e.confirmPassword = "Passwords do not match";
     return e;
   }, [form]);
 
@@ -134,8 +130,8 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       phone: form.phone,
       integrity: form.integrity,
       staff_id: form.integrity === "Timesheet" ? form.staff_id : null,
+      reset_password: form.resetPassword,
     };
-    if (form.newPassword) payload.password = form.newPassword;
 
     const result = await updateUser(payload);
     setIsLoading(false);
@@ -288,40 +284,45 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
             </Field>
           )}
 
-          {/* Password reset divider */}
-          <div className="invoice-form" style={{ width: "100%", padding: "12px 0" }}>
-            <p style={{ fontFamily: "Montserrat-SemiBold", fontSize: 13, opacity: 0.6, margin: 0 }}>
-              Password Reset — leave blank to keep current password
-            </p>
+          <div className="invoice-form user-password-reset-span">
+            {user?.email?.toLowerCase() === "admin@a-zconsultancyltd.com" ? (
+              <div className={`user-password-notice user-password-notice--protected theme-${theme}`}>
+                <div className="user-password-notice-icon">
+                  <i className="fas fa-shield-halved" />
+                </div>
+                <div className="user-password-notice-copy">
+                  <span className="user-password-notice-label">Primary Admin User</span>
+                  <strong>Password reset protected</strong>
+                  <p>
+                    The primary Admin User is excluded from the shared temporary-password reset.
+                    It can still change its own password from My Profile.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <label className={`user-password-reset-card theme-${theme}`}>
+                <input
+                  type="checkbox"
+                  checked={form.resetPassword}
+                  onChange={(event) => handleChange("resetPassword", event.target.checked)}
+                />
+                <span className="user-password-reset-check">
+                  <i className="fas fa-check" />
+                </span>
+                <span className="user-password-reset-content">
+                  <span className="user-password-notice-label">Optional password reset</span>
+                  <strong>Reset to {temporaryPassword}</strong>
+                  <small>
+                    Active sessions will be revoked. At the next sign-in, this user must create
+                    a new private password before accessing Smartbooks.
+                  </small>
+                </span>
+                <span className="user-password-reset-icon">
+                  <i className="fas fa-rotate" />
+                </span>
+              </label>
+            )}
           </div>
-
-          {/* New Password */}
-          <Field id="newPassword" label="New Password" error={errors.newPassword}>
-            <div className="form-wrapper">
-              <input
-                id="newPassword"
-                type="password"
-                className={`form-input form-input-no-padding ${errors.newPassword ? "input-error" : ""}`}
-                value={form.newPassword}
-                onChange={(e) => handleChange("newPassword", e.target.value)}
-                placeholder="Min. 6 characters"
-              />
-            </div>
-          </Field>
-
-          {/* Confirm New Password */}
-          <Field id="confirmPassword" label="Confirm New Password" error={errors.confirmPassword}>
-            <div className="form-wrapper">
-              <input
-                id="confirmPassword"
-                type="password"
-                className={`form-input form-input-no-padding ${errors.confirmPassword ? "input-error" : ""}`}
-                value={form.confirmPassword}
-                onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                placeholder="Re-enter new password"
-              />
-            </div>
-          </Field>
         </div>
 
         <div className="invoice-action-btn main-submit-action-btn">

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useUsersStore from "../../stores/useUsersStore";
-import useAuthStore from "../../stores/useAuthStore";
 import PageNav from "../../components/PageNav";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
 import ErrorModal from "../../components/modals/ErrorModal";
@@ -15,11 +14,7 @@ import ViewUserContent from "./ViewUserContent";
 const ViewUser = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
-  const { user: currentUser } = useAuthStore();
   const { id } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-
   const { singleUser, fetchingSingle, singleUserError, fetchSingleUser, clearSingleUser } = useUsersStore();
 
   const links = [
@@ -30,14 +25,9 @@ const ViewUser = () => {
 
   useEffect(() => {
     document.title = "Smartbooks | View User";
-    const passedUser = location.state?.user;
-    if (passedUser) {
-      useUsersStore.setState({ singleUser: passedUser });
-    } else {
-      fetchSingleUser(id);
-    }
+    fetchSingleUser(id);
     return () => clearSingleUser();
-  }, [id]);
+  }, [id, fetchSingleUser, clearSingleUser]);
 
   const user = singleUser;
 

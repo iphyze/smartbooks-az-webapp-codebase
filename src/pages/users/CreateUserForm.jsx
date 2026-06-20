@@ -8,6 +8,7 @@ import useUsersStore from "../../stores/useUsersStore";
 import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
 import Select from "react-select";
 import "../inputs-styles/Inputs.css";
+import "./UserPasswordNotice.css";
 
 const ROLE_OPTIONS = [
   { value: "Admin", label: "Admin" },
@@ -47,6 +48,7 @@ const CreateUserForm = () => {
   const { createUser } = useUsersStore();
   const { staff, searchStaff } = useTimesheetReferenceStore();
   const navigate = useNavigate();
+  const temporaryPassword = `Consultancy@${new Date().getFullYear()}`;
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -57,8 +59,6 @@ const CreateUserForm = () => {
     lname: "",
     email: "",
     phone: "",
-    password: "",
-    confirmPassword: "",
     integrity: "",
     staff_id: "",
   });
@@ -85,12 +85,6 @@ const CreateUserForm = () => {
       e.email = "Enter a valid email address";
     if (!form.integrity) e.integrity = "Role is required";
     if (form.integrity === "Timesheet" && !form.staff_id) e.staff_id = "Assign a staff profile for Timesheet access";
-    if (!form.password) e.password = "Password is required";
-    else if (form.password.length < 12)
-      e.password = "Password must be at least 12 characters";
-    if (!form.confirmPassword) e.confirmPassword = "Please confirm the password";
-    else if (form.password !== form.confirmPassword)
-      e.confirmPassword = "Passwords do not match";
     return e;
   }, [form]);
 
@@ -110,8 +104,7 @@ const CreateUserForm = () => {
     }
 
     setIsLoading(true);
-    const { confirmPassword, ...payload } = form;
-    const result = await createUser(payload);
+    const result = await createUser(form);
     setIsLoading(false);
 
     if (result?.success) {
@@ -132,7 +125,21 @@ const CreateUserForm = () => {
         <div className="invoice-form-header">
           <div className="invoice-form-htxt">Add New User</div>
           <div className="invoice-form-sub-htxt">
-            Fill in the details below to create a user account
+            Add the account details. Smartbooks will assign the current temporary password automatically.
+          </div>
+        </div>
+
+        <div className={`user-password-notice theme-${theme}`}>
+          <div className="user-password-notice-icon">
+            <i className="fas fa-key" />
+          </div>
+          <div className="user-password-notice-copy">
+            <span className="user-password-notice-label">Temporary sign-in password</span>
+            <strong>{temporaryPassword}</strong>
+            <p>
+              Share this password securely with the new user. They will be required to create
+              a private password immediately after their first sign-in.
+            </p>
           </div>
         </div>
 
@@ -243,39 +250,6 @@ const CreateUserForm = () => {
               </div>
             </Field>
           )}
-
-          {/* Password */}
-          <Field id="password" label="Password" required error={errors.password}>
-            <div className="form-wrapper">
-              <input
-                id="password"
-                type="password"
-                className={`form-input form-input-no-padding ${errors.password ? "input-error" : ""}`}
-                value={form.password}
-                onChange={(e) => handleChange("password", e.target.value)}
-                placeholder="Min. 6 characters"
-              />
-            </div>
-          </Field>
-
-          {/* Confirm Password */}
-          <Field
-            id="confirmPassword"
-            label="Confirm Password"
-            required
-            error={errors.confirmPassword}
-          >
-            <div className="form-wrapper">
-              <input
-                id="confirmPassword"
-                type="password"
-                className={`form-input form-input-no-padding ${errors.confirmPassword ? "input-error" : ""}`}
-                value={form.confirmPassword}
-                onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                placeholder="Re-enter password"
-              />
-            </div>
-          </Field>
         </div>
 
         <div className="invoice-action-btn main-submit-action-btn">

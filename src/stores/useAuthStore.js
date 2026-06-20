@@ -6,6 +6,19 @@ const removeLegacyBrowserTokens = () => {
   localStorage.removeItem('token');
 };
 
+const normalizeUser = (user) => {
+  if (!user) return null;
+
+  return {
+    ...user,
+    must_change_password: Boolean(
+      user.must_change_password === true
+      || user.must_change_password === 1
+      || user.must_change_password === '1'
+    ),
+  };
+};
+
 /**
  * Authentication state contains no JWT.
  * The API issues the JWT only as an HttpOnly cookie; JavaScript retains user UI state only.
@@ -25,13 +38,16 @@ const useAuthStore = create((set, get) => ({
     set({ isInitializing: true });
 
     try {
-      // Bootstrap the anti-CSRF header value; it is not an authentication credential.
-      await api.get('/auth/csrf');
+      // One request establishes the CSRF companion token and restores a valid
+      // HttpOnly-cookie session. This avoids two serial production requests.
+      const response = await api.get('/auth/bootstrap');
+      const payload = response.data?.data || {};
+      const user = normalizeUser(payload.user);
+      const isAuthenticated = Boolean(payload.authenticated && user);
 
-      const response = await api.get('/auth/me');
       set({
-        user: response.data.data,
-        isAuthenticated: true,
+        user: isAuthenticated ? user : null,
+        isAuthenticated,
         authReady: true,
         isInitializing: false,
         token: null,
@@ -50,19 +66,16 @@ const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     removeLegacyBrowserTokens();
     try {
-      await api.get('/auth/csrf');
       const response = await api.post('/auth/login', { email, password });
 
       if (response.data.status === 'Success') {
-        // Login rotates the CSRF cookie; fetch the matching in-memory header value.
-        await api.get('/auth/csrf');
         set({
-          user: response.data.data,
+          user: normalizeUser(response.data.data),
           isAuthenticated: true,
           authReady: true,
           token: null,
         });
-        return { success: true, user: response.data.data };
+        return { success: true, user: normalizeUser(response.data.data) };
       }
 
       return { success: false, error: 'Invalid credentials' };

@@ -1,69 +1,90 @@
-import React, { useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import useBankReconStore from '../../../stores/useBankReconStore';
-import DownloadBankRecon from '../DownloadBankRecon';
 import { fadeUp, fmtDate } from './BankReconUtils';
 import BankReconKpiStrip from './BankReconKpiStrip';
 import BankReconMatcher from './BankReconMatcher';
 import BankReconClassifiedItemsTable from './BankReconClassifiedItemsTable';
+import BankReconAppendModal from './BankReconAppendModal';
+import BankReconAddLineModal from './BankReconAddLineModal';
+import BankReconHeaderEditModal from './BankReconHeaderEditModal';
 
-const BankReconResultsPanel = ({ id }) => {
-  const { current, fetchSingle, downloadExcel } = useBankReconStore();
-  const downloadingExcelId = useBankReconStore((s) => s.downloadingExcelId);
-
+const BankReconResultsPanel = ({ id, onClose }) => {
+  const { current, fetchSingle, downloadExcel, deleteReconciliation, appendLines, addLine } = useBankReconStore();
+  const [showAppend, setShowAppend] = useState(false);
+  const [showAddLine, setShowAddLine] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [excelDownloading, setExcelDownloading] = useState(false);
   useEffect(() => { fetchSingle(id); }, [id, fetchSingle]);
-
   const recon = current.reconciliation;
-  const pdfDoc = useMemo(
-    () => <DownloadBankRecon recon={recon} bankLines={current.bank_lines || []} ledgerLines={current.ledger_lines || []} />,
-    [recon, current.bank_lines, current.ledger_lines]
-  );
-
-  if (current.loading) return <div className="br-card br-card--flat br-loading"><div className="br-spinner" /><span>Loading reconciliation…</span></div>;
+  const summary = current.summary || {};
+  const noMovement = Boolean(summary.noMovementPeriod);
+  if (current.loading) return <div className="br-card br-loading"><div className="br-spinner br-spinner-dark" /><span>Loading reconciliation workspace…</span></div>;
   if (!recon) return null;
+  const acct = [recon.bank_name, recon.account_name, recon.account_number].filter(Boolean).join(' · ');
+  const remove = async () => {
+    if (window.confirm(`Delete reconciliation ${recon.recon_number}? This action cannot be undone.`)) {
+      const done = await deleteReconciliation(recon.id);
+      if (done) onClose();
+    }
+  };
 
-  const acctSub = [recon.bank_name, recon.account_name, recon.account_number].filter(Boolean).join(' · ');
-  const excelLoading = downloadingExcelId === String(recon.id);
+  const handleExcelDownload = async () => {
+    if (excelDownloading) return;
+    setExcelDownloading(true);
+    try {
+      await downloadExcel(recon.id, recon.recon_number);
+    } finally {
+      setExcelDownloading(false);
+    }
+  };
 
   return (
-    <motion.div variants={fadeUp} initial="hidden" animate="show">
-      <div className="br-action-bar">
-        <div className="br-action-left">
-          <span className="br-action-ref"><i className="fas fa-building-columns" />{recon.recon_number}</span>
-          <span className="br-action-chip"><i className="fas fa-briefcase" />{recon.company_name}</span>
-          <span className="br-action-chip"><i className="fas fa-calendar-days" />{fmtDate(recon.period_from)} – {fmtDate(recon.period_to)}</span>
-          {acctSub && <span className="br-action-chip"><i className="fas fa-wallet" />{acctSub}</span>}
+    <>
+      <motion.section className="br-workspace" variants={fadeUp} initial="hidden" animate="show" exit="exit">
+        <div className="br-action-bar">
+          <div className="br-action-left">
+            <span className="br-action-ref"><i className="fas fa-university" />{recon.recon_number}</span>
+            <span className="br-action-chip"><i className="fas fa-briefcase" />{recon.company_name}</span>
+            <span className="br-action-chip"><i className="fas fa-calendar-alt" />{fmtDate(recon.period_from)} – {fmtDate(recon.period_to)}</span>
+            {acct && <span className="br-action-chip"><i className="fas fa-wallet" />{acct}</span>}
+          </div>
+          <div className="br-action-right">
+            <button className="br-btn-ghost" type="button" onClick={() => setShowEdit(true)}><i className="fas fa-edit" />Details</button>
+            <button className="br-btn-ghost" type="button" onClick={() => setShowAddLine(true)}><i className="fas fa-plus-circle" />Add line</button>
+            <button className="br-btn-ghost" type="button" onClick={() => setShowAppend(true)}><i className="fas fa-file-upload" />Append</button>
+            <button
+              className={`br-btn-excel ${excelDownloading ? 'br-btn-excel--loading' : ''}`}
+              type="button"
+              onClick={handleExcelDownload}
+              disabled={excelDownloading}
+              aria-busy={excelDownloading}
+            >
+              <i className={`fas ${excelDownloading ? 'fa-spinner fa-spin' : 'fa-file-excel'}`} />
+              {excelDownloading ? 'Downloading…' : 'Excel'}
+            </button>
+            <button className="br-btn-danger" type="button" onClick={remove}><i className="fas fa-trash-alt" /></button>
+          </div>
         </div>
-        <div className="br-action-right">
-          <button
-            className={`br-btn-excel${excelLoading ? ' br-btn-loading' : ''}`}
-            onClick={() => downloadExcel(recon.id, recon.recon_number)}
-            disabled={excelLoading}
-            aria-busy={excelLoading}
-          >
-            {excelLoading ? (
-              <>
-                <span className="br-spinner br-spinner--sm" aria-hidden="true" />
-                Preparing Excel…
-              </>
-            ) : (
-              <>
-                <i className="fas fa-file-excel" />
-                Excel
-              </>
-            )}
-          </button>
-          <PDFDownloadLink document={pdfDoc} fileName={`${recon.recon_number}.pdf`}>
-            {({ loading }) => <button className="br-btn-pdf" disabled={loading}><i className="fas fa-file-pdf" />{loading ? 'PDF…' : 'PDF'}</button>}
-          </PDFDownloadLink>
-        </div>
-      </div>
-      <BankReconKpiStrip recon={recon} summary={current.summary} />
-      <BankReconMatcher />
-      <BankReconClassifiedItemsTable />
-    </motion.div>
+        <BankReconKpiStrip recon={recon} summary={current.summary} />
+        {noMovement && (
+          <div className="br-no-movement-card">
+            <span className="br-no-movement-icon"><i className="fas fa-leaf" /></span>
+            <div>
+              <strong>No movement period</strong>
+              <p>No bank or ledger transaction lines were uploaded for this period. The reconciliation is based on the opening and closing balances, and the Excel export will still include clean Bank and Ledger sheets for audit attachment.</p>
+            </div>
+          </div>
+        )}
+        <BankReconMatcher />
+        <BankReconClassifiedItemsTable />
+      </motion.section>
+      <AnimatePresence>
+        {showEdit && <BankReconHeaderEditModal recon={recon} onClose={() => setShowEdit(false)} />}
+        {showAppend && <BankReconAppendModal recon={recon} onClose={() => setShowAppend(false)} onAppend={appendLines} />}
+        {showAddLine && <BankReconAddLineModal recon={recon} onClose={() => setShowAddLine(false)} onAdd={addLine} />}
+      </AnimatePresence>
+    </>
   );
 };
-
 export default BankReconResultsPanel;

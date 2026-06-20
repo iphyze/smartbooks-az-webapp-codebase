@@ -88,13 +88,13 @@ textarea:focus-visible {
 body.theme-light,
 .main-container.theme-light,
 .content-container.theme-light {
-  --sb-bg: #f3f7fb;
-  --sb-bg-soft: #f7f9fc;
+  --sb-bg: #edf3f8;
+  --sb-bg-soft: #f6f9fc;
   --sb-surface: #ffffff;
-  --sb-surface-2: #f7fafc;
+  --sb-surface-2: #f9fbfd;
   --sb-surface-3: #eef3f8;
-  --sb-border: #e3e9f1;
-  --sb-border-light: #eef3f8;
+  --sb-border: #d8e2ed;
+  --sb-border-light: #e7eef5;
   --sb-text-1: #102033;
   --sb-text-2: #52647b;
   --sb-text-3: #7b8da5;
@@ -112,9 +112,9 @@ body.theme-light,
   --sb-danger-bg: #fff0f2;
   --sb-info: #2563eb;
   --sb-info-bg: #edf4ff;
-  --sb-shadow-xs: 0 1px 2px rgba(15, 23, 42, .03);
-  --sb-shadow-sm: 0 6px 18px rgba(15, 23, 42, .045);
-  --sb-shadow: 0 15px 38px rgba(15, 23, 42, .065);
+  --sb-shadow-xs: 0 2px 7px rgba(15, 23, 42, .045);
+  --sb-shadow-sm: 0 9px 26px rgba(15, 23, 42, .065);
+  --sb-shadow: 0 18px 44px rgba(15, 23, 42, .085);
   --sb-shadow-popover: 0 22px 50px rgba(15, 23, 42, .12);
   --sb-autofill-bg: #ffffff;
   --sb-autofill-text: #102033;
@@ -130,7 +130,7 @@ body.theme-light,
   --f-brand: var(--sb-brand);
   --f-brand-dim: var(--sb-brand-dim);
   --f-label: var(--sb-text-2);
-  --f-input-bg: var(--sb-surface-2);
+  --f-input-bg: var(--sb-surface);
   --f-disabled-bg: var(--sb-surface-3);
   --f-shadow: var(--sb-shadow-sm);
 }

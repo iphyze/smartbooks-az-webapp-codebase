@@ -88,7 +88,11 @@ const MyProfile = () => {
     const e = {};
     if (!pwForm.currentPassword) e.currentPassword = "Current password is required";
     if (!pwForm.newPassword) e.newPassword = "New password is required";
-    else if (pwForm.newPassword.length < 6) e.newPassword = "Must be at least 6 characters";
+    else if (pwForm.newPassword.length < 12) e.newPassword = "Must be at least 12 characters";
+    else if (pwForm.newPassword === pwForm.currentPassword)
+      e.newPassword = "New password must be different from your current password";
+    else if (/^Consultancy@\d{4}$/i.test(pwForm.newPassword))
+      e.newPassword = "Choose a personal password, not a Consultancy temporary password";
     if (!pwForm.confirmPassword) e.confirmPassword = "Please confirm your new password";
     else if (pwForm.newPassword !== pwForm.confirmPassword)
       e.confirmPassword = "Passwords do not match";
@@ -305,7 +309,7 @@ const MyProfile = () => {
                   <div className="invoice-form-header">
                     <div className="invoice-form-htxt">Change Password</div>
                     <div className="invoice-form-sub-htxt">
-                      Leave blank if you do not want to change your password
+                      Confirm your current password before creating a new one
                     </div>
                   </div>
 
@@ -341,7 +345,7 @@ const MyProfile = () => {
                           className={`form-input form-input-no-padding ${pwErrors.newPassword ? "input-error" : ""}`}
                           value={pwForm.newPassword}
                           onChange={(e) => handlePwChange("newPassword", e.target.value)}
-                          placeholder="Min. 6 characters"
+                          placeholder="Min. 12 characters"
                         />
                       </div>
                     </Field>

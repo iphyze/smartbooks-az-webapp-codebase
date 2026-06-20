@@ -3,8 +3,8 @@
    Elevated navigation rail with soft tonal separation from workspace
 ═══════════════════════════════════════════════════════════ */
 .sb-nav--light {
-  --nav-bg: radial-gradient(circle at 28% 2%, rgba(9,158,145,.065), transparent 32%), linear-gradient(180deg, #eef4f9 0%, #f5f8fc 48%, #eef3f8 100%);
-  --nav-panel: rgba(255,255,255,.8);
+  --nav-bg: radial-gradient(circle at 28% 2%, rgba(9,158,145,.045), transparent 30%), linear-gradient(180deg, #ffffff 0%, #fbfdff 52%, #f7fafc 100%);
+  --nav-panel: rgba(255,255,255,.98);
   --nav-text: #465972;
   --nav-muted: #8291a7;
   --nav-strong: #102033;
@@ -13,13 +13,13 @@
   --nav-active: #087e75;
   --nav-icon: #6e7f97;
   --nav-accent: #099e91;
-  --nav-line: rgba(207,219,233,.95);
-  --nav-edge: rgba(211,222,235,.96);
+  --nav-line: rgba(207,219,233,1);
+  --nav-edge: rgba(201,214,229,.98);
   --nav-inset: rgba(255,255,255,.7);
-  --nav-shadow: 12px 0 32px rgba(15,23,42,.045);
-  --nav-panel-border: rgba(222,231,241,.88);
-  --nav-panel-shadow: 0 12px 27px rgba(15,23,42,.045);
-  --nav-footer-shadow: 0 14px 30px rgba(15,23,42,.065);
+  --nav-shadow: 12px 0 34px rgba(15,23,42,.065);
+  --nav-panel-border: rgba(214,225,237,.98);
+  --nav-panel-shadow: 0 12px 28px rgba(15,23,42,.065);
+  --nav-footer-shadow: 0 14px 32px rgba(15,23,42,.08);
 }
 .sb-nav--dark {
   --nav-bg: radial-gradient(circle at 32% 1%, rgba(19,192,173,.11), transparent 30%), linear-gradient(180deg, #0e182a 0%, #0c1424 42%, #0a1221 100%);
@@ -120,4 +120,22 @@
   .sb-nav { top: 64px; transform: translateX(-106%); border-right: 1px solid var(--nav-edge); box-shadow: 22px 28px 62px rgba(3,7,18,.28); }
   .sb-nav--open { transform: translateX(0); }
   .sb-nav__backdrop { position: fixed; inset: 68px 0 0; z-index: 880; display: block; background: rgba(4,9,18,.46); backdrop-filter: blur(3px); }
+}
+
+.sb-nav__item-badge {
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0aa99a, #21b7c9);
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(9, 158, 145, .22);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
 }

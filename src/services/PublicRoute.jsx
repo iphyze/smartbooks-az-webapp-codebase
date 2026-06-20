@@ -16,7 +16,12 @@ const PublicRoute = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={defaultRouteForRole(user)} replace />;
+    return (
+      <Navigate
+        to={user?.must_change_password ? '/change-password' : defaultRouteForRole(user)}
+        replace
+      />
+    );
   }
 
   return children;

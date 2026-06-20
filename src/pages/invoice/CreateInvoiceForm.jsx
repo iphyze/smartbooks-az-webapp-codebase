@@ -6,6 +6,7 @@ import { fadeInUp } from "../../utils/animation";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import "./InvoiceForm.css";
 import useToastStore from "../../stores/useToastStore";
 import useRateSearchStore from "../../stores/useRateSearchStore";
 import useRateStore from "../../stores/useRateStore";
@@ -21,15 +22,30 @@ import CreateClientsModal from "../../components/modals/CreateClientsModal"; // 
 import CreateProjectModal from "../../components/modals/CreateProjectModal";
 import CreateBankModal from "../../components/modals/CreateBankModal";
 import { findEffectiveRate } from "../../utils/helper";
+import { useSearchParams } from "react-router-dom";
+import useInvoiceAutosave from "../../hooks/useInvoiceAutosave";
+import InvoiceDraftBar from "../../components/InvoiceDraftBar";
+import InvoiceLineEditor from "../../components/invoice/InvoiceLineEditor";
+import CreateInvoiceServiceModal from "../../components/modals/CreateInvoiceServiceModal";
+import useInvoiceServiceStore from "../../stores/useInvoiceServiceStore";
 
 
 /* ─────────────────────────────────────────────
    Helpers
 ───────────────────────────────────────────── */
 let _itemCounter = 0;
-function createEmptyItem(sn) {
+function createEmptyItem(sn, defaults = {}) {
   _itemCounter++;
-  return { id: `item_${Date.now()}_${_itemCounter}`, sn, description: "", amount: "", discount: "", vat: "", wht: "" };
+  return {
+    id: `item_${Date.now()}_${_itemCounter}`,
+    sn,
+    service_catalogue_id: defaults.service_catalogue_id ?? null,
+    description: defaults.description || "",
+    amount: defaults.amount ?? "",
+    discount: defaults.discount ?? "0",
+    vat: defaults.vat ?? "0",
+    wht: defaults.wht ?? "0",
+  };
 }
 
 const formatNumber = (num) => Number(num || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -37,6 +53,41 @@ const formatNumber = (num) => Number(num || 0).toLocaleString("en-US", { minimum
 const CURRENCY_OPTIONS = [{ value: "NGN", label: "NGN" }, { value: "USD", label: "USD" }, { value: "GBP", label: "GBP" }, { value: "EUR", label: "EUR" }];
 const POST_JV_OPTIONS = [{ value: "Yes", label: "Yes" }, { value: "No", label: "No" }];
 const TIN_OPTIONS = [{ value: "Yes", label: "Yes" }, { value: "No", label: "No" }];
+const PAYMENT_TERM_OPTIONS = [
+  { value: 0, label: "Due on receipt" },
+  { value: 7, label: "Net 7 days" },
+  { value: 14, label: "Net 14 days" },
+  { value: 30, label: "Net 30 days" },
+  { value: 45, label: "Net 45 days" },
+  { value: 60, label: "Net 60 days" },
+  { value: null, label: "Custom due date" },
+];
+
+const addDays = (date, days) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return date;
+  const next = new Date(date);
+  next.setDate(next.getDate() + Number(days || 0));
+  return next;
+};
+
+const createInitialInvoiceDetails = () => ({
+  invoice_date: new Date(),
+  due_date: new Date(),
+  payment_terms_days: 0,
+  payment_terms_label: "Due on receipt",
+  clients_name: "",
+  clients_id: "",
+  project: "",
+  currency: "NGN",
+  tin_number: "No",
+  bank_id: null,
+  bank_name: "",
+  account_name: "",
+  account_number: "",
+  account_currency: "",
+  rate_date: "",
+  post_jv: "",
+});
 
 function calculateTotals(items) {
   let totalDiscount = 0, totalVat = 0, totalWht = 0, grandTotal = 0;
@@ -67,29 +118,48 @@ const CreateInvoiceForm = () => {
   const { clients, searchClients, isLoading: clientsLoading } = useClientSearchStore();
   const { projects, searchProjects, isLoading: projectsLoading } = useProjectSearchStore();
   const { banks, searchBanks, isLoading: banksLoading } = useBankSearchStore();
+  const { services, fetchServices, isLoading: servicesLoading } = useInvoiceServiceStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialDraftUuid = searchParams.get("draft") || "";
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isClearingForm, setIsClearingForm] = useState(false);
+  const [showClearFormModal, setShowClearFormModal] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showCreateRateModal, setShowCreateRateModal] = useState(false);
   const [showCreateClientModal, setShowCreateClientModal] = useState(false); // Added for Client Modal
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false); // Added for Project Modal
   const [showCreateBankModal, setShowCreateBankModal] = useState(false); // Added for Bank Modal
-  
+  const [serviceModal, setServiceModal] = useState({ open: false, line: null });
+  const [clientPreferences, setClientPreferences] = useState(null);
+  const [clientPreferencesLoading, setClientPreferencesLoading] = useState(false);
+  const [saveClientPreferences, setSaveClientPreferences] = useState(false);
+  const [taxDefaults, setTaxDefaults] = useState({ discount: "0", vat: "0", wht: "0" });
 
   const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null });
 
-  const [invoiceDetails, setInvoiceDetails] = useState({
-    invoice_date: new Date(), due_date: new Date(), clients_name: "", clients_id: "",
-    project: "", currency: "NGN", tin_number: "No", bank_name: "", account_name: "",
-    account_number: "", account_currency: "", rate_date: "", post_jv: "",
-  });
+  const [invoiceDetails, setInvoiceDetails] = useState(createInitialInvoiceDetails);
 
   const [invoiceItems, setInvoiceItems] = useState([createEmptyItem(1)]);
   const prevInvoiceItemsRef = useRef(invoiceItems);
 
-  useEffect(() => { searchRates(""); searchClients(""); searchProjects(""); searchBanks(""); }, []);
+  useEffect(() => { searchRates(""); searchClients(""); searchProjects(""); searchBanks(""); fetchServices({ currency: "NGN" }); }, []);
   useEffect(() => { prevInvoiceItemsRef.current = invoiceItems; }, [invoiceItems]);
+
+  useEffect(() => {
+    if (!invoiceDetails.currency) return;
+    fetchServices({ currency: invoiceDetails.currency }).catch(() => {});
+  }, [invoiceDetails.currency, fetchServices]);
+
+  useEffect(() => {
+    if (invoiceDetails.payment_terms_days === null || !invoiceDetails.invoice_date) return;
+    const nextDueDate = addDays(invoiceDetails.invoice_date, invoiceDetails.payment_terms_days);
+    setInvoiceDetails((current) => {
+      if (current.due_date instanceof Date && current.due_date.getTime() === nextDueDate.getTime()) return current;
+      return { ...current, due_date: nextDueDate };
+    });
+  }, [invoiceDetails.invoice_date, invoiceDetails.payment_terms_days]);
 
   // Auto-select the effective rate whenever invoice_date or currency changes
   useEffect(() => {
@@ -121,6 +191,79 @@ const CreateInvoiceForm = () => {
   const clientOptions = useMemo(() => clients.map((c) => ({ value: c.clients_name, label: c.clients_name, client: c })), [clients]);
   const projectOptions = useMemo(() => projects.map((p) => ({ value: p.project_name, label: p.project_name })), [projects]);
   const totals = useMemo(() => calculateTotals(invoiceItems), [invoiceItems]);
+  const grossAmount = useMemo(
+    () => invoiceItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0),
+    [invoiceItems]
+  );
+
+  const restoreDraft = useCallback((savedDraft) => {
+    const savedDetails = savedDraft?.invoiceDetails || {};
+    const savedItems = Array.isArray(savedDraft?.invoiceItems) ? savedDraft.invoiceItems : [];
+
+    setInvoiceDetails((current) => ({
+      ...current,
+      ...savedDetails,
+      invoice_date: savedDetails.invoice_date ? new Date(savedDetails.invoice_date) : current.invoice_date,
+      due_date: savedDetails.due_date ? new Date(savedDetails.due_date) : current.due_date,
+    }));
+
+    if (savedItems.length > 0) {
+      setInvoiceItems(savedItems.map((item, index) => ({
+        ...createEmptyItem(index + 1),
+        service_catalogue_id: item.service_catalogue_id ?? null,
+        description: item.description || "",
+        amount: item.amount === null || item.amount === undefined ? "" : String(item.amount),
+        discount: item.discount === null || item.discount === undefined ? "" : String(item.discount),
+        vat: item.vat === null || item.vat === undefined ? "" : String(item.vat),
+        wht: item.wht === null || item.wht === undefined ? "" : String(item.wht),
+      })));
+    }
+    if (savedDraft?.clientPreferenceState) {
+      setSaveClientPreferences(Boolean(savedDraft.clientPreferenceState.saveClientPreferences));
+      if (savedDraft.clientPreferenceState.taxDefaults) {
+        setTaxDefaults(savedDraft.clientPreferenceState.taxDefaults);
+      }
+    }
+  }, []);
+
+  const draftPayload = useMemo(() => ({
+    invoiceDetails: {
+      ...invoiceDetails,
+      invoice_date: invoiceDetails.invoice_date instanceof Date
+        ? invoiceDetails.invoice_date.toISOString().split("T")[0]
+        : invoiceDetails.invoice_date,
+      due_date: invoiceDetails.due_date instanceof Date
+        ? invoiceDetails.due_date.toISOString().split("T")[0]
+        : invoiceDetails.due_date,
+    },
+    invoiceItems: invoiceItems.map(({ id, ...item }) => item),
+    clientPreferenceState: { saveClientPreferences, taxDefaults },
+  }), [invoiceDetails, invoiceItems, saveClientPreferences, taxDefaults]);
+
+  const {
+    draftUuid,
+    saveState,
+    lastSavedAt,
+    isDirty,
+    isRestoring,
+    saveNow,
+    clearDraft,
+  } = useInvoiceAutosave({
+    mode: "create",
+    initialDraftUuid,
+    payload: draftPayload,
+    onRestore: restoreDraft,
+  });
+
+  const handleManualDraftSave = async () => {
+    try {
+      const saved = await saveNow();
+      if (saved) showToast("Invoice draft saved", "success");
+      else showToast("Add a client or service line before saving the draft", "info");
+    } catch (error) {
+      showToast(error.response?.data?.message || "Invoice draft could not be saved", "error");
+    }
+  };
 
   const validateHeader = useCallback(() => {
     const e = {};
@@ -154,10 +297,133 @@ const CreateInvoiceForm = () => {
     }));
   }, [submitted, validateItems, invoiceItems]);
 
-  const handleDetailChange = (field, value) => setInvoiceDetails((prev) => ({ ...prev, [field]: value }));
-  const handleItemChange = (id, field, value) => setInvoiceItems((prev) => prev.map((item) => item.id !== id ? item : { ...item, [field]: value }));
+  const handleDetailChange = (field, value) => {
+    setInvoiceDetails((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "currency" && prev.account_currency && prev.account_currency !== value) {
+        next.bank_id = null;
+        next.bank_name = "";
+        next.account_name = "";
+        next.account_number = "";
+        next.account_currency = "";
+      }
+      return next;
+    });
+    if (field === "currency") {
+      setInvoiceItems((prev) => prev.map((item) => ({ ...item, service_catalogue_id: null })));
+    }
+  };
 
-  const addItem = () => setInvoiceItems((prev) => [...prev, createEmptyItem(prev.length + 1)]);
+  const handleItemChange = (id, field, value) => {
+    if (id === invoiceItems[0]?.id && ["discount", "vat", "wht"].includes(field)) {
+      setTaxDefaults((current) => ({ ...current, [field]: value }));
+    }
+    setInvoiceItems((prev) => prev.map((item) => item.id !== id ? item : { ...item, [field]: value }));
+  };
+
+  const handlePaymentTermsChange = (option) => {
+    const days = option?.value ?? null;
+    setInvoiceDetails((current) => ({
+      ...current,
+      payment_terms_days: days,
+      payment_terms_label: option?.label || "Custom due date",
+      due_date: days === null ? current.due_date : addDays(current.invoice_date, days),
+    }));
+  };
+
+  const applyClientPreferences = useCallback((preferences) => {
+    if (!preferences) return;
+    const termsDays = preferences.payment_terms_days === null ? null : Number(preferences.payment_terms_days || 0);
+    const nextTaxDefaults = {
+      discount: String(preferences.default_discount_percent ?? 0),
+      vat: String(preferences.default_vat_percent ?? 0),
+      wht: String(preferences.default_wht_percent ?? 0),
+    };
+    setTaxDefaults(nextTaxDefaults);
+    setInvoiceDetails((current) => ({
+      ...current,
+      currency: preferences.default_currency || current.currency,
+      payment_terms_days: termsDays,
+      payment_terms_label: termsDays === null ? "Custom due date" : termsDays === 0 ? "Due on receipt" : `Net ${termsDays} days`,
+      due_date: termsDays === null ? current.due_date : addDays(current.invoice_date, termsDays),
+      project: preferences.default_project || "",
+      tin_number: preferences.display_tin || "No",
+      post_jv: preferences.post_journal_entry || "No",
+      bank_id: preferences.default_bank_id || null,
+      bank_name: preferences.bank_name || "",
+      account_name: preferences.account_name || "",
+      account_number: preferences.account_number || "",
+      account_currency: preferences.account_currency || "",
+    }));
+    setInvoiceItems((currentItems) => currentItems.map((item) => {
+      const isBlank = !item.description && !Number(item.amount || 0);
+      return isBlank
+        ? { ...item, service_catalogue_id: null, ...nextTaxDefaults }
+        : { ...item, service_catalogue_id: null };
+    }));
+  }, []);
+
+  const handleClientSelection = async (option) => {
+    if (!option) {
+      setInvoiceDetails((current) => ({ ...current, clients_name: "", clients_id: "" }));
+      setClientPreferences(null);
+      setSaveClientPreferences(false);
+      return;
+    }
+
+    const clientId = option.client?.clients_id || "";
+    setInvoiceDetails((current) => ({ ...current, clients_name: option.value, clients_id: clientId }));
+    setClientPreferencesLoading(true);
+    try {
+      const response = await api.get("/invoice/client-preferences", { params: { client_id: clientId } });
+      const preferences = response.data?.data?.preferences || null;
+      setClientPreferences(preferences);
+      if (preferences) {
+        applyClientPreferences(preferences);
+        showToast("Saved invoice defaults applied for this client", "success");
+      }
+    } catch (error) {
+      setClientPreferences(null);
+      showToast(error.response?.data?.message || "Client defaults could not be loaded", "error");
+    } finally {
+      setClientPreferencesLoading(false);
+    }
+  };
+
+  const handleApplyService = (itemId, service) => {
+    if (service && itemId === invoiceItems[0]?.id) {
+      setTaxDefaults({
+        discount: String(service.discount_percent ?? 0),
+        vat: String(service.vat_percent ?? 0),
+        wht: String(service.wht_percent ?? 0),
+      });
+    }
+    setInvoiceItems((current) => current.map((item) => {
+      if (item.id !== itemId) return item;
+      if (!service) return { ...item, service_catalogue_id: null };
+      return {
+        ...item,
+        service_catalogue_id: service.id,
+        description: service.description || service.service_name || "",
+        amount: String(service.default_amount ?? ""),
+        discount: String(service.discount_percent ?? 0),
+        vat: String(service.vat_percent ?? 0),
+        wht: String(service.wht_percent ?? 0),
+      };
+    }));
+  };
+
+  const handleServiceSearch = (search) => {
+    fetchServices({ currency: invoiceDetails.currency, search }).catch(() => {});
+  };
+
+  const handleServiceCreated = (service) => {
+    if (serviceModal.line && service) handleApplyService(serviceModal.line.id, service);
+    setServiceModal({ open: false, line: null });
+    fetchServices({ currency: invoiceDetails.currency }).catch(() => {});
+  };
+
+  const addItem = () => setInvoiceItems((prev) => [...prev, createEmptyItem(prev.length + 1, taxDefaults)]);
   const requestRemoveItem = (itemId) => { if (invoiceItems.length === 1) return; setDeleteModal({ open: true, itemId }); };
   const confirmRemoveItem = () => {
     setInvoiceItems((prev) => { const filtered = prev.filter((i) => i.id !== deleteModal.itemId); return filtered.map((item, idx) => ({ ...item, sn: idx + 1 })); });
@@ -174,8 +440,7 @@ const CreateInvoiceForm = () => {
     searchClients("");
     // Auto-populate the client fields with the newly created client
     if (newClient) {
-      handleDetailChange("clients_name", newClient.clients_name);
-      handleDetailChange("clients_id", newClient.clients_id);
+      handleClientSelection({ value: newClient.clients_name, client: newClient });
     }
   };
 
@@ -193,10 +458,56 @@ const CreateInvoiceForm = () => {
     searchBanks("");
     // Auto-populate all 4 bank fields with the newly created bank data
     if (newBank) {
+      handleDetailChange("bank_id", newBank.id || null);
       handleDetailChange("bank_name", newBank.bank_name);
       handleDetailChange("account_name", newBank.account_name);
       handleDetailChange("account_number", newBank.account_number);
       handleDetailChange("account_currency", newBank.account_currency);
+    }
+  };
+
+
+  const handleClearForm = async () => {
+    const nextDetails = createInitialInvoiceDetails();
+    const nextItems = [createEmptyItem(1)];
+    const nextDraftPayload = {
+      invoiceDetails: {
+        ...nextDetails,
+        invoice_date: nextDetails.invoice_date.toISOString().split("T")[0],
+        due_date: nextDetails.due_date.toISOString().split("T")[0],
+      },
+      invoiceItems: nextItems.map(({ id, ...item }) => item),
+      clientPreferenceState: {
+        saveClientPreferences: false,
+        taxDefaults: { discount: "0", vat: "0", wht: "0" },
+      },
+    };
+
+    setIsClearingForm(true);
+    try {
+      await clearDraft(nextDraftPayload);
+
+      setInvoiceDetails(nextDetails);
+      setInvoiceItems(nextItems);
+      setClientPreferences(null);
+      setClientPreferencesLoading(false);
+      setSaveClientPreferences(false);
+      setTaxDefaults({ discount: "0", vat: "0", wht: "0" });
+      setSubmitted(false);
+      setOpenMenuId(null);
+      setServiceModal({ open: false, line: null });
+      setDeleteModal({ open: false, itemId: null });
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("draft");
+      setSearchParams(nextParams, { replace: true });
+
+      setShowClearFormModal(false);
+      showToast("Invoice form cleared", "success");
+    } catch (error) {
+      showToast(error.response?.data?.message || "The invoice form could not be cleared", "error");
+    } finally {
+      setIsClearingForm(false);
     }
   };
 
@@ -210,249 +521,632 @@ const CreateInvoiceForm = () => {
     const payload = {
       invoice_date: invoiceDetails.invoice_date instanceof Date ? invoiceDetails.invoice_date.toISOString().split("T")[0] : invoiceDetails.invoice_date,
       due_date: invoiceDetails.due_date instanceof Date ? invoiceDetails.due_date.toISOString().split("T")[0] : invoiceDetails.due_date,
+      payment_terms_days: invoiceDetails.payment_terms_days,
+      payment_terms_label: invoiceDetails.payment_terms_label,
       clients_name: invoiceDetails.clients_name, clients_id: invoiceDetails.clients_id, project: invoiceDetails.project || undefined,
-      currency: invoiceDetails.currency, tin_number: invoiceDetails.tin_number, bank_name: invoiceDetails.bank_name,
-      account_name: invoiceDetails.account_name, account_number: invoiceDetails.account_number, account_currency: invoiceDetails.account_currency,
-      rate_date: invoiceDetails.rate_date, post_jv: invoiceDetails.post_jv,
-      sn: invoiceItems.map((i) => i.sn), description: invoiceItems.map((i) => i.description),
+      currency: invoiceDetails.currency, tin_number: invoiceDetails.tin_number, bank_id: invoiceDetails.bank_id,
+      bank_name: invoiceDetails.bank_name, account_name: invoiceDetails.account_name, account_number: invoiceDetails.account_number,
+      account_currency: invoiceDetails.account_currency, rate_date: invoiceDetails.rate_date, post_jv: invoiceDetails.post_jv,
+      save_client_preferences: saveClientPreferences,
+      client_preferences: {
+        default_currency: invoiceDetails.currency,
+        payment_terms_days: invoiceDetails.payment_terms_days,
+        default_bank_id: invoiceDetails.bank_id,
+        display_tin: invoiceDetails.tin_number,
+        post_journal_entry: invoiceDetails.post_jv,
+        default_project: invoiceDetails.project,
+        default_discount_percent: invoiceItems[0]?.discount ?? taxDefaults.discount,
+        default_vat_percent: invoiceItems[0]?.vat ?? taxDefaults.vat,
+        default_wht_percent: invoiceItems[0]?.wht ?? taxDefaults.wht,
+      },
+      draft_uuid: draftUuid || undefined,
+      sn: invoiceItems.map((i) => i.sn), service_catalogue_id: invoiceItems.map((i) => i.service_catalogue_id || null), description: invoiceItems.map((i) => i.description),
       amount: invoiceItems.map((i) => parseFloat(i.amount) || 0), discount: invoiceItems.map((i) => parseFloat(i.discount) || 0),
       vat: invoiceItems.map((i) => parseFloat(i.vat) || 0), wht: invoiceItems.map((i) => parseFloat(i.wht) || 0),
     };
     try {
       await api.post("/invoice/create-invoice", payload, { headers: { Authorization: `Bearer ${token}` } });
+      const nextDetails = createInitialInvoiceDetails();
+      const nextItems = [createEmptyItem(1)];
+      await clearDraft({
+        invoiceDetails: {
+          ...nextDetails,
+          invoice_date: nextDetails.invoice_date.toISOString().split("T")[0],
+          due_date: nextDetails.due_date.toISOString().split("T")[0],
+        },
+        invoiceItems: nextItems.map(({ id, ...item }) => item),
+        clientPreferenceState: {
+          saveClientPreferences: false,
+          taxDefaults: { discount: "0", vat: "0", wht: "0" },
+        },
+      });
       showToast("Invoice created successfully!", "success"); setSubmitted(false);
-      setInvoiceDetails({ invoice_date: new Date(), due_date: new Date(), clients_name: "", clients_id: "", project: "", currency: "NGN", tin_number: "No", bank_name: "", account_name: "", account_number: "", account_currency: "", rate_date: "", post_jv: "" });
-      setInvoiceItems([createEmptyItem(1)]);
+      setInvoiceDetails(nextDetails);
+      setInvoiceItems(nextItems);
+      setClientPreferences(null);
+      setSaveClientPreferences(false);
+      setTaxDefaults({ discount: "0", vat: "0", wht: "0" });
     } catch (error) { showToast(error.response?.data?.message || "Failed to create invoice", "error"); } finally { setIsLoading(false); }
   };
 
   return (
     <>
-      <motion.div variants={fadeInUp} initial="hidden" animate="show" transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }} className={`invoice-form-box theme-${theme}`}>
-        <form className="invoice-form-f-container" onSubmit={handleSubmit} noValidate>
-          <div className="invoice-form-header">
-            <div className="invoice-form-htxt">Create Invoice</div>
-            <div className="invoice-form-sub-htxt">Fill the form below to create a new invoice</div>
-          </div>
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate="show"
+        transition={{ duration: 0.22, delay: 0.02, ease: "easeOut" }}
+        className={`invoice-form-box invoice-builder theme-${theme}`}
+      >
+        <form className="invoice-builder__form" onSubmit={handleSubmit} noValidate>
+          <header className="invoice-builder__hero">
+            <div className="invoice-builder__hero-copy">
+              <span className="invoice-builder__eyebrow">
+                <span className="fas fa-file-invoice" aria-hidden="true" />
+                Invoice workflow
+              </span>
+              <h2 className="invoice-builder__title">Create a professional invoice</h2>
+              <p className="invoice-builder__subtitle">
+                Complete the invoice details, add each service line, then review the live summary before generating the invoice.
+              </p>
+            </div>
 
-          <div className="invoice-form-flex-box">
-            {/* Invoice Date */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.invoice_date ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.invoice_date ? "input-label-message" : ""}`} htmlFor="invoice_date">Invoice Date</label>
-                  <div className="form-wrapper">
-                    <DatePicker selected={invoiceDetails.invoice_date} onChange={(date) => handleDetailChange("invoice_date", date)} className={`form-input ${headerErrors.invoice_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="invoice_date"
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"
-                    />
-                    <span className={`chevron-input-icon fas fa-calendar ${headerErrors.invoice_date ? "input-icon-error" : ""}`} />
-                  </div>
-                </div>
-                {headerErrors.invoice_date && <div className="input-error-message">{headerErrors.invoice_date}</div>}
+            <div className="invoice-builder__hero-meta" aria-label="Invoice overview">
+              <span className="invoice-builder__meta-pill">
+                <span className="fas fa-coins" aria-hidden="true" />
+                {invoiceDetails.currency || "Currency"}
+              </span>
+              <span className="invoice-builder__meta-pill">
+                <span className="fas fa-list-check" aria-hidden="true" />
+                {invoiceItems.length} {invoiceItems.length === 1 ? "service" : "services"}
+              </span>
+            </div>
+          </header>
+
+          <section className="invoice-builder__section">
+            <div className="invoice-builder__section-heading">
+              <div className="invoice-builder__section-icon">
+                <span className="fas fa-calendar-check" aria-hidden="true" />
+              </div>
+              <div className="invoice-builder__section-copy">
+                <span className="invoice-builder__section-index">01</span>
+                <h3 className="invoice-builder__section-title">Invoice details</h3>
+                <p className="invoice-builder__section-text">Set the billing period, currency and applicable exchange rate.</p>
               </div>
             </div>
 
-            {/* Due Date */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.due_date ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.due_date ? "input-label-message" : ""}`} htmlFor="due_date">Due Date</label>
-                  <div className="form-wrapper">
-                    <DatePicker selected={invoiceDetails.due_date} onChange={(date) => handleDetailChange("due_date", date)} className={`form-input ${headerErrors.due_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" id="due_date"
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"
-                    />
-                    <span className={`chevron-input-icon fas fa-calendar ${headerErrors.due_date ? "input-icon-error" : ""}`} />
-                  </div>
-                </div>
-                {headerErrors.due_date && <div className="input-error-message">{headerErrors.due_date}</div>}
-              </div>
-            </div>
-
-            {/* Currency */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.currency ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.currency ? "input-label-message" : ""}`} htmlFor="currency">Currency</label>
-                  <div className="form-wrapper">
-                    <Select options={CURRENCY_OPTIONS} onChange={(opt) => { handleDetailChange("currency", opt?.value || ""); }} value={CURRENCY_OPTIONS.find((o) => o.value === invoiceDetails.currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="currency" onMenuOpen={() => setOpenMenuId("currency")} onMenuClose={() => setOpenMenuId(null)} />
-                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "currency" ? "chevron-rotate" : "", headerErrors.currency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                  </div>
-                </div>
-                {headerErrors.currency && <div className="input-error-message">{headerErrors.currency}</div>}
-              </div>
-            </div>
-
-            {/* Client Name */}
-            <div className="invoice-form invoice-form-three">
-              <div className="inv-form-flex">
-                <div className="input-form-wrapper inv-form-flex-wrap">
-                  <div className={`input-form-group ${headerErrors.clients_name ? "input-form-error" : ""}`}>
-                    <label className={`input-form-label ${headerErrors.clients_name ? "input-label-message" : ""}`} htmlFor="clients_name">Client Name</label>
+            <div className="invoice-builder__field-grid invoice-builder__field-grid--four">
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className={`input-form-group ${headerErrors.invoice_date ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.invoice_date ? "input-label-message" : ""}`} htmlFor="invoice_date">Invoice Date</label>
                     <div className="form-wrapper">
-                      <Select options={clientOptions} onInputChange={(val) => { if (val.length > 1) searchClients(val); }} onMenuOpen={() => setOpenMenuId("clients_name")} onMenuClose={() => { setOpenMenuId(null); searchClients(""); }} onChange={(opt) => { if (opt) { handleDetailChange("clients_name", opt.value); handleDetailChange("clients_id", opt.client?.clients_id || ""); } else { handleDetailChange("clients_name", ""); handleDetailChange("clients_id", ""); } }} value={invoiceDetails.clients_name ? { value: invoiceDetails.clients_name, label: invoiceDetails.clients_name } : null} placeholder="Search client..." className={`form-input-select ${headerErrors.clients_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="clients_name" isLoading={clientsLoading} />
-                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "clients_name" ? "chevron-rotate" : "", headerErrors.clients_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                      <DatePicker
+                        selected={invoiceDetails.invoice_date}
+                        onChange={(date) => handleDetailChange("invoice_date", date)}
+                        className={`form-input ${headerErrors.invoice_date ? "input-error" : ""}`}
+                        dateFormat="yyyy-MM-dd"
+                        wrapperClassName="input-date-picker"
+                        id="invoice_date"
+                        showMonthDropdown
+                        showYearDropdown
+                        dropdownMode="select"
+                      />
+                      <span className={`chevron-input-icon fas fa-calendar ${headerErrors.invoice_date ? "input-icon-error" : ""}`} />
                     </div>
                   </div>
-                  {headerErrors.clients_name && <div className="input-error-message">{headerErrors.clients_name}</div>}
-                </div>
-                {/* Button to trigger Create Client Modal */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client"><span className="fas fa-plus"></span></button>
-              </div>
-            </div>
-
-            {/* Client ID */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className="input-form-group">
-                  <label className="input-form-label" htmlFor="clients_id">Client ID</label>
-                  <div className="form-wrapper"><input type="text" id="clients_id" className="form-input form-input-no-padding" value={invoiceDetails.clients_id} disabled readOnly placeholder="Auto-filled" /></div>
+                  {headerErrors.invoice_date && <div className="input-error-message">{headerErrors.invoice_date}</div>}
                 </div>
               </div>
-            </div>
 
-            {/* Project */}
-            <div className="invoice-form invoice-form-three">
-              <div className="inv-form-flex">
-                <div className="input-form-wrapper inv-form-flex-wrap">
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
                   <div className="input-form-group">
-                    <label className="input-form-label" htmlFor="project">Project <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
+                    <label className="input-form-label" htmlFor="payment_terms">Payment Terms</label>
                     <div className="form-wrapper">
-                      <Select options={projectOptions} onInputChange={(val) => { if (val.length > 1) searchProjects(val); }} onMenuOpen={() => setOpenMenuId("project")} onMenuClose={() => { setOpenMenuId(null); searchProjects(""); }} onChange={(opt) => handleDetailChange("project", opt ? opt.value : "")} value={invoiceDetails.project ? { value: invoiceDetails.project, label: invoiceDetails.project } : null} placeholder="Search project..." className="form-input-select" classNamePrefix="form-input-select" isClearable inputId="project" isLoading={projectsLoading} />
-                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "project" ? "chevron-rotate" : ""].filter(Boolean).join(" ")} />
+                      <Select
+                        options={PAYMENT_TERM_OPTIONS}
+                        onChange={handlePaymentTermsChange}
+                        value={PAYMENT_TERM_OPTIONS.find((option) => option.value === invoiceDetails.payment_terms_days) || PAYMENT_TERM_OPTIONS[PAYMENT_TERM_OPTIONS.length - 1]}
+                        placeholder="Select payment terms"
+                        className="form-input-select"
+                        classNamePrefix="form-input-select"
+                        inputId="payment_terms"
+                        onMenuOpen={() => setOpenMenuId("payment_terms")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "payment_terms" ? "chevron-rotate" : ""].filter(Boolean).join(" ")} />
                     </div>
                   </div>
                 </div>
-                {/* UPDATE THIS BUTTON BELOW */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateProjectModal(true)} title="Add New project"><span className="fas fa-plus"></span></button>
               </div>
-            </div>
 
-            {/* Rate Date */}
-            <div className="invoice-form invoice-form-three">
-              <div className="inv-form-flex">
-                <div className="input-form-wrapper inv-form-flex-wrap">
-                  <div className={`input-form-group ${headerErrors.rate_date ? "input-form-error" : ""}`}>
-                    <label className={`input-form-label ${headerErrors.rate_date ? "input-label-message" : ""}`} htmlFor="rate_date">Rate Date</label>
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className={`input-form-group ${headerErrors.due_date ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.due_date ? "input-label-message" : ""}`} htmlFor="due_date">Due Date</label>
                     <div className="form-wrapper">
-                      <Select options={rateOptions} onChange={(opt) => handleDetailChange("rate_date", opt ? opt.value : "")} value={rateOptions.find((o) => o.value === invoiceDetails.rate_date) || null} placeholder="Select rate..." className={`form-input-select ${headerErrors.rate_date ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="rate_date" onMenuOpen={() => setOpenMenuId("rate_date")} onMenuClose={() => setOpenMenuId(null)} noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : `No rates for ${invoiceDetails.currency}`} isLoading={ratesLoading} />
-                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "rate_date" ? "chevron-rotate" : "", headerErrors.rate_date ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                      <DatePicker
+                        selected={invoiceDetails.due_date}
+                        onChange={(date) => handleDetailChange("due_date", date)}
+                        className={`form-input ${headerErrors.due_date ? "input-error" : ""}`}
+                        dateFormat="yyyy-MM-dd"
+                        wrapperClassName="input-date-picker"
+                        id="due_date"
+                        showMonthDropdown
+                        showYearDropdown
+                        dropdownMode="select"
+                        disabled={invoiceDetails.payment_terms_days !== null}
+                      />
+                      <span className={`chevron-input-icon fas fa-calendar ${headerErrors.due_date ? "input-icon-error" : ""}`} />
                     </div>
                   </div>
-                  {headerErrors.rate_date && <div className="input-error-message">{headerErrors.rate_date}</div>}
+                  {headerErrors.due_date && <div className="input-error-message">{headerErrors.due_date}</div>}
                 </div>
-                {/* Button to trigger Create Rate Modal */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate"><span className="fas fa-plus"></span></button>
               </div>
-            </div>
 
-            {/* Select Bank Account */}
-            <div className="invoice-form invoice-form-three">
-              <div className="inv-form-flex">
-                <div className="input-form-wrapper inv-form-flex-wrap">
-                  <div className={`input-form-group ${headerErrors.bank_name ? "input-form-error" : ""}`}>
-                    <label className={`input-form-label ${headerErrors.bank_name ? "input-label-message" : ""}`} htmlFor="bank_account">Select Bank Account <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className={`input-form-group ${headerErrors.currency ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.currency ? "input-label-message" : ""}`} htmlFor="currency">Currency</label>
                     <div className="form-wrapper">
-                      <Select options={bankOptions} onInputChange={(val) => { if (val.length > 1) searchBanks(val); }} onMenuOpen={() => setOpenMenuId("bank_account")} onMenuClose={() => { setOpenMenuId(null); searchBanks(""); }} onChange={(opt) => { if (opt) { handleDetailChange("bank_name", opt.bank.bank_name); handleDetailChange("account_name", opt.bank.account_name); handleDetailChange("account_number", opt.bank.account_number); handleDetailChange("account_currency", opt.bank.account_currency); } else { handleDetailChange("bank_name", ""); handleDetailChange("account_name", ""); handleDetailChange("account_number", ""); handleDetailChange("account_currency", ""); } }} value={invoiceDetails.bank_name ? { value: invoiceDetails.bank_name, label: `${invoiceDetails.bank_name} - ${invoiceDetails.account_number}` } : null} placeholder="Search bank account..." className={`form-input-select ${headerErrors.bank_name ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="bank_account" isLoading={banksLoading} />
-                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "bank_account" ? "chevron-rotate" : "", headerErrors.bank_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                      <Select
+                        options={CURRENCY_OPTIONS}
+                        onChange={(opt) => handleDetailChange("currency", opt?.value || "")}
+                        value={CURRENCY_OPTIONS.find((option) => option.value === invoiceDetails.currency) || null}
+                        placeholder="Select currency"
+                        className={`form-input-select ${headerErrors.currency ? "input-error" : ""}`}
+                        classNamePrefix="form-input-select"
+                        inputId="currency"
+                        onMenuOpen={() => setOpenMenuId("currency")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "currency" ? "chevron-rotate" : "", headerErrors.currency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                     </div>
                   </div>
-                  {headerErrors.bank_name && <div className="input-error-message">{headerErrors.bank_name}</div>}
+                  {headerErrors.currency && <div className="input-error-message">{headerErrors.currency}</div>}
                 </div>
-                {/* UPDATE THIS BUTTON BELOW */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateBankModal(true)} title="Add New Bank"><span className="fas fa-plus"></span></button>
+              </div>
+
+              <div className="invoice-builder__field">
+                <div className="inv-form-flex invoice-builder__inline-field">
+                  <div className="input-form-wrapper inv-form-flex-wrap">
+                    <div className={`input-form-group ${headerErrors.rate_date ? "input-form-error" : ""}`}>
+                      <label className={`input-form-label ${headerErrors.rate_date ? "input-label-message" : ""}`} htmlFor="rate_date">Rate Date</label>
+                      <div className="form-wrapper">
+                        <Select
+                          options={rateOptions}
+                          onChange={(opt) => handleDetailChange("rate_date", opt ? opt.value : "")}
+                          value={rateOptions.find((option) => option.value === invoiceDetails.rate_date) || null}
+                          placeholder="Select rate..."
+                          className={`form-input-select ${headerErrors.rate_date ? "input-error" : ""}`}
+                          classNamePrefix="form-input-select"
+                          isClearable
+                          inputId="rate_date"
+                          onMenuOpen={() => setOpenMenuId("rate_date")}
+                          onMenuClose={() => setOpenMenuId(null)}
+                          noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : `No rates for ${invoiceDetails.currency}`}
+                          isLoading={ratesLoading}
+                        />
+                        <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "rate_date" ? "chevron-rotate" : "", headerErrors.rate_date ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                      </div>
+                    </div>
+                    {headerErrors.rate_date && <div className="input-error-message">{headerErrors.rate_date}</div>}
+                  </div>
+                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateRateModal(true)} title="Add a new exchange rate" aria-label="Add a new exchange rate">
+                    <span className="fas fa-plus" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="invoice-builder__section">
+            <div className="invoice-builder__section-heading">
+              <div className="invoice-builder__section-icon">
+                <span className="fas fa-building" aria-hidden="true" />
+              </div>
+              <div className="invoice-builder__section-copy">
+                <span className="invoice-builder__section-index">02</span>
+                <h3 className="invoice-builder__section-title">Client and billing</h3>
+                <p className="invoice-builder__section-text">Choose the client, related project and receiving bank account.</p>
               </div>
             </div>
 
-            {/* Display TIN Number */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.tin_number ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.tin_number ? "input-label-message" : ""}`} htmlFor="tin_number">Display TIN Number?</label>
-                  <div className="form-wrapper">
-                    <Select options={TIN_OPTIONS} onChange={(opt) => handleDetailChange("tin_number", opt?.value || "")} value={TIN_OPTIONS.find((o) => o.value === invoiceDetails.tin_number) || null} placeholder="Select" className={`form-input-select ${headerErrors.tin_number ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="tin_number" onMenuOpen={() => setOpenMenuId("tin_number")} onMenuClose={() => setOpenMenuId(null)} />
-                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "tin_number" ? "chevron-rotate" : "", headerErrors.tin_number ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+            <div className="invoice-builder__field-grid invoice-builder__field-grid--two">
+              <div className="invoice-builder__field">
+                <div className="inv-form-flex invoice-builder__inline-field">
+                  <div className="input-form-wrapper inv-form-flex-wrap">
+                    <div className={`input-form-group ${headerErrors.clients_name ? "input-form-error" : ""}`}>
+                      <label className={`input-form-label ${headerErrors.clients_name ? "input-label-message" : ""}`} htmlFor="clients_name">Client Name</label>
+                      <div className="form-wrapper">
+                        <Select
+                          options={clientOptions}
+                          onInputChange={(value) => { if (value.length > 1) searchClients(value); }}
+                          onMenuOpen={() => setOpenMenuId("clients_name")}
+                          onMenuClose={() => { setOpenMenuId(null); searchClients(""); }}
+                          onChange={handleClientSelection}
+                          value={invoiceDetails.clients_name ? { value: invoiceDetails.clients_name, label: invoiceDetails.clients_name } : null}
+                          placeholder="Search client..."
+                          className={`form-input-select ${headerErrors.clients_name ? "input-error" : ""}`}
+                          classNamePrefix="form-input-select"
+                          isClearable
+                          inputId="clients_name"
+                          isLoading={clientsLoading}
+                        />
+                        <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "clients_name" ? "chevron-rotate" : "", headerErrors.clients_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                      </div>
+                    </div>
+                    {headerErrors.clients_name && <div className="input-error-message">{headerErrors.clients_name}</div>}
+                  </div>
+                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateClientModal(true)} title="Add a new client" aria-label="Add a new client">
+                    <span className="fas fa-plus" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className="input-form-group">
+                    <label className="input-form-label" htmlFor="clients_id">Client ID</label>
+                    <div className="form-wrapper">
+                      <input type="text" id="clients_id" className="form-input form-input-no-padding invoice-builder__readonly-field" value={invoiceDetails.clients_id} disabled readOnly placeholder="Auto-filled after client selection" />
+                      <span className="chevron-input-icon fas fa-lock" aria-hidden="true" />
+                    </div>
                   </div>
                 </div>
-                {headerErrors.tin_number && <div className="input-error-message">{headerErrors.tin_number}</div>}
+              </div>
+
+              <div className="invoice-builder__field">
+                <div className="inv-form-flex invoice-builder__inline-field">
+                  <div className="input-form-wrapper inv-form-flex-wrap">
+                    <div className="input-form-group">
+                      <label className="input-form-label" htmlFor="project">Project <span className="invoice-builder__optional">Optional</span></label>
+                      <div className="form-wrapper">
+                        <Select
+                          options={projectOptions}
+                          onInputChange={(value) => { if (value.length > 1) searchProjects(value); }}
+                          onMenuOpen={() => setOpenMenuId("project")}
+                          onMenuClose={() => { setOpenMenuId(null); searchProjects(""); }}
+                          onChange={(option) => handleDetailChange("project", option ? option.value : "")}
+                          value={invoiceDetails.project ? { value: invoiceDetails.project, label: invoiceDetails.project } : null}
+                          placeholder="Search project..."
+                          className="form-input-select"
+                          classNamePrefix="form-input-select"
+                          isClearable
+                          inputId="project"
+                          isLoading={projectsLoading}
+                        />
+                        <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "project" ? "chevron-rotate" : ""].filter(Boolean).join(" ")} />
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateProjectModal(true)} title="Add a new project" aria-label="Add a new project">
+                    <span className="fas fa-plus" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="invoice-builder__field">
+                <div className="inv-form-flex invoice-builder__inline-field">
+                  <div className="input-form-wrapper inv-form-flex-wrap">
+                    <div className={`input-form-group ${headerErrors.bank_name ? "input-form-error" : ""}`}>
+                      <label className={`input-form-label ${headerErrors.bank_name ? "input-label-message" : ""}`} htmlFor="bank_account">Bank Account <span className="invoice-builder__optional">Optional</span></label>
+                      <div className="form-wrapper">
+                        <Select
+                          options={bankOptions}
+                          onInputChange={(value) => { if (value.length > 1) searchBanks(value); }}
+                          onMenuOpen={() => setOpenMenuId("bank_account")}
+                          onMenuClose={() => { setOpenMenuId(null); searchBanks(""); }}
+                          onChange={(option) => {
+                            if (option) {
+                              handleDetailChange("bank_id", option.bank.id || option.value || null);
+                              handleDetailChange("bank_name", option.bank.bank_name);
+                              handleDetailChange("account_name", option.bank.account_name);
+                              handleDetailChange("account_number", option.bank.account_number);
+                              handleDetailChange("account_currency", option.bank.account_currency);
+                            } else {
+                              handleDetailChange("bank_id", null);
+                              handleDetailChange("bank_name", "");
+                              handleDetailChange("account_name", "");
+                              handleDetailChange("account_number", "");
+                              handleDetailChange("account_currency", "");
+                            }
+                          }}
+                          value={invoiceDetails.bank_name ? { value: invoiceDetails.bank_name, label: `${invoiceDetails.bank_name} - ${invoiceDetails.account_number}` } : null}
+                          placeholder="Search bank account..."
+                          className={`form-input-select ${headerErrors.bank_name ? "input-error" : ""}`}
+                          classNamePrefix="form-input-select"
+                          isClearable
+                          inputId="bank_account"
+                          isLoading={banksLoading}
+                        />
+                        <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "bank_account" ? "chevron-rotate" : "", headerErrors.bank_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                      </div>
+                    </div>
+                    {headerErrors.bank_name && <div className="input-error-message">{headerErrors.bank_name}</div>}
+                  </div>
+                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateBankModal(true)} title="Add a new bank account" aria-label="Add a new bank account">
+                    <span className="fas fa-plus" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Post Journal Entry */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.post_jv ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.post_jv ? "input-label-message" : ""}`} htmlFor="post_jv">Post Journal Entry</label>
-                  <div className="form-wrapper">
-                    <Select options={POST_JV_OPTIONS} onChange={(opt) => handleDetailChange("post_jv", opt?.value || "")} value={POST_JV_OPTIONS.find((o) => o.value === invoiceDetails.post_jv) || null} placeholder="Select" className={`form-input-select ${headerErrors.post_jv ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="post_jv" onMenuOpen={() => setOpenMenuId("post_jv")} onMenuClose={() => setOpenMenuId(null)} />
-                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "post_jv" ? "chevron-rotate" : "", headerErrors.post_jv ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+            {invoiceDetails.clients_id ? (
+              <div className={`invoice-client-defaults ${clientPreferences ? "invoice-client-defaults--active" : ""}`}>
+                <div className="invoice-client-defaults__icon">
+                  <span className={clientPreferencesLoading ? "fas fa-spinner fa-spin" : clientPreferences ? "fas fa-wand-magic-sparkles" : "fas fa-sliders"} aria-hidden="true" />
+                </div>
+                <div className="invoice-client-defaults__copy">
+                  <strong>{clientPreferencesLoading ? "Loading client defaults..." : clientPreferences ? "Client defaults applied" : "No saved invoice defaults yet"}</strong>
+                  <p>{clientPreferences ? "Currency, payment terms, bank and tax defaults were loaded. You can still change any field for this invoice." : "Complete this invoice and save the current setup as the preferred starting point for this client."}</p>
+                </div>
+                <label className="invoice-client-defaults__toggle">
+                  <input type="checkbox" checked={saveClientPreferences} onChange={(event) => setSaveClientPreferences(event.target.checked)} />
+                  <span className="invoice-client-defaults__switch" aria-hidden="true" />
+                  <span>Save current setup as client default</span>
+                </label>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="invoice-builder__section">
+            <div className="invoice-builder__section-heading">
+              <div className="invoice-builder__section-icon">
+                <span className="fas fa-sliders" aria-hidden="true" />
+              </div>
+              <div className="invoice-builder__section-copy">
+                <span className="invoice-builder__section-index">03</span>
+                <h3 className="invoice-builder__section-title">Accounting controls</h3>
+                <p className="invoice-builder__section-text">Choose how the invoice should appear and whether it should post to the journal.</p>
+              </div>
+            </div>
+
+            <div className="invoice-builder__field-grid invoice-builder__field-grid--two">
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className={`input-form-group ${headerErrors.tin_number ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.tin_number ? "input-label-message" : ""}`} htmlFor="tin_number">Display TIN Number?</label>
+                    <div className="form-wrapper">
+                      <Select
+                        options={TIN_OPTIONS}
+                        onChange={(option) => handleDetailChange("tin_number", option?.value || "")}
+                        value={TIN_OPTIONS.find((option) => option.value === invoiceDetails.tin_number) || null}
+                        placeholder="Select"
+                        className={`form-input-select ${headerErrors.tin_number ? "input-error" : ""}`}
+                        classNamePrefix="form-input-select"
+                        inputId="tin_number"
+                        onMenuOpen={() => setOpenMenuId("tin_number")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "tin_number" ? "chevron-rotate" : "", headerErrors.tin_number ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                    </div>
+                  </div>
+                  {headerErrors.tin_number && <div className="input-error-message">{headerErrors.tin_number}</div>}
+                </div>
+              </div>
+
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className={`input-form-group ${headerErrors.post_jv ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.post_jv ? "input-label-message" : ""}`} htmlFor="post_jv">Post Journal Entry</label>
+                    <div className="form-wrapper">
+                      <Select
+                        options={POST_JV_OPTIONS}
+                        onChange={(option) => handleDetailChange("post_jv", option?.value || "")}
+                        value={POST_JV_OPTIONS.find((option) => option.value === invoiceDetails.post_jv) || null}
+                        placeholder="Select"
+                        className={`form-input-select ${headerErrors.post_jv ? "input-error" : ""}`}
+                        classNamePrefix="form-input-select"
+                        isClearable
+                        inputId="post_jv"
+                        onMenuOpen={() => setOpenMenuId("post_jv")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "post_jv" ? "chevron-rotate" : "", headerErrors.post_jv ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                    </div>
+                  </div>
+                  {headerErrors.post_jv && <div className="input-error-message">{headerErrors.post_jv}</div>}
+                </div>
+              </div>
+            </div>
+
+            <div className="invoice-builder__notice">
+              <span className="invoice-builder__notice-icon fas fa-circle-info" aria-hidden="true" />
+              <p>Required fields are validated before submission. Optional project and bank information can be added later if needed.</p>
+            </div>
+          </section>
+
+          <section className="invoice-builder__section invoice-builder__section--items">
+            <div className="invoice-builder__items-toolbar">
+              <div className="invoice-builder__section-heading invoice-builder__section-heading--compact">
+                <div className="invoice-builder__section-icon">
+                  <span className="fas fa-receipt" aria-hidden="true" />
+                </div>
+                <div className="invoice-builder__section-copy">
+                  <span className="invoice-builder__section-index">04</span>
+                  <h3 className="invoice-builder__section-title">Services and charges</h3>
+                  <p className="invoice-builder__section-text">Add one line for each service and apply the relevant tax percentages.</p>
+                </div>
+              </div>
+              <span className="invoice-builder__count-badge">{invoiceItems.length} {invoiceItems.length === 1 ? "line" : "lines"}</span>
+            </div>
+
+            <InvoiceLineEditor
+              items={invoiceItems}
+              currency={invoiceDetails.currency}
+              errorsById={itemErrorMap}
+              services={services}
+              servicesLoading={servicesLoading}
+              onSearchServices={handleServiceSearch}
+              onApplyService={handleApplyService}
+              onSaveAsService={(line) => setServiceModal({ open: true, line })}
+              onChange={handleItemChange}
+              onRemove={(item) => requestRemoveItem(item.id)}
+            />
+
+            <div className="invoice-builder__items-footer">
+              <div className="invoice-builder__add-area">
+                <button type="button" onClick={addItem} className="invoice-add-btn invoice-builder__add-service">
+                  <span className="fas fa-plus" aria-hidden="true" />
+                  Add another service
+                </button>
+                <p>Each service line can have its own discount, VAT and withholding-tax percentages.</p>
+              </div>
+
+              <aside className="invoice-builder__summary-card" aria-label="Invoice totals">
+                <div className="invoice-builder__summary-header">
+                  <div>
+                    <span className="invoice-builder__summary-kicker">Live calculation</span>
+                    <h4>Invoice summary</h4>
+                  </div>
+                  <span className="invoice-builder__currency-chip">{invoiceDetails.currency || "—"}</span>
+                </div>
+                <div className="invoice-builder__summary-list">
+                  <div className="invoice-builder__summary-row">
+                    <span>Gross service value</span>
+                    <strong>{formatNumber(grossAmount)}</strong>
+                  </div>
+                  <div className="invoice-builder__summary-row">
+                    <span>Total discount</span>
+                    <strong>- {formatNumber(totals.totalDiscount)}</strong>
+                  </div>
+                  <div className="invoice-builder__summary-row">
+                    <span>Total VAT</span>
+                    <strong>+ {formatNumber(totals.totalVat)}</strong>
+                  </div>
+                  <div className="invoice-builder__summary-row invoice-builder__summary-row--muted">
+                    <span>WHT (reference)</span>
+                    <strong>{formatNumber(totals.totalWht)}</strong>
                   </div>
                 </div>
-                {headerErrors.post_jv && <div className="input-error-message">{headerErrors.post_jv}</div>}
+                <div className="invoice-builder__grand-total">
+                  <span>Grand total</span>
+                  <strong><small>{invoiceDetails.currency}</small>{formatNumber(totals.grandTotal)}</strong>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          <InvoiceDraftBar
+            saveState={saveState}
+            lastSavedAt={lastSavedAt}
+            isDirty={isDirty}
+            isRestoring={isRestoring}
+            onSave={handleManualDraftSave}
+            onClear={() => setShowClearFormModal(true)}
+            showClear
+            isClearing={isClearingForm}
+            disabled={isLoading || isClearingForm}
+          />
+
+          <footer className="invoice-builder__footer">
+            <div className="invoice-builder__footer-copy">
+              <span className="fas fa-shield-alt" aria-hidden="true" />
+              <div>
+                <strong>Ready to generate?</strong>
+                <p>Review the client, service lines and totals before creating the invoice.</p>
               </div>
             </div>
-          </div>
-
-          {/* INVOICE ITEMS TABLE */}
-          <div className="invoice-form-full">
-            <div className="invoice-items-table invoice-items-table-inv">
-              <div className="invoice-table-header journal-table-header">
-                <div className="invoice-table-cell cell-sn">S/N</div>
-                <div className="invoice-table-cell">Description of Services</div>
-                <div className="invoice-table-cell cell-small">Amount</div>
-                <div className="invoice-table-cell cell-small">Disc (%)</div>
-                <div className="invoice-table-cell cell-small">Vat (%)</div>
-                <div className="invoice-table-cell cell-small">Wht (%)</div>
-                <div className="invoice-table-cell cell-small">Subtotal</div>
-                <div className="invoice-table-cell cell-action">Action</div>
-              </div>
-              {invoiceItems.map((item) => {
-                const rowErr = itemErrorMap[item.id] || {}; const subtotal = computeRowSubtotal(item);
-                return (
-                  <div key={item.id} className="invoice-table-row">
-                    <div className="invoice-table-cell cell-sn"><span className="invoice-sn-badge">{item.sn}</span></div>
-                    <div className="invoice-table-cell"><div className="input-form-wrapper" style={{ margin: 0 }}><div className={`input-form-group ${rowErr.description ? "input-form-error" : ""}`}><div className="form-wrapper"><input type="text" className={`form-input-select form-input-textarea-row ${rowErr.description ? "input-error" : ""}`} value={item.description} onChange={(e) => handleItemChange(item.id, "description", e.target.value)} placeholder="Service Description" /></div></div>{rowErr.description && <div className="input-error-message">{rowErr.description}</div>}</div></div>
-                    <div className="invoice-table-cell cell-small"><div className="input-form-wrapper" style={{ margin: 0 }}><div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}><div className="form-wrapper"><input type="number" className={`form-input form-input-number ${rowErr.amount ? "input-error" : ""}`} value={item.amount} onChange={(e) => handleItemChange(item.id, "amount", e.target.value)} step="0.01" min="0" placeholder="0.00" /></div></div>{rowErr.amount && <div className="input-error-message">{rowErr.amount}</div>}</div></div>
-                    <div className="invoice-table-cell cell-small"><div className="input-form-wrapper" style={{ margin: 0 }}><div className={`input-form-group ${rowErr.discount ? "input-form-error" : ""}`}><div className="form-wrapper"><input type="number" className={`form-input form-input-number ${rowErr.discount ? "input-error" : ""}`} value={item.discount} onChange={(e) => handleItemChange(item.id, "discount", e.target.value)} step="0.01" min="0" max="100" placeholder="0.00" /></div></div>{rowErr.discount && <div className="input-error-message">{rowErr.discount}</div>}</div></div>
-                    <div className="invoice-table-cell cell-small"><div className="input-form-wrapper" style={{ margin: 0 }}><div className={`input-form-group ${rowErr.vat ? "input-form-error" : ""}`}><div className="form-wrapper"><input type="number" className={`form-input form-input-number ${rowErr.vat ? "input-error" : ""}`} value={item.vat} onChange={(e) => handleItemChange(item.id, "vat", e.target.value)} step="0.01" min="0" max="100" placeholder="0.00" /></div></div>{rowErr.vat && <div className="input-error-message">{rowErr.vat}</div>}</div></div>
-                    <div className="invoice-table-cell cell-small"><div className="input-form-wrapper" style={{ margin: 0 }}><div className={`input-form-group ${rowErr.wht ? "input-form-error" : ""}`}><div className="form-wrapper"><input type="number" className={`form-input form-input-number ${rowErr.wht ? "input-error" : ""}`} value={item.wht} onChange={(e) => handleItemChange(item.id, "wht", e.target.value)} step="0.01" min="0" max="100" placeholder="0.00" /></div></div>{rowErr.wht && <div className="input-error-message">{rowErr.wht}</div>}</div></div>
-                    <div className="invoice-table-cell cell-small"><div className="input-form-wrapper" style={{ margin: 0 }}><div className="input-form-group"><div className="form-wrapper"><input type="text" className="form-input form-input-number invoice-subtotal-field" value={formatNumber(subtotal)} readOnly disabled /></div></div></div></div>
-                    <div className="invoice-table-cell cell-action"><button type="button" onClick={() => requestRemoveItem(item.id)} className="invoice-remove-btn" disabled={invoiceItems.length === 1} title="Remove row"><span className="fas fa-trash" /></button></div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* SUMMARY & SUBMIT */}
-          <div className="invoice-form-summary">
-            <button type="button" onClick={addItem} className="invoice-add-btn"><span className="fas fa-plus-circle" /> Add New Service</button>
-            <div className="invoice-totals">
-              <div className="invoice-total-row"><div className="invoice-total-label">Total Discount</div><div className="invoice-total-value">{formatNumber(totals.totalDiscount)}</div></div>
-              <div className="invoice-total-row"><div className="invoice-total-label">Total VAT</div><div className="invoice-total-value">{formatNumber(totals.totalVat)}</div></div>
-              <div className="invoice-total-row invoice-grand-total"><div className="invoice-total-label inv-bold large-text">Grand Total</div><div className="invoice-total-value inv-bold large-text">{formatNumber(totals.grandTotal)}</div></div>
-            </div>
-          </div>
-          <div className="invoice-action-btn">
-            <div className="invoice-action-btn-wrapper">
-              <button type="submit" disabled={isLoading} className="invoice-submit-btn">
-                {isLoading ? (<div className="invoice-loader" />) : (<span className="invoice-submit-btn-text">Generate Invoice</span>)}
-              </button>
-            </div>
-          </div>
+            <button type="submit" disabled={isLoading || isRestoring} className="invoice-submit-btn invoice-builder__submit-button">
+              {isLoading ? (
+                <div className="invoice-loader" />
+              ) : (
+                <>
+                  <span>Generate Invoice</span>
+                  <span className="fas fa-arrow-right" aria-hidden="true" />
+                </>
+              )}
+            </button>
+          </footer>
         </form>
       </motion.div>
 
-      {/* Modals */}
       <AnimatePresence>
-        {deleteModal.open && (<DeleteLineItemModal isOpen={deleteModal.open} onClose={() => setDeleteModal({ open: false, itemId: null })} onConfirm={confirmRemoveItem} isNew={true} />)}
-        {showCreateRateModal && (<CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />)}
-        {showCreateClientModal && (<CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />)}
-        {showCreateProjectModal && (<CreateProjectModal isOpen={showCreateProjectModal} onClose={() => setShowCreateProjectModal(false)} onProjectCreated={handleProjectCreated} />)}
-        {showCreateBankModal && (<CreateBankModal isOpen={showCreateBankModal} onClose={() => setShowCreateBankModal(false)} onBankCreated={handleBankCreated} />)}
+        {showClearFormModal && (
+          <motion.div
+            className={`invoice-clear-modal__backdrop theme-${theme}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !isClearingForm) {
+                setShowClearFormModal(false);
+              }
+            }}
+          >
+            <motion.section
+              className="invoice-clear-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="clear-invoice-form-title"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
+              <div className="invoice-clear-modal__icon">
+                <span className="fas fa-eraser" aria-hidden="true" />
+              </div>
+              <div className="invoice-clear-modal__copy">
+                <span className="invoice-clear-modal__eyebrow">Clear invoice form</span>
+                <h3 id="clear-invoice-form-title">Start with a clean invoice?</h3>
+                <p>
+                  This removes the restored draft and clears every client, service, tax and payment setting currently entered on this form.
+                </p>
+              </div>
+              <div className="invoice-clear-modal__actions">
+                <button
+                  type="button"
+                  className="invoice-clear-modal__cancel"
+                  onClick={() => setShowClearFormModal(false)}
+                  disabled={isClearingForm}
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  className="invoice-clear-modal__confirm"
+                  onClick={handleClearForm}
+                  disabled={isClearingForm}
+                >
+                  <span className={`fas ${isClearingForm ? "fa-spinner fa-spin" : "fa-eraser"}`} aria-hidden="true" />
+                  <span>{isClearingForm ? "Clearing…" : "Clear form"}</span>
+                </button>
+              </div>
+            </motion.section>
+          </motion.div>
+        )}
+        {deleteModal.open && (
+          <DeleteLineItemModal
+            isOpen={deleteModal.open}
+            onClose={() => setDeleteModal({ open: false, itemId: null })}
+            onConfirm={confirmRemoveItem}
+            isNew={true}
+          />
+        )}
+        {showCreateRateModal && (
+          <CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />
+        )}
+        {showCreateClientModal && (
+          <CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />
+        )}
+        {showCreateProjectModal && (
+          <CreateProjectModal isOpen={showCreateProjectModal} onClose={() => setShowCreateProjectModal(false)} onProjectCreated={handleProjectCreated} />
+        )}
+        {showCreateBankModal && (
+          <CreateBankModal isOpen={showCreateBankModal} onClose={() => setShowCreateBankModal(false)} onBankCreated={handleBankCreated} />
+        )}
+        {serviceModal.open && (
+          <CreateInvoiceServiceModal
+            isOpen={serviceModal.open}
+            currency={invoiceDetails.currency}
+            initialLine={serviceModal.line}
+            onClose={() => setServiceModal({ open: false, line: null })}
+            onCreated={handleServiceCreated}
+          />
+        )}
       </AnimatePresence>
     </>
   );

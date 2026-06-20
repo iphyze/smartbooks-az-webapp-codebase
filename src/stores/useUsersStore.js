@@ -86,7 +86,10 @@ const useUsersStore = create(
       createUser: async (payload) => {
         try {
           const response = await api.post('/users/createUsers', payload);
-          useToastStore.getState().showToast('User created successfully', 'success');
+          useToastStore.getState().showToast(
+            response.data.message || 'User created successfully',
+            'success'
+          );
           return { success: true, data: response.data.data };
         } catch (error) {
           const message = error.response?.data?.message || 'Failed to create user';
@@ -101,7 +104,10 @@ const useUsersStore = create(
       updateUser: async (payload) => {
         try {
           const response = await api.put('/users/editUsers', payload);
-          useToastStore.getState().showToast('User updated successfully', 'success');
+          useToastStore.getState().showToast(
+            response.data.message || 'User updated successfully',
+            'success'
+          );
           return { success: true, data: response.data.data };
         } catch (error) {
           const message = error.response?.data?.message || 'Failed to update user';

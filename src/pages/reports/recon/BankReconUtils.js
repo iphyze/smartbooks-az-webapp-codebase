@@ -10,7 +10,7 @@ export const fmtAmt = (n) => Number(n || 0).toLocaleString('en-US', {
 });
 
 export const safe = (v) => (v === null || v === undefined || v === '' ? '—' : String(v));
-export const amountOf = (line) => Math.abs(Number(line?.amount || 0));
+export const amountOf = (line) => Math.abs(Number(line?.outstanding_amount ?? line?.remaining_amount ?? line?.amount ?? 0));
 export const sumSelected = (lines, ids) => lines
   .filter((x) => ids.includes(Number(x.id)))
   .reduce((s, x) => s + amountOf(x), 0);

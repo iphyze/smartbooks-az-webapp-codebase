@@ -32,7 +32,7 @@ const BankReconAppendModal = ({ recon, onClose, onAppend }) => {
         {/* Header */}
         <div className="br-modal-head">
           <div className="br-modal-ico" style={{ background: 'rgba(0,177,150,.12)', color: 'var(--sb-brand,#00b196)' }}>
-            <i className={`fas ${loading ? 'fa-spinner fa-spin' : result ? 'fa-circle-check' : 'fa-file-arrow-up'}`} />
+            <i className={`fas ${loading ? 'fa-spinner fa-spin' : result ? 'fa-check-circle' : 'fa-file-upload'}`} />
           </div>
           <div>
             <h3>Append Statement Lines</h3>
@@ -43,7 +43,7 @@ const BankReconAppendModal = ({ recon, onClose, onAppend }) => {
             </p>
           </div>
           <button className="br-modal-x" onClick={onClose} disabled={loading}>
-            <i className="fas fa-xmark" />
+            <i className="fas fa-times" />
           </button>
         </div>
 
@@ -67,7 +67,7 @@ const BankReconAppendModal = ({ recon, onClose, onAppend }) => {
               ))}
             </div>
             <p style={{ fontSize: 12, color: 'var(--sb-text-3,#7aada6)', marginTop: 14 }}>
-              <i className="fas fa-circle-info" style={{ marginRight: 6 }} />
+              <i className="fas fa-info-circle" style={{ marginRight: 6 }} />
               The workspace will reload with the new lines. Unmatched new lines are ready for manual matching or classification.
             </p>
           </div>
@@ -121,7 +121,7 @@ const BankReconAppendModal = ({ recon, onClose, onAppend }) => {
                   onChange={handleFile}
                   disabled={loading}
                 />
-                <i className={`fas ${file ? 'fa-check-circle' : 'fa-cloud-arrow-up'} br-drop-icon`}
+                <i className={`fas ${file ? 'fa-check-circle' : 'fa-cloud-upload-alt'} br-drop-icon`}
                    style={{ color: file ? 'var(--sb-brand,#00b196)' : undefined }} />
                 <span className="br-drop-name">{file?.name || `Click to upload CSV / XLSX`}</span>
                 <span className="br-drop-hint">
@@ -138,7 +138,7 @@ const BankReconAppendModal = ({ recon, onClose, onAppend }) => {
               borderRadius: 10, padding: '12px 16px', fontSize: 12,
               color: '#6366f1', display: 'flex', gap: 10, alignItems: 'flex-start',
             }}>
-              <i className="fas fa-shield-halved" style={{ marginTop: 1, flexShrink: 0 }} />
+              <i className="fas fa-shield-alt" style={{ marginTop: 1, flexShrink: 0 }} />
               <div>
                 <strong>Safe to re-upload:</strong> Each line is hashed by date, amount, direction and description.
                 Duplicate lines are silently skipped — only genuinely new transactions are added.
@@ -164,7 +164,7 @@ const BankReconAppendModal = ({ recon, onClose, onAppend }) => {
               >
                 {loading
                   ? <><span className="br-spinner" />Processing…</>
-                  : <><i className="fas fa-file-arrow-up" />Append Lines</>}
+                  : <><i className="fas fa-file-upload" />Append Lines</>}
               </button>
             </>
           )}

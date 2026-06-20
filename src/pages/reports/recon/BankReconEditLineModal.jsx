@@ -78,14 +78,14 @@ const BankReconEditLineModal = ({ line, source, onClose, onSave }) => {
         {/* Header */}
         <div className="br-modal-head">
           <div className="br-modal-ico" style={{ background: 'rgba(99,102,241,.13)', color: '#6366f1' }}>
-            <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-pen-to-square'}`} />
+            <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-edit'}`} />
           </div>
           <div>
             <h3>Edit {isLedger ? 'Ledger' : 'Bank'} Line</h3>
             <p>{loading ? 'Saving correction, please wait…' : 'Correct an erroneous posting. Changes recompute the reconciliation summary.'}</p>
           </div>
           <button className="br-modal-x" onClick={onClose} disabled={loading}>
-            <i className="fas fa-xmark" />
+            <i className="fas fa-times" />
           </button>
         </div>
 
@@ -97,7 +97,7 @@ const BankReconEditLineModal = ({ line, source, onClose, onSave }) => {
             display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12.5,
             color: '#ca8a04',
           }}>
-            <i className="fas fa-triangle-exclamation" style={{ marginTop: 2, flexShrink: 0 }} />
+            <i className="fas fa-exclamation-triangle" style={{ marginTop: 2, flexShrink: 0 }} />
             <span>
               This line is currently <strong>matched</strong>. Editing it (especially the amount or direction)
               may invalidate the match. Consider unmatching it first if the amounts will change significantly.
@@ -117,7 +117,7 @@ const BankReconEditLineModal = ({ line, source, onClose, onSave }) => {
                 placeholder="0.00"
                 disabled={loading}
               />
-              {errors.amount && <span className="br-err-msg"><i className="fas fa-circle-exclamation" />{errors.amount}</span>}
+              {errors.amount && <span className="br-err-msg"><i className="fas fa-exclamation-circle" />{errors.amount}</span>}
             </Field>
 
             <Field label="Direction (Side)">
@@ -145,7 +145,7 @@ const BankReconEditLineModal = ({ line, source, onClose, onSave }) => {
                         cursor: loading ? 'not-allowed' : 'pointer', transition: '.15s',
                       }}
                     >
-                      <i className={`fas ${dir === 'OUT' ? 'fa-arrow-up-right' : 'fa-arrow-down-left'}`} style={{ marginRight: 6 }} />
+                      <i className={`fas ${dir === 'OUT' ? 'fa-arrow-up' : 'fa-arrow-down'}`} style={{ marginRight: 6 }} />
                       {label}
                     </button>
                   );
@@ -169,7 +169,7 @@ const BankReconEditLineModal = ({ line, source, onClose, onSave }) => {
                 />
                 <span className="chevron-input-icon fas fa-calendar" />
               </div>
-              {errors.txn_date && <span className="br-err-msg"><i className="fas fa-circle-exclamation" />{errors.txn_date}</span>}
+              {errors.txn_date && <span className="br-err-msg"><i className="fas fa-exclamation-circle" />{errors.txn_date}</span>}
             </Field>
             <Field label="Reference">
               <input
@@ -191,7 +191,7 @@ const BankReconEditLineModal = ({ line, source, onClose, onSave }) => {
               placeholder="Transaction description"
               disabled={loading}
             />
-            {errors.description && <span className="br-err-msg"><i className="fas fa-circle-exclamation" />{errors.description}</span>}
+            {errors.description && <span className="br-err-msg"><i className="fas fa-exclamation-circle" />{errors.description}</span>}
           </Field>
 
           {/* Ledger name (ledger side only) + Running balance */}

@@ -687,3 +687,351 @@
   color: #7e8e9e;
   border-color: #2f3944;
 }
+/* ──────────────────────────────────────────────────────────────────────────
+   Smartbooks document views — invoice and journal screen polish
+   These selectors are intentionally scoped so exported/downloaded PDFs are
+   untouched and other legacy view screens keep their existing presentation.
+   ────────────────────────────────────────────────────────────────────────── */
+.vc-document-view {
+  isolation: isolate;
+  overflow: hidden;
+  padding: 48px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #dfe8f1;
+  box-shadow: 0 18px 42px rgba(7, 20, 38, 0.08);
+}
+
+.vc-document-view::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, #12b8aa 0%, #29d0c0 50%, rgba(41, 208, 192, 0) 100%);
+}
+
+.theme-dark .vc-document-view,
+.vc-document-view.theme-dark {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(22, 196, 181, 0.065), transparent 30%),
+    linear-gradient(145deg, #111d2e 0%, #0b1625 100%);
+  border-color: #24344b;
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.28);
+}
+
+.theme-dark .vc-document-view .vc-header-title,
+.theme-dark .vc-document-view .vc-voucher-type {
+  color: #f3f7fb;
+}
+
+.theme-dark .vc-document-view .vc-header-text {
+  color: #c9d7e7;
+}
+
+.theme-dark .vc-document-view .vc-voucher-type-number,
+.theme-dark .vc-document-view .vc-header-title-tcolor {
+  color: #25cbbb;
+}
+
+.theme-dark .vc-document-view .vc-table-body {
+  background: #101c2c;
+}
+
+.theme-dark .vc-document-view .vc-table-body:nth-child(odd) {
+  background: #152337;
+}
+
+.theme-dark .vc-document-view .vc-table-body .vc-table-data {
+  color: #c9d8e7;
+  border-color: #2a3a50;
+}
+
+.theme-dark .vc-document-view .vc-table-header {
+  background: #078d7d;
+}
+
+/* Document action buttons */
+.vc-document-view .vc-button-box {
+  right: 34px;
+  top: 42px;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.vc-action-btn,
+.vc-document-view .vc-edit-btn,
+.vc-document-view .vc-export-btn,
+.vc-document-view .vc-print-btn {
+  min-height: 44px;
+  padding: 0 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  text-decoration: none;
+  font-family: Montserrat-Medium;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(7, 20, 38, 0.12);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.vc-document-view .vc-edit-btn {
+  color: #ffffff;
+  background: #1269ca;
+  border-color: #277cdc;
+}
+
+.vc-document-view .vc-print-btn {
+  color: #087f73;
+  background: #e5faf7;
+  border-color: rgba(13, 173, 158, 0.3);
+}
+
+.vc-document-view .vc-export-btn {
+  color: #ffffff;
+  background: #078f7f;
+  border-color: #12aa99;
+}
+
+.theme-dark .vc-document-view .vc-edit-btn {
+  background: #176fcf;
+  border-color: #3389e9;
+}
+
+.theme-dark .vc-document-view .vc-print-btn {
+  color: #57dfd1;
+  background: rgba(16, 190, 173, 0.11);
+  border-color: rgba(47, 207, 192, 0.28);
+}
+
+.theme-dark .vc-document-view .vc-export-btn {
+  background: #078d7d;
+  border-color: #16aa9a;
+}
+
+.vc-action-btn:hover,
+.vc-document-view .vc-edit-btn:hover,
+.vc-document-view .vc-export-btn:hover,
+.vc-document-view .vc-print-btn:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 11px 24px rgba(7, 20, 38, 0.18);
+}
+
+.vc-action-btn:focus-visible {
+  outline: 3px solid rgba(34, 202, 187, 0.28);
+  outline-offset: 3px;
+}
+
+.vc-action-btn:disabled {
+  opacity: 0.62;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Invoice totals — supports long currencies and large values without clipping */
+.vc-document-view .vc-summary-table {
+  gap: 24px;
+}
+
+.vc-document-view .vc-invoice-totals {
+  width: min(100%, 430px);
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  border: 1px solid #dbe6ef;
+  border-radius: 13px;
+  background: #f7fafc;
+}
+
+.theme-dark .vc-document-view .vc-invoice-totals {
+  background: #101c2c;
+  border-color: #293a51;
+}
+
+.vc-document-view .vc-invoice-total-row {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(86px, 0.65fr) minmax(0, 1.35fr);
+  align-items: center;
+  gap: 18px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e9f0;
+}
+
+.theme-dark .vc-document-view .vc-invoice-total-row {
+  border-bottom-color: #293a51;
+}
+
+.vc-document-view .vc-invoice-total-row:last-child {
+  border-bottom: 0;
+}
+
+.vc-document-view .vc-invoice-total-label,
+.vc-document-view .vc-invoice-total-value {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.vc-document-view .vc-invoice-total-label {
+  color: #5d6f82;
+  font-family: Montserrat-Medium;
+}
+
+.vc-document-view .vc-invoice-total-value {
+  color: #152437;
+  text-align: right;
+  font-family: Montserrat-SemiBold;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.theme-dark .vc-document-view .vc-invoice-total-label {
+  color: #91a4b9;
+}
+
+.theme-dark .vc-document-view .vc-invoice-total-value {
+  color: #edf5fb;
+}
+
+.vc-document-view .vc-invoice-total-row.invoice-grand-total {
+  margin: 0;
+  padding: 15px 16px;
+  border: 0;
+  background: linear-gradient(135deg, #078f7f, #0ab29e);
+}
+
+.vc-document-view .invoice-grand-total .vc-invoice-total-label,
+.vc-document-view .invoice-grand-total .vc-invoice-total-value {
+  color: #ffffff !important;
+}
+
+.vc-document-view .invoice-grand-total .vc-invoice-total-value {
+  max-width: 100%;
+  font-size: clamp(14px, 1.35vw, 18px) !important;
+  line-height: 1.35;
+}
+
+/* Journal totals */
+.vc-document-view .vc-summary-grid {
+  width: min(100%, 430px);
+  min-width: 0;
+  margin-left: auto;
+  border-radius: 13px;
+  border-color: #dbe6ef;
+}
+
+.theme-dark .vc-document-view .vc-summary-grid {
+  background: #101c2c;
+  border-color: #293a51;
+}
+
+.vc-document-view .vc-summary-grid .invoice-total-row {
+  min-width: 0;
+  gap: 16px;
+}
+
+.vc-document-view .vc-summary-grid .invoice-total-value {
+  min-width: 0;
+  max-width: 72%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.theme-dark .vc-document-view .vc-summary-grid .invoice-total-label {
+  color: #91a4b9;
+}
+
+.theme-dark .vc-document-view .vc-summary-grid .invoice-total-value {
+  color: #edf5fb;
+}
+
+.theme-dark .vc-document-view .vc-summary-grid .invoice-total-row-header {
+  background: #078d7d;
+}
+
+@media screen and (max-width: 1180px) {
+  .vc-document-view {
+    padding: 38px 28px;
+  }
+
+  .vc-document-view .company-logo {
+    margin-bottom: 28px;
+  }
+
+  .vc-document-view .vc-button-box {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    margin: 0 0 36px;
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .vc-document-view {
+    padding: 28px 18px;
+    border-radius: 14px;
+  }
+
+  .vc-document-view .company-logo {
+    width: min(190px, 70%);
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+
+  .vc-document-view .vc-button-box {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-bottom: 30px;
+  }
+
+  .vc-document-view .vc-button-box .vc-export-btn {
+    grid-column: 1 / -1;
+  }
+
+  .vc-action-btn,
+  .vc-document-view .vc-edit-btn,
+  .vc-document-view .vc-export-btn,
+  .vc-document-view .vc-print-btn {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+
+  .vc-document-view .vc-invoice-total-row {
+    gap: 12px;
+    padding-inline: 13px;
+  }
+
+  .vc-document-view .vc-summary-grid .invoice-total-value {
+    max-width: 66%;
+  }
+}
+
+@media screen and (max-width: 440px) {
+  .vc-document-view .vc-button-box {
+    grid-template-columns: 1fr;
+  }
+
+  .vc-document-view .vc-button-box .vc-export-btn {
+    grid-column: auto;
+  }
+}
+
+/* Keep journal summary currency headings readable in every theme. */
+.vc-summary-grid .invoice-total-row-header,
+.theme-light .vc-summary-grid .invoice-total-row-header,
+.theme-dark .vc-summary-grid .invoice-total-row-header {
+  color: #ffffff !important;
+}

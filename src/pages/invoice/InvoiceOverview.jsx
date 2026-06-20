@@ -13,11 +13,11 @@ import ChartSearchableSelect from "../../components/ChartSearchableSelect";
 import EmptyTable from "../../components/EmptyTable";
 import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationModal";
 import ErrorModal from "../../components/modals/ErrorModal";
-import UpdateModal from "../../components/modals/UpdateModal"; // Import UpdateModal
 import useInvoiceStore from "../../stores/useInvoiceStore"; // Updated Store
 import useAuthStore from "../../stores/useAuthStore";
 import { formatCurrencyDecimals } from "../../utils/helper";
 import InvoiceKPICards from "./InvoiceKPICards";
+import "./InvoiceWorkflow.css";
 
 const InvoiceOverview = () => {
   const [nav, setNav] = useState(false);
@@ -30,13 +30,11 @@ const InvoiceOverview = () => {
     sortOrder, searchQuery, selectedItems, fetchData, setCurrentPage,
     setItemsPerPage, setSearchQuery, setSorting, toggleItemSelection,
     clearSelection, deleteSelectedItems, exportToExcel, getTotalPages,
-    updateInvoiceStatus, // New action for status update
     fetchKPIs, kpis, kpisLoading,
   } = useInvoiceStore();
 
   // Local UI states for modals and actions
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
 
   const links = [
@@ -44,18 +42,9 @@ const InvoiceOverview = () => {
     { label: "Invoices", to: "/invoice/home", active: false }
   ];
 
-  // Options for the Status Update Modal
-  const statusOptions = [
-    { id: "Paid", label: "Paid" },
-    { id: "Pending", label: "Pending" },
-    { id: "Overdue", label: "Overdue" },
-    { id: "Cancelled", label: "Cancelled" }
-  ];
-
   // Options for Bulk Actions dropdown
   const actionOptions = [
     { id: "", label: "Select Action" },
-    { id: "update-status", label: "Update Status" },
     { id: "delete", label: "Delete" }
   ];
 
@@ -113,8 +102,6 @@ const InvoiceOverview = () => {
     setSelectedAction(actionId);
     if (actionId === "delete") {
       setShowDeleteModal(true);
-    } else if (actionId === "update-status") {
-      setShowUpdateModal(true);
     }
   };
 
@@ -125,12 +112,6 @@ const InvoiceOverview = () => {
     clearSelection();
   };
 
-  const handleUpdateStatus = async (status) => {
-    await updateInvoiceStatus(status);
-    setShowUpdateModal(false);
-    setSelectedAction("");
-    clearSelection();
-  };
 
   const handleDeleteInvoice = async (invoice_id) => {
     if(invoice_id !== ""){
@@ -158,6 +139,23 @@ const InvoiceOverview = () => {
     return sortOrder === 'ASC'
       ? <i className="fas fa-sort-up table-sort-icon"></i>
       : <i className="fas fa-sort-down table-sort-icon"></i>;
+  };
+
+
+  const getWorkflowStyle = (status) => {
+    const normalized = String(status || "Issued").toLowerCase();
+    return ["issued", "cancelled", "void"].includes(normalized) ? normalized : "issued";
+  };
+
+  const formatDeliveryDate = (value) => {
+    if (!value) return "";
+    const parsed = new Date(value.replace(" ", "T"));
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const pageLimitOptions = [
@@ -309,7 +307,13 @@ const InvoiceOverview = () => {
                             Due Date {getSortIcon('due_date')}
                           </th>
                           <th onClick={() => handleSort('status')} className="sortable">
-                            Status {getSortIcon('status')}
+                            Payment {getSortIcon('status')}
+                          </th>
+                          <th onClick={() => handleSort('workflow_status')} className="sortable">
+                            Workflow {getSortIcon('workflow_status')}
+                          </th>
+                          <th onClick={() => handleSort('last_sent_at')} className="sortable">
+                            Delivery {getSortIcon('last_sent_at')}
                           </th>
                           <th>Amt</th>
                           <th>Actions</th>
@@ -338,6 +342,31 @@ const InvoiceOverview = () => {
                               <span className={`badge badge-${getStatusStyle(invoice.status)}`}>
                                 <span className={`badge-circle badge-circle-${getStatusStyle(invoice.status)}`}/> {invoice.status}
                               </span>
+                            </td>
+                            <td>
+                              <span className={`invoice-list-workflow invoice-list-workflow--${getWorkflowStyle(invoice.workflow_status)}`}>
+                                {invoice.workflow_status || "Issued"}
+                              </span>
+                            </td>
+                            <td>
+                              {Number(invoice.sent_count || 0) > 0 ? (
+                                <div className="invoice-delivery-state invoice-delivery-state--sent">
+                                  <span className="invoice-delivery-state__label">
+                                    <i className="fas fa-paper-plane" aria-hidden="true"></i>
+                                    Sent {Number(invoice.sent_count) > 1 ? `${invoice.sent_count}×` : ""}
+                                  </span>
+                                  {invoice.last_sent_at && (
+                                    <small>{formatDeliveryDate(invoice.last_sent_at)}</small>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="invoice-delivery-state invoice-delivery-state--not-sent">
+                                  <span className="invoice-delivery-state__label">
+                                    <i className="fas fa-envelope" aria-hidden="true"></i>
+                                    Not sent
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="data-table-bold-text">{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</td>
                             <td>
@@ -425,23 +454,6 @@ const InvoiceOverview = () => {
               onConfirm={handleDelete}
               count={selectedItems.length}
               page="invoice"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Update Status Modal */}
-        <AnimatePresence>
-          {showUpdateModal && (
-            <UpdateModal
-              isOpen={showUpdateModal}
-              onClose={() => {
-                setShowUpdateModal(false);
-                setSelectedAction("");
-                clearSelection();
-              }}
-              onConfirm={handleUpdateStatus}
-              count={selectedItems.length}
-              statusOptions={statusOptions}
             />
           )}
         </AnimatePresence>

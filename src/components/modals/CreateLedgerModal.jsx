@@ -114,7 +114,7 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
 
   return (
     <>
-      <div className={`modal-overlay theme-${theme}`}>
+      <div className={`modal-overlay modal-overlay--level-1 ${showCreateAccountModal ? "modal-overlay--suspended" : ""} theme-${theme}`}>
         <motion.div
           className="modal-content-scrollable"
           ref={modalRef}
@@ -197,6 +197,8 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
             isOpen={showCreateAccountModal}
             onClose={() => setShowCreateAccountModal(false)}
             onAccountCreated={handleAccountCreated}
+            stackLevel={2}
+            parentModalTitle="Create New Ledger"
           />
         )}
       </AnimatePresence>

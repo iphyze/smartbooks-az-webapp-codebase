@@ -769,7 +769,7 @@ input[type="number"] {
 }
 .form-input-select__menu-portal .form-input-select__option--is-selected {
   background: var(--sb-brand, #00c9aa) !important;
-  color: #0a120f !important;
+  color: #ffffff !important;
   font-weight: 600 !important;
 }
 
@@ -1031,4 +1031,17 @@ input[type="number"] {
 .journal-items-table .invoice-table-cell,
 .journal-items-table .form-wrapper {
   isolation: auto;
+}
+
+
+/* App-wide React Select selected option contrast.
+   Portal menus receive inline styles, so !important is intentional here. */
+.theme-light .form-input-select__menu-portal .form-input-select__option--is-selected,
+.theme-dark .form-input-select__menu-portal .form-input-select__option--is-selected,
+.theme-light .react-select__menu-portal .react-select__option--is-selected,
+.theme-dark .react-select__menu-portal .react-select__option--is-selected,
+.theme-light .select__menu-portal .select__option--is-selected,
+.theme-dark .select__menu-portal .select__option--is-selected {
+  color: #ffffff !important;
+  font-weight: 650 !important;
 }

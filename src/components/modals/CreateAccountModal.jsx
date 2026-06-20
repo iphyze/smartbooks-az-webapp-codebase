@@ -41,7 +41,7 @@ const SUB_CATEGORY_OPTIONS = [
 /* ─────────────────────────────────────────────
    Create Account Modal (Scrollable Inner Box)
 ───────────────────────────────────────────── */
-const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
+const CreateAccountModal = ({ isOpen, onClose, onAccountCreated, stackLevel = 1, parentModalTitle = "" }) => {
   const { theme } = useThemeStore();
   const modalRef = useRef(null);
   const { createAccountType } = useAccountStore();
@@ -148,7 +148,7 @@ const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
   if (!isOpen) return null;
 
   return (
-    <div className={`modal-overlay theme-${theme}`}>
+    <div className={`modal-overlay modal-overlay--level-${stackLevel} theme-${theme}`}>
       <motion.div 
         className="modal-content-scrollable" 
         ref={modalRef}
@@ -165,6 +165,12 @@ const CreateAccountModal = ({ isOpen, onClose, onAccountCreated }) => {
         </div>
 
         <div className="modal-body-scrollable">
+          {stackLevel > 1 && (
+            <div className="nested-modal-context">
+              <i className="fas fa-layer-group" />
+              <span>Creating an account type for <strong>{parentModalTitle || "the previous form"}</strong></span>
+            </div>
+          )}
           <div className="">
             <div className="modal-icon"><i className="fas fa-book"></i></div>
             <p className="modal-text">Fill the form below to add a new account type</p>

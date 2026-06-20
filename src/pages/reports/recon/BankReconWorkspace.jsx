@@ -13,6 +13,8 @@ import BankReconAppendModal from '../recon/BankReconAppendModal';
 import BankReconAddLineModal from '../recon/BankReconAddLineModal';
 import BankReconMatcher from '../recon/BankReconMatcher';
 import BankReconClassifiedItemsTable from '../recon/BankReconClassifiedItemsTable';
+import BankReconAutoRulesPanel from '../recon/BankReconAutoRulesPanel';
+import BankReconSmartInsightsPanel from '../recon/BankReconSmartInsightsPanel';
 import DownloadBankRecon from '../DownloadBankRecon';
 import '../recon/BankReconciliation.css';
 
@@ -122,6 +124,14 @@ const BankReconWorkspace = () => {
               </div>
 
               <BankReconKpiStrip recon={recon} summary={current.summary} />
+
+              <div className="br-workspace-guide">
+                <i className="fas fa-info-circle" />
+                <p>Select outstanding lines to match or categorise them. Use <strong>Edit Line</strong> on any bank or ledger item to correct its date, narration, amount, direction or reference.</p>
+              </div>
+
+              <BankReconSmartInsightsPanel recon={recon} />
+              <BankReconAutoRulesPanel recon={recon} />
               <BankReconMatcher />
               <BankReconClassifiedItemsTable />
             </motion.div>

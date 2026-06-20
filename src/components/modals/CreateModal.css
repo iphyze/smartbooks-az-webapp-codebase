@@ -1,0 +1,78 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SMARTBOOKS — CREATE MODAL LAYERING
+   Explicit levels keep nested quick-create flows predictable. A nested
+   Account Type modal therefore remains above its parent Ledger modal.
+═══════════════════════════════════════════════════════════════════════ */
+
+.modal-overlay--level-1 {
+  z-index: 5000 !important;
+}
+
+.modal-overlay--level-2 {
+  z-index: 5200 !important;
+  background: rgba(3, 8, 18, 0.72) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.modal-overlay--level-3 {
+  z-index: 5400 !important;
+}
+
+.modal-overlay--suspended .modal-content-scrollable {
+  pointer-events: none;
+  filter: saturate(0.72) brightness(0.83);
+  transition: filter 0.2s ease;
+}
+
+.modal-overlay--level-2 .modal-content-scrollable {
+  max-width: 560px;
+  border-color: rgba(19, 185, 187, 0.28);
+  box-shadow: 0 30px 85px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(19, 185, 187, 0.08);
+}
+
+.nested-modal-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 0 17px;
+  padding: 11px 13px;
+  border: 1px solid rgba(19, 185, 187, 0.2);
+  border-radius: 11px;
+  color: var(--sb-text-2, #52647b);
+  background: var(--sb-brand-dim, rgba(19, 185, 187, 0.08));
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.nested-modal-context .fas {
+  margin-top: 2px;
+  color: var(--sb-brand, #13b9bb);
+}
+
+.nested-modal-context strong {
+  color: var(--sb-text-1, #102033);
+  font-weight: 700;
+}
+
+.theme-dark .nested-modal-context {
+  color: var(--sb-text-2, #b0bdd0);
+  border-color: rgba(24, 195, 199, 0.2);
+  background: rgba(24, 195, 199, 0.08);
+}
+
+.theme-dark .nested-modal-context strong {
+  color: var(--sb-text-1, #eef3fb);
+}
+
+@media (max-width: 480px) {
+  .modal-overlay--level-2 {
+    padding: 0 !important;
+    align-items: flex-end;
+  }
+
+  .modal-overlay--level-2 .modal-content-scrollable {
+    max-height: 92vh;
+    border-radius: 19px 19px 0 0;
+  }
+}

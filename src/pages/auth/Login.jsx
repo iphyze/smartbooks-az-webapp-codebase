@@ -83,7 +83,12 @@ const Login = () => {
       const result = await login(email, password);
       if (result.success) {
         showToast("Login successful! Welcome back.", "success");
-        navigate(defaultRouteForRole(result.user));
+        navigate(
+          result.user?.must_change_password
+            ? "/change-password"
+            : defaultRouteForRole(result.user),
+          { replace: true }
+        );
       } else {
         showToast(result.error || "Invalid credentials", "error");
       }

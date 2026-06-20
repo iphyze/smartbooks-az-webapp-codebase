@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import useAuthStore from "../stores/useAuthStore";
 import useThemeStore from "../stores/useThemeStore";
+import useNotificationStore from "../stores/useNotificationStore";
 import { canManageUsers, isTimesheetOnly } from "../utils/permissions";
 import './NavBar.css';
 
@@ -40,6 +41,7 @@ const navigationForOperationalUser = (isAdmin) => [
   { title: "Governance", items: [
     ...(isAdmin ? [{ type: "submenu", key: "users", label: "User Administration", icon: "fa-users-gear" }] : []),
     { type: "link", path: "/lock-period/home", label: "Lock Period", icon: "fa-calendar-xmark" },
+    { type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" },
     { type: "link", path: "/users/my-profile", label: "My Profile", icon: "fa-circle-user" },
   ] },
 ];
@@ -48,6 +50,7 @@ const NavBar = ({ nav, setNav }) => {
   const location = useLocation();
   const { user } = useAuthStore();
   const { theme } = useThemeStore();
+  const unreadNotifications = useNotificationStore((state) => state.counts.unread_count);
   const navRef = useRef(null);
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const isTimesheetUser = isTimesheetOnly(user);
@@ -64,6 +67,7 @@ const NavBar = ({ nav, setNav }) => {
           { title: "My Workspace", items: [
             { type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" },
             { type: "submenu", key: "report", label: "Reporting", icon: "fa-chart-simple" },
+            { type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" },
             { type: "link", path: "/users/my-profile", label: "My Profile", icon: "fa-circle-user" },
           ] },
         ],
@@ -109,7 +113,13 @@ const NavBar = ({ nav, setNav }) => {
                 if (item.type === 'link') {
                   return (
                     <NavLink key={item.path} to={item.path} end={item.end} onClick={() => setNav(false)} className={({ isActive }) => `sb-nav__item ${isActive ? 'sb-nav__item--active' : ''}`}>
-                      <span className="sb-nav__item-icon"><i className={`fas ${item.icon}`} /></span><span>{item.label}</span>
+                      <span className="sb-nav__item-icon"><i className={`fas ${item.icon}`} /></span>
+                      <span>{item.label}</span>
+                      {item.badge === 'notifications' && unreadNotifications > 0 && (
+                        <span className="sb-nav__item-badge" aria-label={`${unreadNotifications} unread notifications`}>
+                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        </span>
+                      )}
                     </NavLink>
                   );
                 }

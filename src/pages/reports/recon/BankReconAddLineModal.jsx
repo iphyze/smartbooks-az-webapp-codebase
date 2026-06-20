@@ -83,7 +83,7 @@ const BankReconAddLineModal = ({ recon, onClose, onAdd }) => {
             <p>Add a single posted transaction that's missing from the statement.</p>
           </div>
           <button className="br-modal-x" onClick={onClose} disabled={loading}>
-            <i className="fas fa-xmark" />
+            <i className="fas fa-times" />
           </button>
         </div>
 
@@ -175,7 +175,7 @@ const BankReconAddLineModal = ({ recon, onClose, onAdd }) => {
                       cursor: loading ? 'not-allowed' : 'pointer', transition: '.15s',
                     }}
                   >
-                    <i className={`fas ${dir === 'OUT' ? 'fa-arrow-up-right' : 'fa-arrow-down-left'}`} style={{ marginRight: 4 }} />
+                    <i className={`fas ${dir === 'OUT' ? 'fa-arrow-up' : 'fa-arrow-down'}`} style={{ marginRight: 4 }} />
                     {isLedger ? (dir === 'OUT' ? 'Cr' : 'Dr') : (dir === 'OUT' ? 'Dr' : 'Cr')}
                   </button>
                 ))}
@@ -207,7 +207,7 @@ const BankReconAddLineModal = ({ recon, onClose, onAdd }) => {
             borderRadius: 10, padding: '14px 16px',
           }}>
             <p style={{ fontWeight: 700, fontSize: 12, color: 'var(--sb-text-2,#3d5752)', marginBottom: 10 }}>
-              <i className="fas fa-balance-scale" style={{ marginRight: 8, color: 'var(--sb-brand,#00b196)' }} />
+              <i className="fas fa-exchange-alt" style={{ marginRight: 8, color: 'var(--sb-brand,#00b196)' }} />
               Update Closing Balances (optional)
             </p>
             <p style={{ fontSize: 11, color: 'var(--sb-text-3,#7aada6)', marginBottom: 12 }}>

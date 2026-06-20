@@ -11,6 +11,7 @@ import {
 import { LineCard } from './BankReconCommon';
 import BankReconClassifyModal from './BankReconClassifyModal';
 import BankReconEditLineModal from './BankReconEditLineModal';
+import BankReconDeleteConfirmModal from './BankReconDeleteConfirmModal';
 
 /* ── Status filter tabs ────────────────────────────────────── */
 const STATUS_TABS = [
@@ -289,7 +290,7 @@ const BankReconMatcher = () => {
     current, ui,
     matchLines, matchSelectedLines, unmatchLines,
     classifyLine, classifySelectedLines,
-    updateLine, unclassifyLines,
+    updateLine, unclassifyLines, deleteLines,
     setUi, saving,
   } = useBankReconStore();
 
@@ -309,12 +310,14 @@ const BankReconMatcher = () => {
   const [lgSort,      setLgSort]      = useState('date_asc');
 
   const [matchMode,   setMatchMode]   = useState(MATCH_MODES.BANK_DEBIT_LEDGER_CREDIT.key);
+  const [partialMode, setPartialMode] = useState(false);
   const mode = MATCH_MODES[matchMode];
 
   const [selectedBankIds,   setSelectedBankIds]   = useState([]);
   const [selectedLedgerIds, setSelectedLedgerIds] = useState([]);
   const [classifyTarget, setClassifyTarget] = useState(null);
   const [editTarget,     setEditTarget]     = useState(null); // { line, source }
+  const [deleteTarget,   setDeleteTarget]   = useState(null); // { source, lineIds, label, sideLabel, countText }
 
   const toggleId = (setter) => (id) => setter((ids) => (
     ids.includes(Number(id)) ? ids.filter((x) => x !== Number(id)) : [...ids, Number(id)]
@@ -360,7 +363,8 @@ const BankReconMatcher = () => {
   const ledgerTotal  = sumSelected(ledger_lines, selectedLedgerIds);
   const tolerance    = Number(current.reconciliation?.tolerance_amount ?? 0);
   const matchDiff    = Math.abs(bankTotal - ledgerTotal);
-  const canBulkMatch = selectedBankIds.length > 0 && selectedLedgerIds.length > 0 && matchDiff <= Math.max(tolerance, 0.01);
+  const canFullMatch = matchDiff <= Math.max(tolerance, 0.01);
+  const canBulkMatch = selectedBankIds.length > 0 && selectedLedgerIds.length > 0 && (canFullMatch || partialMode);
 
   const clearSelections = () => { setSelectedBankIds([]); setSelectedLedgerIds([]); };
   const switchMode = (nextMode) => { setMatchMode(nextMode); clearSelections(); };
@@ -384,6 +388,31 @@ const BankReconMatcher = () => {
     if (source === 'ledger') setSelectedLedgerIds((ids) => ids.filter((id) => !lineIds.includes(id)));
   };
 
+  const handleDeleteLines = (source, lineIds, label = '') => {
+    const ids = [...new Set((Array.isArray(lineIds) ? lineIds : [lineIds]).map(Number).filter(Boolean))];
+    if (!ids.length) return;
+
+    const sideLabel = source === 'bank' ? 'bank' : 'ledger';
+    const titleSide = source === 'bank' ? 'Bank Statement' : 'Ledger';
+    const countText = ids.length === 1
+      ? `${sideLabel} line${label ? `: ${label}` : ''}`
+      : `${ids.length} ${sideLabel} lines`;
+
+    setDeleteTarget({ source, lineIds: ids, label, sideLabel, titleSide, countText });
+  };
+
+  const confirmDeleteLines = async () => {
+    if (!deleteTarget?.lineIds?.length) return;
+
+    const { source, lineIds: ids } = deleteTarget;
+    const res = await deleteLines({ source, lineIds: ids });
+    if (res) {
+      if (source === 'bank') setSelectedBankIds((currentIds) => currentIds.filter((id) => !ids.includes(id)));
+      if (source === 'ledger') setSelectedLedgerIds((currentIds) => currentIds.filter((id) => !ids.includes(id)));
+      setDeleteTarget(null);
+    }
+  };
+
   const submitClassify = async (payload) => {
     if (classifySelectedLines) await classifySelectedLines(payload);
     else if (classifyLine && payload.lineIds?.length === 1) await classifyLine({ ...payload, lineId: payload.lineIds[0] });
@@ -394,7 +423,7 @@ const BankReconMatcher = () => {
 
   const submitBulkMatch = async () => {
     if (!canBulkMatch) return;
-    if (matchSelectedLines) await matchSelectedLines({ bank_line_ids: selectedBankIds, ledger_line_ids: selectedLedgerIds });
+    if (matchSelectedLines) await matchSelectedLines({ bank_line_ids: selectedBankIds, ledger_line_ids: selectedLedgerIds, allow_partial: partialMode && !canFullMatch });
     else if (matchLines && selectedBankIds.length === 1 && selectedLedgerIds.length === 1) await matchLines(selectedBankIds[0], selectedLedgerIds[0]);
     clearSelections();
   };
@@ -432,8 +461,8 @@ const BankReconMatcher = () => {
         <div className="br-bulk-metrics">
           <span><strong>{selectedBankIds.length}</strong> Bank line{selectedBankIds.length !== 1 ? 's' : ''} · {fmtAmt(bankTotal)}</span>
           <span><strong>{selectedLedgerIds.length}</strong> Ledger line{selectedLedgerIds.length !== 1 ? 's' : ''} · {fmtAmt(ledgerTotal)}</span>
-          <span className={canBulkMatch ? 'br-text-ok' : 'br-text-warn'}>
-            Difference: {fmtAmt(Math.abs(bankTotal - ledgerTotal))}
+          <span className={canFullMatch ? 'br-text-ok' : partialMode ? 'br-text-ok' : 'br-text-warn'}>
+            Difference: {fmtAmt(Math.abs(bankTotal - ledgerTotal))}{partialMode && !canFullMatch ? ' · partial allocation' : ''}
           </span>
           {saving && <><div className="br-spinner br-spinner--sm" />Saving…</>}
         </div>
@@ -465,8 +494,31 @@ const BankReconMatcher = () => {
               <i className="fas fa-tag-slash" />Remove from Class
             </button>
           )}
+          <button
+            className="br-btn-ghost-sm br-btn-danger-sm"
+            onClick={() => handleDeleteLines('bank', selectedBankIds)}
+            disabled={!selectedBankIds.length || saving}
+          >
+            <i className="fas fa-trash-can" />Delete Bank
+          </button>
+          <button
+            className="br-btn-ghost-sm br-btn-danger-sm"
+            onClick={() => handleDeleteLines('ledger', selectedLedgerIds)}
+            disabled={!selectedLedgerIds.length || saving}
+          >
+            <i className="fas fa-trash-can" />Delete Ledger
+          </button>
+          <button
+            type="button"
+            className={`br-btn-ghost-sm ${partialMode ? 'br-btn-ghost-sm--active' : ''}`}
+            onClick={() => setPartialMode((v) => !v)}
+            disabled={!selectedBankIds.length || !selectedLedgerIds.length || saving}
+            title="Allow the smaller side to be allocated and leave the balance outstanding"
+          >
+            <i className="fas fa-code-branch" />Partial Match {partialMode ? 'On' : 'Off'}
+          </button>
           <button className="br-btn-primary br-btn-primary--sm" onClick={submitBulkMatch} disabled={!canBulkMatch || saving}>
-            <i className="fas fa-link" />Match Selected
+            <i className="fas fa-link" />{partialMode && !canFullMatch ? 'Allocate Partial' : 'Match Selected'}
           </button>
           <button className="br-btn-ghost-sm" onClick={clearSelections} disabled={!selectedBankIds.length && !selectedLedgerIds.length}>
             <i className="fas fa-xmark" />Clear
@@ -480,7 +532,7 @@ const BankReconMatcher = () => {
           <i className="fas fa-circle-info" />
           <span>
             Use filters and sort to find transactions, then use <strong>Select All</strong> in each column to bulk-select the filtered results.
-            Match activates when Bank Debit totals equal Ledger Credit totals and Bank Credit totals equal Ledger Debit totals within tolerance.
+            Match activates when Bank Debit totals equal Ledger Credit totals and Bank Credit totals equal Ledger Debit totals within tolerance. Turn on Partial Match when one side should be allocated and the remaining balance should stay outstanding.
           </span>
         </div>
       </div>
@@ -512,7 +564,15 @@ const BankReconMatcher = () => {
           />
           <div className="br-col-scroll">
             {bankFiltered.length === 0 && (
-              <div className="br-col-empty">No bank lines match the current filters.</div>
+              <div className={`br-col-empty ${bank_lines.length === 0 ? 'br-col-empty--no-movement' : ''}`}>
+                {bank_lines.length === 0 ? (
+                  <>
+                    <i className="fas fa-file-circle-check" />
+                    <strong>No bank transactions for this period</strong>
+                    <span>The uploaded bank statement can remain heading-only for a no-movement month.</span>
+                  </>
+                ) : 'No bank lines match the current filters.'}
+              </div>
             )}
             {bankFiltered.map((line) => (
               <LineCard
@@ -526,6 +586,7 @@ const BankReconMatcher = () => {
                 onClassify={(lineIds, source) => setClassifyTarget({ source, lineIds })}
                 onEditLine={(l, s) => setEditTarget({ line: l, source: s })}
                 onUnclassify={(lineId) => handleUnclassify('bank', [lineId])}
+                onDeleteLine={(line) => handleDeleteLines('bank', [line.id], line.reference || line.description?.slice(0, 50))}
               />
             ))}
           </div>
@@ -562,7 +623,15 @@ const BankReconMatcher = () => {
           />
           <div className="br-col-scroll">
             {lgFiltered.length === 0 && (
-              <div className="br-col-empty">No ledger lines match the current filters.</div>
+              <div className={`br-col-empty ${ledger_lines.length === 0 ? 'br-col-empty--no-movement' : ''}`}>
+                {ledger_lines.length === 0 ? (
+                  <>
+                    <i className="fas fa-file-circle-check" />
+                    <strong>No ledger transactions for this period</strong>
+                    <span>The uploaded ledger extract can remain heading-only for a no-movement month.</span>
+                  </>
+                ) : 'No ledger lines match the current filters.'}
+              </div>
             )}
             {lgFiltered.map((line) => (
               <LineCard
@@ -576,6 +645,7 @@ const BankReconMatcher = () => {
                 onClassify={(lineIds, source) => setClassifyTarget({ source, lineIds })}
                 onEditLine={(l, s) => setEditTarget({ line: l, source: s })}
                 onUnclassify={(lineId) => handleUnclassify('ledger', [lineId])}
+                onDeleteLine={(line) => handleDeleteLines('ledger', [line.id], line.reference || line.description?.slice(0, 50))}
               />
             ))}
           </div>
@@ -598,6 +668,14 @@ const BankReconMatcher = () => {
             source={editTarget.source}
             onClose={() => setEditTarget(null)}
             onSave={handleEditSave}
+          />
+        )}
+        {deleteTarget && (
+          <BankReconDeleteConfirmModal
+            target={deleteTarget}
+            saving={saving}
+            onClose={() => !saving && setDeleteTarget(null)}
+            onConfirm={confirmDeleteLines}
           />
         )}
       </AnimatePresence>

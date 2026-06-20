@@ -1,0 +1,3 @@
+﻿Journal Date,Journal Type,Transaction Type,Journal Currency,Main Journal Description,Cost Center,Rate Date,Ledger Name,Ledger Number,Line Description,Line Date,Side,Line Currency,Amount
+2026-06-20,Expenses,Bank Transfer,NGN,June office electricity expense,Overhead,2026-05-08,Electricity Expense,61000000,Electricity bill for June 2026,2026-06-20,Debit,NGN,50000
+,,,,,,,Head Office Bank,52000001,Payment for June electricity bill,2026-06-20,Credit,NGN,50000

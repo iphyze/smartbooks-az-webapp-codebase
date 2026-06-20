@@ -61,8 +61,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     const requestUrl = response.config?.url || '';
-    if (requestUrl.includes('/auth/csrf') && response.data?.data?.csrfToken) {
-      csrfTokenInMemory = response.data.data.csrfToken;
+    const responseCsrfToken = response.data?.data?.csrfToken || response.data?.csrfToken;
+    if (responseCsrfToken) {
+      csrfTokenInMemory = responseCsrfToken;
     }
     if (requestUrl.includes('/auth/logout')) {
       clearCsrfToken();
@@ -71,7 +72,18 @@ api.interceptors.response.use(
   },
   (error) => {
     const requestUrl = error.config?.url || '';
-    const isAuthProbe = requestUrl.includes('/auth/me') || requestUrl.includes('/auth/login');
+    const isAuthProbe = requestUrl.includes('/auth/bootstrap') || requestUrl.includes('/auth/me') || requestUrl.includes('/auth/login');
+
+    if (
+      error.response?.status === 403
+      && error.response?.data?.code === 'PASSWORD_CHANGE_REQUIRED'
+    ) {
+      const { user } = useAuthStore.getState();
+      useAuthStore.setState({
+        user: user ? { ...user, must_change_password: true } : user,
+      });
+
+    }
 
     if (error.response?.status === 401 && !isAuthProbe) {
       clearCsrfToken();

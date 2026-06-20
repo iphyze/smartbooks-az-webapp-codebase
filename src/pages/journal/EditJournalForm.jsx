@@ -3,9 +3,6 @@ import { AnimatePresence } from "framer-motion";
 import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
-import Select from "react-select";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import useToastStore from "../../stores/useToastStore";
 import useLedgerSearchStore from "../../stores/useLedgerSearchStore";
 import useRateSearchStore from "../../stores/useRateSearchStore";
@@ -13,6 +10,8 @@ import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
 import useClientSearchStore from "../../stores/useClientSearchStore";
 import "../inputs-styles/Inputs.css";
+import "./JournalForm.css";
+import JournalFormView from "./JournalFormView";
 import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
 import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateLedgerModal from "../../components/modals/CreateLedgerModal";
@@ -146,44 +145,19 @@ function resolveItemRate(item, rates) {
   };
 }
 
-const formatNumber = (num) =>
-  Number(num || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
 const EPSILON = 0.001;
+const JOURNAL_FAVOURITE_LEDGERS_KEY = "smartbooks_journal_favourite_ledgers";
 
-const DATE_PICKER_PORTAL_PROPS = {
-  portalId: "smartbooks-datepicker-portal",
-  popperClassName: "smartbooks-datepicker-popper",
-  calendarClassName: "smartbooks-datepicker-calendar",
-  popperPlacement: "bottom-start",
-};
+function readFavouriteLedgers() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(JOURNAL_FAVOURITE_LEDGERS_KEY) || "[]");
+    return Array.isArray(stored) ? stored.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
 
-/* ─────────────────────────────────────────────
-   Static Option Arrays
-───────────────────────────────────────────── */
-const JOURNAL_TYPE_OPTIONS = [
-  { value: "Payment",  label: "Payment"  },
-  { value: "Receipt",  label: "Receipt"  },
-  { value: "Expenses", label: "Expenses" },
-  { value: "Sales",    label: "Sales"    },
-  { value: "General",  label: "General"  },
-  { value: "Journal",  label: "Journal"  },
-];
-const TRANSACTION_TYPE_OPTIONS = [
-  { value: "Cash",           label: "Cash"           },
-  { value: "Bank",           label: "Bank"           },
-  { value: "Not Applicable", label: "Not Applicable" },
-];
-const SIDE_OPTIONS = [
-  { value: "Debit",  label: "Debit"  },
-  { value: "Credit", label: "Credit" },
-];
-const CURRENCY_OPTIONS = [
-  { value: "NGN", label: "NGN" },
-  { value: "USD", label: "USD" },
-  { value: "GBP", label: "GBP" },
-  { value: "EUR", label: "EUR" },
-];
+
 
 /* ─────────────────────────────────────────────
    calculateTotals — identical to original
@@ -257,6 +231,8 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
   const [showCreateRateModal,   setShowCreateRateModal]   = useState(false);
   const [activeRowId,           setActiveRowId]           = useState(null);
+  const [ledgerSuggestions, setLedgerSuggestions] = useState([]);
+  const [favoriteLedgerNames, setFavoriteLedgerNames] = useState(readFavouriteLedgers);
 
   const [deleteModal, setDeleteModal] = useState({
     open: false, itemId: null, db_id: null, isNew: true, isDeleting: false,
@@ -280,7 +256,25 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   const prevJournalItemsRef = useRef(journalItems);
 
   /* ── On mount ── */
-  useEffect(() => { searchRates(""); searchLedgers(""); searchClients(""); }, []);
+  useEffect(() => {
+    searchRates("");
+    searchLedgers("");
+    searchClients("");
+
+    const loadLedgerSuggestions = async () => {
+      try {
+        const token = useAuthStore.getState().token;
+        const response = await api.get("/journal/ledger-suggestions?limit=8", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLedgerSuggestions(response.data?.data || []);
+      } catch {
+        setLedgerSuggestions([]);
+      }
+    };
+
+    loadLedgerSuggestions();
+  }, []);
 
   /* ── Populate form when journal prop arrives ── */
   useEffect(() => {
@@ -388,6 +382,27 @@ useEffect(() => {
     return [{ value: "Overhead", label: "Overhead" }, ...clientOpts];
   }, [clients]);
 
+  const quickLedgers = useMemo(() => {
+    const byName = new Map();
+    [...ledgerSuggestions, ...ledgers].forEach((ledger) => {
+      if (ledger?.ledger_name && !byName.has(ledger.ledger_name)) byName.set(ledger.ledger_name, ledger);
+    });
+    const favourites = favoriteLedgerNames.map((name) => byName.get(name)).filter(Boolean);
+    const recent = ledgerSuggestions.filter((ledger) => !favoriteLedgerNames.includes(ledger.ledger_name));
+    return [...favourites, ...recent].slice(0, 8);
+  }, [ledgerSuggestions, ledgers, favoriteLedgerNames]);
+
+  const toggleFavoriteLedger = (ledgerName) => {
+    if (!ledgerName) return;
+    setFavoriteLedgerNames((current) => {
+      const next = current.includes(ledgerName)
+        ? current.filter((name) => name !== ledgerName)
+        : [ledgerName, ...current].slice(0, 12);
+      localStorage.setItem(JOURNAL_FAVOURITE_LEDGERS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   useEffect(() => { prevJournalItemsRef.current = journalItems; }, [journalItems]);
 
   /* ── Sync row descriptions when main description changes ── */
@@ -487,7 +502,7 @@ useEffect(() => {
         }
 
         if (field === "ledger_name") {
-          const found = ledgers.find((l) => l.ledger_name === value);
+          const found = [...ledgers, ...ledgerSuggestions].find((l) => l.ledger_name === value);
           if (found) {
             updated.ledger_number     = found.ledger_number     || "";
             updated.ledger_class      = found.ledger_class      || "";
@@ -538,6 +553,100 @@ useEffect(() => {
       }
       return [...prev, newItem];
     });
+  };
+
+  const buildPreparedItem = (source = null) => {
+    const shell = createEmptyItem(
+      source?.journal_description ?? journalDetails.main_journal_description,
+      source?.journal_date ?? journalDetails.journal_date
+    );
+    const item = source
+      ? {
+          ...source,
+          id: shell.id,
+          db_id: null,
+          journal_date: parseDateValue(source.journal_date, journalDetails.journal_date),
+          _rate_resolved: true,
+        }
+      : shell;
+
+    if (!source) {
+      const found = masterRateId ? rates.find((rate) => String(rate.id) === masterRateId) : null;
+      if (found) {
+        const currency = item.jcurrency.toLowerCase();
+        item.jrate = masterRateId;
+        item.currencyRate = parseFloat(found[`${currency}_rate`]) || 0;
+        item.rate_date = found.created_at;
+        item.ngn_rate = found.ngn_rate;
+        item.usd_rate = found.usd_rate;
+        item.eur_rate = found.eur_rate;
+        item.gbp_rate = found.gbp_rate;
+        item._rate_resolved = true;
+      }
+    }
+
+    return item;
+  };
+
+  const insertItem = (itemId, position = "below") => {
+    setJournalItems((current) => {
+      const index = current.findIndex((item) => item.id === itemId);
+      if (index < 0) return current;
+      const targetIndex = position === "above" ? index : index + 1;
+      const next = [...current];
+      next.splice(targetIndex, 0, buildPreparedItem());
+      return next;
+    });
+  };
+
+  const duplicateItem = (itemId) => {
+    setJournalItems((current) => {
+      const index = current.findIndex((item) => item.id === itemId);
+      if (index < 0) return current;
+      const next = [...current];
+      next.splice(index + 1, 0, buildPreparedItem(current[index]));
+      return next;
+    });
+  };
+
+  const addBalancingItem = () => {
+    if (Math.abs(totals.grand_total) < EPSILON) return;
+    const currency = journalDetails.journal_currency || "NGN";
+    const found = masterRateId ? rates.find((rate) => String(rate.id) === masterRateId) : null;
+    const rate = currency === "NGN" ? 1 : parseFloat(found?.[`${currency.toLowerCase()}_rate`]) || 0;
+    if (rate <= 0) {
+      showToast(`A valid ${currency} rate is required before adding a balancing line.`, "error");
+      return;
+    }
+
+    const item = buildPreparedItem();
+    item.sides = totals.grand_total > 0 ? "Credit" : "Debit";
+    item.jcurrency = currency;
+    item.amount = String(Number((Math.abs(totals.grand_total) / rate).toFixed(6)));
+    item.journal_description = journalDetails.main_journal_description || "Balancing entry";
+    if (found) {
+      item.jrate = masterRateId;
+      item.currencyRate = rate;
+      item.rate_date = found.created_at;
+      item.ngn_rate = found.ngn_rate;
+      item.usd_rate = found.usd_rate;
+      item.eur_rate = found.eur_rate;
+      item.gbp_rate = found.gbp_rate;
+    }
+    setJournalItems((current) => [...current, item]);
+    showToast("Balancing line added. Select the ledger before updating.", "success");
+  };
+
+  const handleLineKeyDown = (itemId, event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      addItem();
+      return;
+    }
+    if (event.altKey && event.key.toLowerCase() === "d") {
+      event.preventDefault();
+      duplicateItem(itemId);
+    }
   };
 
   const requestRemoveItem = (item) => {
@@ -652,344 +761,55 @@ useEffect(() => {
     }
   };
 
-  const selectedMasterRateOpt = masterRateOptions.find((o) => o.value === masterRateId) || null;
 
   /* ─────────────────────────────────────────────
      Render
   ───────────────────────────────────────────── */
   return (
     <>
-      <motion.div variants={fadeInUp} initial="hidden" animate="show"
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate="show"
         transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }}
-        className={`invoice-form-box theme-${theme}`}>
-        <form className="invoice-form-f-container" onSubmit={handleSubmit} noValidate>
-
-          <div className="invoice-form-header">
-            <div className="invoice-form-htxt">Edit Journal</div>
-            <div className="invoice-form-sub-htxt">Update the details below to edit Journal #{journalId}</div>
-          </div>
-
-          <div className="invoice-form-flex-box">
-
-            {/* Journal Date */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.journal_date ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.journal_date ? "input-label-message" : ""}`} htmlFor="journal_date">Journal Date</label>
-                  <div className="form-wrapper">
-                    <DatePicker selected={journalDetails.journal_date} onChange={(date) => handleDetailChange("journal_date", date)} className={`form-input ${headerErrors.journal_date ? "input-error" : ""}`} dateFormat="yyyy-MM-dd" wrapperClassName="input-date-picker" {...DATE_PICKER_PORTAL_PROPS} id="journal_date" showMonthDropdown showYearDropdown dropdownMode="select" />
-                    <span className={`chevron-input-icon fas fa-calendar ${headerErrors.journal_date ? "input-icon-error" : ""}`} />
-                  </div>
-                </div>
-                {headerErrors.journal_date && <div className="input-error-message">{headerErrors.journal_date}</div>}
-              </div>
-            </div>
-
-            {/* Journal Type */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.journal_type ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.journal_type ? "input-label-message" : ""}`} htmlFor="journal_type">Journal Type</label>
-                  <div className="form-wrapper">
-                    <Select options={JOURNAL_TYPE_OPTIONS} onChange={(opt) => handleDetailChange("journal_type", opt?.value || "")} value={JOURNAL_TYPE_OPTIONS.find((o) => o.value === journalDetails.journal_type) || null} placeholder="Select type" className={`form-input-select ${headerErrors.journal_type ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="journal_type" onMenuOpen={() => setOpenMenuId("journal_type")} onMenuClose={() => setOpenMenuId(null)} />
-                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "journal_type" ? "chevron-rotate" : "", headerErrors.journal_type ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                  </div>
-                </div>
-                {headerErrors.journal_type && <div className="input-error-message">{headerErrors.journal_type}</div>}
-              </div>
-            </div>
-
-            {/* Journal Currency */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.journal_currency ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.journal_currency ? "input-label-message" : ""}`} htmlFor="journal_currency">Journal Currency</label>
-                  <div className="form-wrapper">
-                    <Select options={CURRENCY_OPTIONS} onChange={(opt) => handleDetailChange("journal_currency", opt?.value || "")} value={CURRENCY_OPTIONS.find((o) => o.value === journalDetails.journal_currency) || null} placeholder="Select currency" className={`form-input-select ${headerErrors.journal_currency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="journal_currency" onMenuOpen={() => setOpenMenuId("journal_currency")} onMenuClose={() => setOpenMenuId(null)} />
-                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "journal_currency" ? "chevron-rotate" : "", headerErrors.journal_currency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                  </div>
-                </div>
-                {headerErrors.journal_currency && <div className="input-error-message">{headerErrors.journal_currency}</div>}
-              </div>
-            </div>
-
-
-
-            {/* Transaction Type */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.transaction_type ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.transaction_type ? "input-label-message" : ""}`} htmlFor="transaction_type">Transaction Type</label>
-                  <div className="form-wrapper">
-                    <Select options={TRANSACTION_TYPE_OPTIONS} onChange={(opt) => handleDetailChange("transaction_type", opt?.value || "")} value={TRANSACTION_TYPE_OPTIONS.find((o) => o.value === journalDetails.transaction_type) || null} placeholder="Select type" className={`form-input-select ${headerErrors.transaction_type ? "input-error" : ""}`} classNamePrefix="form-input-select" isClearable inputId="transaction_type" onMenuOpen={() => setOpenMenuId("transaction_type")} onMenuClose={() => setOpenMenuId(null)} />
-                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "transaction_type" ? "chevron-rotate" : "", headerErrors.transaction_type ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                  </div>
-                </div>
-                {headerErrors.transaction_type && <div className="input-error-message">{headerErrors.transaction_type}</div>}
-              </div>
-            </div>
-
-            {/* Cost Center */}
-            <div className="invoice-form invoice-form-three">
-              <div className="inv-form-flex">
-                <div className="input-form-wrapper inv-form-flex-wrap">
-                  <div className={`input-form-group ${headerErrors.cost_center ? "input-form-error" : ""}`}>
-                    <label className={`input-form-label ${headerErrors.cost_center ? "input-label-message" : ""}`} htmlFor="cost_center">Cost Center</label>
-                    <div className="form-wrapper">
-                      <Select options={costCenterOptions} onChange={(opt) => handleDetailChange("cost_center", opt?.value || "")} value={costCenterOptions.find((o) => o.value === journalDetails.cost_center) || null} placeholder="Select cost center" className={`form-input-select ${headerErrors.cost_center ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId="cost_center" onMenuOpen={() => setOpenMenuId("cost_center")} onMenuClose={() => setOpenMenuId(null)} />
-                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "cost_center" ? "chevron-rotate" : "", headerErrors.cost_center ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                    </div>
-                  </div>
-                  {headerErrors.cost_center && <div className="input-error-message">{headerErrors.cost_center}</div>}
-                </div>
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client">
-                  <span className="fas fa-plus" />
-                </button>
-              </div>
-            </div>
-
-            {/* Journal Description — last */}
-            <div className="invoice-form">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${headerErrors.main_journal_description ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${headerErrors.main_journal_description ? "input-label-message" : ""}`} htmlFor="main_journal_description">Journal Description</label>
-                  <div className="form-wrapper">
-                    <textarea className={`form-input-select form-input-textarea ${headerErrors.main_journal_description ? "input-error" : ""}`} rows="2" placeholder="Enter description" value={journalDetails.main_journal_description} onChange={(e) => handleDetailChange("main_journal_description", e.target.value)} id="main_journal_description" />
-                  </div>
-                </div>
-                {headerErrors.main_journal_description && <div className="input-error-message">{headerErrors.main_journal_description}</div>}
-              </div>
-            </div>
-
-          </div>
-
-          {/* ── JOURNAL ITEMS TABLE — no Rate column ── */}
-          <div className="invoice-form-full">
-            <div className="invoice-items-table journal-items-table">
-              <div className="invoice-table-header journal-table-header">
-                <div className="invoice-table-cell journal-cell-ledger">Ledger Name</div>
-                <div className="invoice-table-cell journal-cell-description">Description</div>
-                <div className="invoice-table-cell journal-cell-date">Journal Date</div>
-                <div className="invoice-table-cell cell-small journal-cell-side">DR / CR</div>
-                <div className="invoice-table-cell cell-small journal-cell-currency">Currency</div>
-                <div className="invoice-table-cell journal-cell-rate">Rate Date</div>
-                <div className="invoice-table-cell journal-cell-amount">Amount</div>
-                <div className="invoice-table-cell cell-action">Action</div>
-              </div>
-
-              {journalItems.map((item) => {
-                const rowErr   = itemErrorMap[item.id] || {};
-                const ledgerId = `ledger_${item.id}`;
-                const sideId   = `side_${item.id}`;
-                const currId   = `curr_${item.id}`;
-
-                return (
-                  <div key={item.id} className="invoice-table-row">
-
-                    {/* Ledger */}
-                    <div className="invoice-table-cell journal-cell-ledger">
-                      <div className="inv-form-flex">
-                        <div className="input-form-wrapper inv-form-flex-wrap">
-                          <div className={`input-form-group ${rowErr.ledger_name ? "input-form-error" : ""}`}>
-                            <label className={`input-form-label ${rowErr.ledger_name ? "input-label-message" : ""}`} htmlFor={ledgerId}>Ledger</label>
-                            <div className="form-wrapper">
-                              <Select
-                                options={ledgers.map((l) => ({ value: l.ledger_name, label: l.ledger_name }))}
-                                onInputChange={(val) => { if (val.length > 1) searchLedgers(val); }}
-                                onMenuOpen={() => setOpenMenuId(`ledger_${item.id}`)}
-                                onMenuClose={() => { setOpenMenuId(null); searchLedgers(""); }}
-                                onChange={(opt) => handleItemChange(item.id, "ledger_name", opt ? opt.value : "")}
-                                value={item.ledger_name ? { value: item.ledger_name, label: item.ledger_name } : null}
-                                placeholder="Search ledger..." isClearable inputId={ledgerId}
-                                className={`form-input-select ${rowErr.ledger_name ? "input-error" : ""}`}
-                                classNamePrefix="form-input-select"
-                                menuPortalTarget={document.body}
-                                styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
-                              />
-                              <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `ledger_${item.id}` ? "chevron-rotate" : "", rowErr.ledger_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                            </div>
-                          </div>
-                          {rowErr.ledger_name && <div className="input-error-message">{rowErr.ledger_name}</div>}
-                        </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateLedgerModal(true); }} title="Add New Ledger">
-                          <span className="fas fa-plus" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="invoice-table-cell journal-cell-description">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div className={`input-form-group ${rowErr.journal_description ? "input-form-error" : ""}`}>
-                          <div className="form-wrapper">
-                            <input type="text" className={`form-input-select form-input-textarea-row ${rowErr.journal_description ? "input-error" : ""}`} value={item.journal_description} onChange={(e) => handleItemChange(item.id, "journal_description", e.target.value)} placeholder="Description" />
-                          </div>
-                        </div>
-                        {rowErr.journal_description && <div className="input-error-message">{rowErr.journal_description}</div>}
-                      </div>
-                    </div>
-
-
-                    {/* Journal Date */}
-                    <div className="invoice-table-cell journal-cell-date">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div className={`input-form-group ${rowErr.journal_date ? "input-form-error" : ""}`}>
-                          <label className={`input-form-label ${rowErr.journal_date ? "input-label-message" : ""}`} htmlFor={`line_date_${item.id}`}>Date</label>
-                          <div className="form-wrapper">
-                            <DatePicker
-                              selected={parseDateValue(item.journal_date, journalDetails.journal_date)}
-                              onChange={(date) => handleItemChange(item.id, "journal_date", date)}
-                              className={`form-input ${rowErr.journal_date ? "input-error" : ""}`}
-                              dateFormat="yyyy-MM-dd"
-                              wrapperClassName="input-date-picker"
-                              {...DATE_PICKER_PORTAL_PROPS}
-                              id={`line_date_${item.id}`}
-                              showMonthDropdown
-                              showYearDropdown
-                              dropdownMode="select"
-                            />
-                            <span className={`chevron-input-icon fas fa-calendar ${rowErr.journal_date ? "input-icon-error" : ""}`} />
-                          </div>
-                        </div>
-                        {rowErr.journal_date && <div className="input-error-message">{rowErr.journal_date}</div>}
-                      </div>
-                    </div>
-
-                    {/* DR / CR */}
-                    <div className="invoice-table-cell cell-small journal-cell-side">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div className={`input-form-group ${rowErr.sides ? "input-form-error" : ""}`}>
-                          <label className={`input-form-label ${rowErr.sides ? "input-label-message" : ""}`} htmlFor={sideId}>Side</label>
-                          <div className="form-wrapper">
-                            <Select options={SIDE_OPTIONS} onChange={(opt) => handleItemChange(item.id, "sides", opt ? opt.value : "")} value={SIDE_OPTIONS.find((o) => o.value === item.sides) || null} placeholder="Select" className={`form-input-select ${rowErr.sides ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={sideId} onMenuOpen={() => setOpenMenuId(`sides_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }} />
-                            <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `sides_${item.id}` ? "chevron-rotate" : "", rowErr.sides ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                          </div>
-                        </div>
-                        {rowErr.sides && <div className="input-error-message">{rowErr.sides}</div>}
-                      </div>
-                    </div>
-
-                    {/* Currency */}
-                    <div className="invoice-table-cell cell-small journal-cell-currency">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div className={`input-form-group ${rowErr.jcurrency ? "input-form-error" : ""}`}>
-                          <label className={`input-form-label ${rowErr.jcurrency ? "input-label-message" : ""}`} htmlFor={currId}>Currency</label>
-                          <div className="form-wrapper">
-                            <Select options={CURRENCY_OPTIONS} onChange={(opt) => handleItemChange(item.id, "jcurrency", opt ? opt.value : "NGN")} value={CURRENCY_OPTIONS.find((o) => o.value === item.jcurrency) || null} className={`form-input-select ${rowErr.jcurrency ? "input-error" : ""}`} classNamePrefix="form-input-select" inputId={currId} onMenuOpen={() => setOpenMenuId(`currency_${item.id}`)} onMenuClose={() => setOpenMenuId(null)} menuPortalTarget={document.body} styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }} />
-                            <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `currency_${item.id}` ? "chevron-rotate" : "", rowErr.jcurrency ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                          </div>
-                        </div>
-                        {rowErr.jcurrency && <div className="input-error-message">{rowErr.jcurrency}</div>}
-                      </div>
-                    </div>
-
-                    {/* Rate Date — Select using masterRateOptions, auto-filled & styled consistently */}
-                    <div className="invoice-table-cell journal-cell-rate">
-                      <div className="inv-form-flex">
-                        <div className="input-form-wrapper inv-form-flex-wrap" style={{ margin: 0 }}>
-                          <div className={`input-form-group ${rowErr.jrate ? "input-form-error" : ""}`}>
-                            <label className={`input-form-label ${rowErr.jrate ? "input-label-message" : ""}`} htmlFor={`rate_${item.id}`}>Rate Date</label>
-                            <div className="form-wrapper">
-                              <Select
-                                options={masterRateOptions.map((o) => ({
-                                  ...o,
-                                  label: o.rate
-                                    ? `${o.rate.created_at?.slice(0, 10)} | ${item.jcurrency} @ ${o.rate[`${item.jcurrency.toLowerCase()}_rate`]}`
-                                    : o.label,
-                                }))}
-                                onChange={(opt) => setMasterRateId(opt ? opt.value : "")}
-                                value={item.jrate ? {
-                                  value: item.jrate,
-                                  label: item.rate_date
-                                    ? `${String(item.rate_date).slice(0, 10)} | ${item.jcurrency} @ ${item.currencyRate}`
-                                    : "",
-                                } : null}
-                                placeholder={rates.length === 0 ? "Loading..." : "Select rate..."}
-                                className={`form-input-select ${rowErr.jrate ? "input-error" : ""}`}
-                                classNamePrefix="form-input-select"
-                                isClearable
-                                inputId={`rate_${item.id}`}
-                                onMenuOpen={() => setOpenMenuId(`rate_${item.id}`)}
-                                onMenuClose={() => setOpenMenuId(null)}
-                                menuPortalTarget={document.body}
-                                styles={{ menuPortal: (b) => ({ ...b, zIndex: 9999 }) }}
-                                noOptionsMessage={() => rates.length === 0 ? "Loading rates..." : "No rates found"}
-                              />
-                              <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `rate_${item.id}` ? "chevron-rotate" : "", rowErr.jrate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
-                            </div>
-                          </div>
-                          {rowErr.jrate && <div className="input-error-message">{rowErr.jrate}</div>}
-                        </div>
-                        <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateRateModal(true)} title="Add New Rate">
-                          <span className="fas fa-plus" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Amount */}
-                    <div className="invoice-table-cell journal-cell-amount">
-                      <div className="input-form-wrapper" style={{ margin: 0 }}>
-                        <div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}>
-                          <div className="form-wrapper">
-                            <input type="number" className={`form-input form-input-number ${rowErr.amount ? "input-error" : ""}`} value={item.amount} onChange={(e) => handleItemChange(item.id, "amount", e.target.value)} onWheel={(e) => e.target.blur()} step="any" min="0" placeholder="0.00" />
-                          </div>
-                        </div>
-                        {rowErr.amount && <div className="input-error-message">{rowErr.amount}</div>}
-                      </div>
-                    </div>
-
-                    {/* Remove */}
-                    <div className="invoice-table-cell cell-action">
-                      <button type="button" onClick={() => requestRemoveItem(item)} className="invoice-remove-btn" disabled={journalItems.length === 1} title="Remove row">
-                        <span className="fas fa-trash" />
-                      </button>
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── SUMMARY ── */}
-          <div className="invoice-form-summary">
-            <button type="button" onClick={addItem} className="invoice-add-btn">
-              <span className="fas fa-plus-circle" /> Add Row
-            </button>
-            <div className="invoice-totals journal-summary-grid">
-              <div className="journal-summary-col">
-                <div className="invoice-total-row-header">NGN</div>
-                <div className="invoice-total-row"><div className="invoice-total-label">Debit</div><div className="invoice-total-value">{formatNumber(totals.total_debit_ngn)}</div></div>
-                <div className="invoice-total-row"><div className="invoice-total-label">Credit</div><div className="invoice-total-value">{formatNumber(totals.total_credit_ngn)}</div></div>
-                <div className="invoice-total-row"><div className="invoice-total-label inv-bold">Balance</div><div className="invoice-total-value inv-bold">{formatNumber(totals.grand_total_ngn)}</div></div>
-              </div>
-              <div className="journal-summary-col">
-                <div className="invoice-total-row-header">FCY</div>
-                <div className="invoice-total-row"><div className="invoice-total-label">Debit</div><div className="invoice-total-value">{formatNumber(totals.total_debit_usd)}</div></div>
-                <div className="invoice-total-row"><div className="invoice-total-label">Credit</div><div className="invoice-total-value">{formatNumber(totals.total_credit_usd)}</div></div>
-                <div className="invoice-total-row"><div className="invoice-total-label inv-bold">Balance</div><div className="invoice-total-value inv-bold">{formatNumber(totals.grand_total_usd)}</div></div>
-              </div>
-              <div className="journal-summary-col jsc-summary">
-                <div className={`invoice-total-row invoice-grand-total ${!isBalanced ? "error-total" : "balanced-total"}`}>
-                  <div className="invoice-total-label invoice-diff-text">
-                    Difference
-                    {!isBalanced && <span style={{ fontSize: "10px", marginLeft: "5px", color: "#f8d9d9" }}>(must be 0.00)</span>}
-                  </div>
-                  <div className="invoice-total-value invoice-diff-text">{formatNumber(totals.grand_total)}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── SUBMIT ── */}
-          <div className="invoice-action-btn">
-            <div className="invoice-action-btn-wrapper">
-              <button type="submit" disabled={isLoading} className="invoice-submit-btn">
-                {isLoading ? <div className="invoice-loader" /> : <span className="invoice-submit-btn-text">Update Journal</span>}
-              </button>
-            </div>
-          </div>
-
+        className={`invoice-form-box journal-builder theme-${theme}`}
+      >
+        <form className="invoice-form-f-container journal-builder__form" onSubmit={handleSubmit} noValidate>
+          <JournalFormView
+            mode="edit"
+            journalDetails={journalDetails}
+            headerErrors={headerErrors}
+            handleDetailChange={handleDetailChange}
+            costCenterOptions={costCenterOptions}
+            journalItems={journalItems}
+            itemErrorMap={itemErrorMap}
+            ledgers={ledgers}
+            searchLedgers={searchLedgers}
+            rates={rates}
+            masterRateOptions={masterRateOptions}
+            handleItemChange={handleItemChange}
+            setOpenMenuId={setOpenMenuId}
+            openMenuId={openMenuId}
+            setShowCreateClientModal={setShowCreateClientModal}
+            setShowCreateLedgerModal={setShowCreateLedgerModal}
+            setShowCreateRateModal={setShowCreateRateModal}
+            setActiveRowId={setActiveRowId}
+            setMasterRateId={setMasterRateId}
+            onRemoveItem={(item) => requestRemoveItem(item)}
+            addItem={addItem}
+            onDuplicateItem={duplicateItem}
+            onInsertItem={insertItem}
+            onAddBalancingLine={addBalancingItem}
+            quickLedgers={quickLedgers}
+            favoriteLedgerNames={favoriteLedgerNames}
+            onQuickLedgerSelect={(itemId, ledgerName) => handleItemChange(itemId, "ledger_name", ledgerName)}
+            onToggleFavoriteLedger={toggleFavoriteLedger}
+            onLineKeyDown={handleLineKeyDown}
+            totals={totals}
+            isBalanced={isBalanced}
+            isLoading={isLoading}
+            onCancel={() => navigate("/journal/home")}
+          />
         </form>
       </motion.div>
 
@@ -1003,9 +823,27 @@ useEffect(() => {
             isDeleting={deleteModal.isDeleting}
           />
         )}
-        {showCreateClientModal && <CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />}
-        {showCreateLedgerModal && <CreateLedgerModal isOpen={showCreateLedgerModal} onClose={() => setShowCreateLedgerModal(false)} onLedgerCreated={handleLedgerCreated} />}
-        {showCreateRateModal   && <CreateRateModal   isOpen={showCreateRateModal}   onClose={() => setShowCreateRateModal(false)}   onRateCreated={handleRateCreated}   />}
+        {showCreateClientModal && (
+          <CreateClientsModal
+            isOpen={showCreateClientModal}
+            onClose={() => setShowCreateClientModal(false)}
+            onClientCreated={handleClientCreated}
+          />
+        )}
+        {showCreateLedgerModal && (
+          <CreateLedgerModal
+            isOpen={showCreateLedgerModal}
+            onClose={() => setShowCreateLedgerModal(false)}
+            onLedgerCreated={handleLedgerCreated}
+          />
+        )}
+        {showCreateRateModal && (
+          <CreateRateModal
+            isOpen={showCreateRateModal}
+            onClose={() => setShowCreateRateModal(false)}
+            onRateCreated={handleRateCreated}
+          />
+        )}
       </AnimatePresence>
     </>
   );

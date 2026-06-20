@@ -56,13 +56,14 @@ export const CustomDropdown = ({ value, options, onChange }) => {
 };
 
 export const StatusPill = ({ status }) => (
-  <span className={`br-pill ${status === 'Matched' ? 'br-pill--matched' : ['Classified', 'Bank-Only'].includes(status) ? 'br-pill--bankonly' : 'br-pill--unmatched'}`}>
+  <span className={`br-pill ${status === 'Matched' ? 'br-pill--matched' : status === 'Partially Matched' ? 'br-pill--partial' : ['Classified', 'Bank-Only'].includes(status) ? 'br-pill--bankonly' : 'br-pill--unmatched'}`}>
     {status}
   </span>
 );
 
-export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSelect, onUnmatch, onClassify, onEditLine, onUnclassify }) => {
+export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSelect, onUnmatch, onClassify, onEditLine, onUnclassify, onDeleteLine }) => {
   const matched    = line.match_status === 'Matched';
+  const partial    = Boolean(line.is_partially_matched) || Number(line.matched_amount || 0) > 0 && Number(line.outstanding_amount || 0) > 0;
   const classified = ['Classified', 'Bank-Only'].includes(line.match_status);
   const isOut      = line.direction === 'OUT';
   // Classified lines are always selectable so the user can bulk re-classify them.
@@ -96,7 +97,7 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
           <i className={`fas ${isOut ? 'fa-arrow-up-right' : 'fa-arrow-down-left'}`} />
           {entrySide(side, line.direction)}
         </span>
-        <StatusPill status={line.match_status} />
+        <StatusPill status={partial ? 'Partially Matched' : line.match_status} />
 
         {matched && (
           <button
@@ -120,6 +121,11 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
         <span className={`br-line-amt ${isOut ? 'br-amt-out' : 'br-amt-in'}`}>
           {isOut ? '−' : '+'} {fmtAmt(line.amount)}
         </span>
+        {partial && (
+          <span className="br-match-tag" title="Remaining outstanding amount">
+            <i className="fas fa-scale-balanced" />Remaining {fmtAmt(line.outstanding_amount)}
+          </span>
+        )}
         {matched && line.match_group && <span className="br-match-tag"><i className="fas fa-link" />{line.match_group}</span>}
         {classified && <span className="br-type-tag"><i className="fas fa-tag" />{safe(line.category_name || line.bank_only_type)}</span>}
       </div>
@@ -162,6 +168,19 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
           >
             <i className="fas fa-pen-to-square" />
             Edit Line
+          </button>
+        )}
+        {onDeleteLine && (
+          <button
+            className="br-classify-link br-delete-line-link"
+            style={{ margin: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteLine(line, side);
+            }}
+          >
+            <i className="fas fa-trash-can" />
+            Delete Line
           </button>
         )}
       </div>
