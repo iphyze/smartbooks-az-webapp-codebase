@@ -52,11 +52,14 @@ function parseDateValue(value, fallback = new Date()) {
   return fallback instanceof Date && !Number.isNaN(fallback.getTime()) ? fallback : new Date();
 }
 
-const formatNumber = (value) =>
-  Number(value || 0).toLocaleString("en-US", {
+const formatNumber = (value) => {
+  const number = Number(value) || 0;
+  const normalized = Math.abs(number) < 0.005 ? 0 : number;
+  return normalized.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+};
 
 const portalTarget = () => (typeof document !== "undefined" ? document.body : null);
 
@@ -101,7 +104,7 @@ export default function JournalFormView({
   setShowCreateLedgerModal,
   setShowCreateRateModal,
   setActiveRowId,
-  setMasterRateId,
+  handleRateChange,
   onRemoveItem,
   addItem,
   onDuplicateItem,
@@ -570,7 +573,7 @@ export default function JournalFormView({
                                   ? `${option.rate.created_at?.slice(0, 10)} | ${item.jcurrency} @ ${option.rate[`${item.jcurrency.toLowerCase()}_rate`]}`
                                   : option.label,
                               }))}
-                              onChange={(option) => setMasterRateId(option?.value || "")}
+                              onChange={(option) => handleRateChange(item.id, option?.value || "")}
                               value={item.jrate ? {
                                 value: item.jrate,
                                 label: item.rate_date

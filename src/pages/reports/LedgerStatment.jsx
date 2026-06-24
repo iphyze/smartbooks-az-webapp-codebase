@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
+import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import useLedgerSearchStore from "../../stores/useLedgerSearchStore";
@@ -393,14 +394,12 @@ const LedgerBlock = ({ ledger, index }) => {
 
             {/* ── Transactions or empty notice ── */}
             {!transactions || transactions.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="ls-empty-row">
-                  <div className="ls-empty-inner">
-                    <i className="fas fa-calendar-xmark" />
-                    <span>No transactions recorded for this period</span>
-                  </div>
-                </td>
-              </tr>
+              <EmptyTable
+                tableColSpan={7}
+                icon="fas fa-calendar-xmark"
+                message="No transactions recorded for this period"
+                description="Adjust the statement period or ledger range to review other entries."
+              />
             ) : (
               transactions.map((t, i) => (
                 <tr key={i}>

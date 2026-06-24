@@ -259,19 +259,19 @@ export default DownloadBankRecon;
 
 /* ─── Styles ─────────────────────────────────────── */
 const S = StyleSheet.create({
-  page: { fontFamily:'Montserrat-Regular', fontSize:7, paddingTop:68, paddingBottom:36, paddingHorizontal:22, backgroundColor:'#ffffff' },
+  page: { fontFamily:'Montserrat-Regular', fontSize: 6.3, paddingTop:68, paddingBottom:36, paddingHorizontal:22, backgroundColor:'#ffffff' },
 
   pageHeader: { position:'absolute', top:0, left:0, right:0, paddingHorizontal:22, paddingTop:12, paddingBottom:8, flexDirection:'row', justifyContent:'space-between', alignItems:'center', backgroundColor:'#ffffff' },
   logo:       { width:100, height:'auto', objectFit:'contain' },
   headerRight:{ alignItems:'flex-end' },
-  reportTitle:{ fontFamily:'Montserrat-Bold', fontSize:13, color:TEXT1, letterSpacing:.3 },
-  reportMeta: { fontFamily:'Montserrat-SemiBold', fontSize:7.5, color:TEXT2, marginTop:2 },
-  reportSub:  { fontFamily:'Montserrat-Light', fontSize:6.5, color:TEXT3, marginTop:2 },
+  reportTitle:{ fontFamily:'Montserrat-Bold', fontSize: 11.7, color:TEXT1, letterSpacing:.3 },
+  reportMeta: { fontFamily:'Montserrat-SemiBold', fontSize: 6.8, color:TEXT2, marginTop:2 },
+  reportSub:  { fontFamily:'Montserrat-Light', fontSize: 5.9, color:TEXT3, marginTop:2 },
   divider:    { position:'absolute', top:58, left:22, right:22, height:1.5, backgroundColor:BRAND },
 
   pageFooter: { position:'absolute', bottom:0, left:0, right:0, paddingHorizontal:22, paddingVertical:8, borderTopWidth:1, borderTopColor:BORDER, flexDirection:'row', justifyContent:'space-between', alignItems:'center', backgroundColor:'#ffffff' },
-  footerL:    { fontFamily:'Montserrat-Light', fontSize:6.5, color:TEXT3 },
-  footerR:    { fontFamily:'Montserrat-Medium', fontSize:6.5, color:TEXT2 },
+  footerL:    { fontFamily:'Montserrat-Light', fontSize: 5.9, color:TEXT3 },
+  footerR:    { fontFamily:'Montserrat-Medium', fontSize: 5.9, color:TEXT2 },
 
   /* KPI */
   kpiRow:     { flexDirection:'row', marginBottom:10, gap:6 },
@@ -279,28 +279,28 @@ const S = StyleSheet.create({
   kpiCellOk:  { backgroundColor:'rgba(0,177,150,0.06)', borderColor:'rgba(0,177,150,0.25)' },
   kpiCellWarn:{ backgroundColor:'rgba(244,124,124,0.06)', borderColor:'rgba(244,124,124,0.25)' },
   kpiLabel:   { fontFamily:'Montserrat-Medium', fontSize:6, color:TEXT3, textTransform:'uppercase', letterSpacing:.5, marginBottom:3 },
-  kpiValue:   { fontFamily:'Montserrat-Bold', fontSize:10, color:TEXT1 },
+  kpiValue:   { fontFamily:'Montserrat-Bold', fontSize: 9, color:TEXT1 },
 
   /* Formula */
   formulaBox:   { borderWidth:1, borderColor:BORDER, borderRadius:8, padding:10, marginBottom:10, backgroundColor:GRAY },
-  formulaTitle: { fontFamily:'Montserrat-Bold', fontSize:8, color:BRAND, marginBottom:6, textTransform:'uppercase', letterSpacing:.5 },
+  formulaTitle: { fontFamily:'Montserrat-Bold', fontSize: 7.2, color:BRAND, marginBottom:6, textTransform:'uppercase', letterSpacing:.5 },
   formulaRow:   { flexDirection:'row', justifyContent:'space-between', paddingVertical:3, borderBottomWidth:.5, borderBottomColor:BORDER },
-  formulaLabel: { fontFamily:'Montserrat-Light', fontSize:7, color:TEXT2, flex:1 },
-  formulaValue: { fontFamily:'Montserrat-Regular', fontSize:7, color:TEXT1, width:80, textAlign:'right' },
-  formulaBold:  { fontFamily:'Montserrat-Bold', fontSize:7.5 },
+  formulaLabel: { fontFamily:'Montserrat-Light', fontSize: 6.3, color:TEXT2, flex:1 },
+  formulaValue: { fontFamily:'Montserrat-Regular', fontSize: 6.3, color:TEXT1, width:80, textAlign:'right' },
+  formulaBold:  { fontFamily:'Montserrat-Bold', fontSize: 6.8 },
 
   /* Section */
   section:    { marginBottom:12 },
   secHead:    { backgroundColor:BRAND, paddingVertical:6, paddingHorizontal:10, marginBottom:0 },
-  secHeadText:{ fontFamily:'Montserrat-Bold', fontSize:8, color:'#ffffff', letterSpacing:.4 },
+  secHeadText:{ fontFamily:'Montserrat-Bold', fontSize: 7.2, color:'#ffffff', letterSpacing:.4 },
 
   /* Table */
   table:     { borderWidth:1, borderColor:BORDER, overflow:'hidden' },
   tableHead: { flexDirection:'row', backgroundColor:BRAND2 },
-  th:        { fontFamily:'Montserrat-SemiBold', fontSize:6.5, color:'#ffffff', paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:'rgba(255,255,255,0.2)' },
+  th:        { fontFamily:'Montserrat-SemiBold', fontSize: 5.9, color:'#ffffff', paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:'rgba(255,255,255,0.2)' },
   tableRow:  { flexDirection:'row', borderBottomWidth:.5, borderBottomColor:BORDER },
   rowAlt:    { backgroundColor:GRAY },
-  td:        { fontFamily:'Montserrat-Light', fontSize:7, color:TEXT2, paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:BORDER },
+  td:        { fontFamily:'Montserrat-Light', fontSize: 6.3, color:TEXT2, paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:BORDER },
   emptyRow:  { padding:12 },
-  emptyText: { fontFamily:'Montserrat-Light', fontSize:7, color:TEXT3, textAlign:'center' },
+  emptyText: { fontFamily:'Montserrat-Light', fontSize: 6.3, color:TEXT3, textAlign:'center' },
 });

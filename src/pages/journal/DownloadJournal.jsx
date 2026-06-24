@@ -172,7 +172,7 @@ export default DownloadJournal;
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'Montserrat-Regular',
-    fontSize: 10,
+    fontSize: 9,
     paddingTop: 30,
     paddingBottom: 40,
     paddingHorizontal: 30,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
       fontFamily: 'Montserrat-Medium',
-      fontSize: 8,
+      fontSize: 7.2,
       width: 100,
       color: '#000000',
       lineHeight: 1.5,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   metaValue: {
       width: '70%',
       fontFamily: 'Montserrat-Light',
-      fontSize: 8,
+      fontSize: 7.2,
       flex: 1,
       color: '#000000',
       lineHeight: 1.5,
@@ -224,13 +224,13 @@ const styles = StyleSheet.create({
   },
   voucherTypeText: {
       fontFamily: 'Montserrat-Medium',
-      fontSize: 11,
+      fontSize: 9.9,
       color: '#000000',
       textTransform: 'capitalize',
   },
   voucherId: {
       fontFamily: 'Montserrat-Medium',
-      fontSize: 9,
+      fontSize: 8.1,
       color: '#00b196',
   },
 
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   tableCell: {
       paddingVertical: 5,
       paddingHorizontal: 5,
-      fontSize: 8,
+      fontSize: 7.2,
       fontFamily: 'Montserrat-Light',
       color: '#00000',
       borderRightWidth: 0.5,
@@ -303,13 +303,13 @@ const styles = StyleSheet.create({
   signatureLabel: {
       width: '15%',
       fontFamily: 'Montserrat-Medium',
-      fontSize: 8,
+      fontSize: 7.2,
       color: '#000000',
   },
   signatureValue: {
       width: '85%',
       fontFamily: 'Montserrat-Light',
-      fontSize: 8,
+      fontSize: 7.2,
       color: '#000000',
   },
   
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
       backgroundColor: '#00b196',
       color: 'white',
       fontFamily: 'Montserrat-Medium',
-      fontSize: 8,
+      fontSize: 7.2,
       paddingVertical: 2,
       paddingHorizontal: 4,
       lineHeight: 1.2,
@@ -347,12 +347,12 @@ const styles = StyleSheet.create({
   },
   totalsLabel: {
       fontFamily: 'Montserrat-Regular',
-      fontSize: 8,
+      fontSize: 7.2,
       color: '#000000',
   },
   totalsValue: {
       fontFamily: 'Montserrat-Medium',
-      fontSize: 8,
+      fontSize: 7.2,
       color: '#000000',
   },
 });

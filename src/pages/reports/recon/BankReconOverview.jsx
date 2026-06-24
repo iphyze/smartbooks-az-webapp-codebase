@@ -7,6 +7,7 @@ import { fadeInUp } from '../../../utils/animation';
 import useThemeStore from '../../../stores/useThemeStore';
 import PageNav from '../../../components/PageNav';
 import TableLoaderComponent from '../../../components/TableLoaderComponent';
+import EmptyTable from '../../../components/EmptyTable';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import DeleteConfirmationModal from '../../../components/modals/DeleteConfirmationModal';
 import useBankReconStore from '../../../stores/useBankReconStore';
@@ -228,32 +229,14 @@ const BankReconOverview = () => {
                               );
                             })}
                             {data.length === 0 && (
-                              <tr>
-                                <td colSpan={10}>
-                                  <div style={{
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                    justifyContent: 'center', padding: '48px 24px', gap: 12,
-                                  }}>
-                                    <i className="fas fa-scale-balanced" style={{
-                                      fontSize: 32, color: 'var(--color-green)', opacity: 0.4,
-                                    }} />
-                                    <p style={{
-                                      margin: 0, fontSize: 14, fontWeight: 600,
-                                      color: 'var(--table-text-color, #6b7280)',
-                                    }}>
-                                      No reconciliations found.
-                                    </p>
-                                    <button
-                                      className="create-new-invoice-btn"
-                                      style={{ height: 34, padding: '0 16px', fontSize: 12, marginTop: 4 }}
-                                      onClick={() => navigate('/reports/bank-recon/create')}
-                                    >
-                                      <span className="fas fa-plus" />
-                                      <span>Create New Reconciliation</span>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
+                              <EmptyTable
+                                tableColSpan={10}
+                                icon="fas fa-scale-balanced"
+                                message="No reconciliations found"
+                                description="Adjust your search or create a reconciliation to begin matching bank and ledger entries."
+                                link="/reports/bank-recon/create"
+                                actionLabel="Create New Reconciliation"
+                              />
                             )}
                           </tbody>
                         </table>

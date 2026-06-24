@@ -221,7 +221,7 @@ export default DownloadInvoice;
 const styles = StyleSheet.create({
     page: {
         fontFamily: 'Montserrat-Regular',
-        fontSize: 10,
+        fontSize: 9,
         paddingTop: 30,
         paddingBottom: 40,
         paddingHorizontal: 30,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     },
     metaLabel: {
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         width: 100,
         color: '#000000',
         lineHeight: 1.5,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     metaValue: {
         width: '70%',
         fontFamily: 'Montserrat-Light',
-        fontSize: 8,
+        fontSize: 7.2,
         flex: 1,
         color: '#000000',
         lineHeight: 1.5,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     invoiceTypeText: {
         position: 'relative',
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#000000',
         textTransform: 'capitalize',
         marginBottom: 1,
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     invoiceId: {
         position: 'relative',
         fontFamily: 'Montserrat-Bold',
-        fontSize: 16,
+        fontSize: 14.4,
         color: '#00b196',
         letterSpacing: 0.5,
         marginBottom: 5,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
-        fontSize: 8,
+        fontSize: 7.2,
         fontFamily: 'Montserrat-Medium',
         alignSelf: 'flex-end',
         alignItems: 'center',
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     },
     invoiceTin: {
         position: 'relative',
-        fontSize: 8,
+        fontSize: 7.2,
         letterSpacing: 0.5,
         color: '#bcc7d1',
         fontFamily: 'Montserrat-SemiBold',
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     tableCell: {
         paddingVertical: 5,
         paddingHorizontal: 5,
-        fontSize: 8,
+        fontSize: 7.2,
         fontFamily: 'Montserrat-Light',
         color: '#00000',
         borderRightWidth: 0.5,
@@ -389,13 +389,13 @@ const styles = StyleSheet.create({
     signatureLabel: {
         width: '15%',
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#000000',
     },
     signatureValue: {
         width: '85%',
         fontFamily: 'Montserrat-Light',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#000000',
     },
 
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#00b196',
         color: 'white',
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         paddingVertical: 2,
         paddingHorizontal: 4,
         lineHeight: 1.2,
@@ -435,17 +435,17 @@ const styles = StyleSheet.create({
     },
     totalsLabel: {
         fontFamily: 'Montserrat-Regular',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#627976',
     },
     totalsValue: {
         fontFamily: 'Montserrat-Regular',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#627976',
     },
     totalsMain: {
         fontFamily: 'Montserrat-SemiBold',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#627976',
     },
     vcPaymentDetailsBox: {
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
         height: 'auto',
         lineHeight: 1.5,
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#a4acb4',
         marginBottom: 8
     },
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
         width: 70,
         lineHeight: 1.5,
         fontFamily: 'Montserrat-Regular',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#373c40',
     },
     vcPaymentText: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
         width: '50%',
         lineHeight: 1.5,
         fontFamily: 'Montserrat-Light',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#373c40',
     },
     vcSignatureBox: {
@@ -518,13 +518,13 @@ const styles = StyleSheet.create({
         position: 'relative',
         color: '#373c40',
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8
+        fontSize: 7.2
     },
     vcThanksText: {
         position: 'relative',
         color: '#373c40',
         fontFamily: 'Montserrat-Light',
-        fontSize: 8,
+        fontSize: 7.2,
         marginVertical: 20,
         marginBottom: 40
     }

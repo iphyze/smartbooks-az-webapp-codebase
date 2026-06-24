@@ -7,6 +7,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import NavBar from '../NavBar';
 import Header from '../Header';
 import PageNav from '../../components/PageNav';
+import EmptyTable from '../../components/EmptyTable';
 import useThemeStore from '../../stores/useThemeStore';
 import useTimesheetReportStore from '../../stores/useTimesheetReportStore';
 import useTimesheetReferenceStore from '../../stores/useTimesheetReferenceStore';
@@ -358,9 +359,12 @@ const ResultsView = ({ data, summary, meta, pagination, onExcel, excelLoading, o
             </thead>
             <tbody>
               {data.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="tsr-empty-cell">No timesheet entries found for the selected filters.</td>
-                </tr>
+                <EmptyTable
+                  tableColSpan={7}
+                  icon="fas fa-business-time"
+                  message="No timesheet entries found"
+                  description="Adjust the staff, client, project or date filters to review other activity."
+                />
               ) : (
                 data.map((group, i) => (
                   <React.Fragment key={`${group.staff_id}-${group.staff_name}-${i}`}>

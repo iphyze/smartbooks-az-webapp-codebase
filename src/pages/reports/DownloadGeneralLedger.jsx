@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
   /* ── Page ── */
   page: {
     fontFamily: 'Montserrat-Regular',
-    fontSize: 9,
+    fontSize: 8.1,
     paddingTop: 72,
     paddingBottom: 44,
     paddingHorizontal: 30,
@@ -71,14 +71,14 @@ const styles = StyleSheet.create({
 
   reportTitle: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 13,
+    fontSize: 11.7,
     color: TEXT1,
     letterSpacing: 0.3,
   },
 
   reportMeta: {
     fontFamily: 'Montserrat-Light',
-    fontSize: 7.5,
+    fontSize: 6.8,
     color: TEXT3,
     marginTop: 2,
   },
@@ -110,13 +110,13 @@ const styles = StyleSheet.create({
 
   footerLeft: {
     fontFamily: 'Montserrat-Light',
-    fontSize: 7,
+    fontSize: 6.3,
     color: TEXT3,
   },
 
   footerRight: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 7,
+    fontSize: 6.3,
     color: TEXT2,
   },
 
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
 
   sectionLabel: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 7.5,
+    fontSize: 6.8,
     color: TEXT3,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
 
   summaryCardLabel: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 7,
+    fontSize: 6.3,
     color: TEXT3,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -190,14 +190,14 @@ const styles = StyleSheet.create({
 
   summaryCardValue: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 13,
+    fontSize: 11.7,
     color: TEXT1,
     marginBottom: 2,
   },
 
   summaryCardCurrency: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 7,
+    fontSize: 6.3,
     color: BRAND,
   },
 
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
 
   th: {
     fontFamily: 'Montserrat-SemiBold',
-    fontSize: 7.5,
+    fontSize: 6.8,
     color: '#ffffff',
     paddingVertical: 7,
     paddingHorizontal: 7,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
 
   td: {
     fontFamily: 'Montserrat-Light',
-    fontSize: 8,
+    fontSize: 7.2,
     color: TEXT2,
     paddingVertical: 6,
     paddingHorizontal: 7,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
 
   grandTd: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 8.5,
+    fontSize: 7.7,
     color: TEXT1,
     paddingVertical: 8,
     paddingHorizontal: 7,
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontFamily: 'Montserrat-Light',
-    fontSize: 8,
+    fontSize: 7.2,
     color: TEXT3,
   },
 });

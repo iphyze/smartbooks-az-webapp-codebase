@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "../pages/invoice/InvoiceWorkflow.css";
 
 const formatMoney = (value) =>
@@ -15,6 +16,7 @@ const formatDate = (value) => {
 };
 
 const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => {
+  const navigate = useNavigate();
   const payments = Array.isArray(invoice?.payments) ? invoice.payments : [];
   const summary = invoice?.payment_summary || {};
   const currency = invoice?.currency || "—";
@@ -98,6 +100,18 @@ const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => 
                     {payment.bank_name ? <span><i className="fas fa-building-columns" aria-hidden="true" />{payment.bank_name} · {payment.account_number}</span> : null}
                     {payment.transaction_reference ? <span><i className="fas fa-hashtag" aria-hidden="true" />{payment.transaction_reference}</span> : null}
                   </div>
+                  {payment.journal_id ? (
+                    <div className="invoice-payment-item__journal-links">
+                      <button type="button" onClick={() => navigate(`/journal/view/${payment.journal_id}`)}>
+                        <i className="fas fa-book" aria-hidden="true" /> Receipt journal #{payment.journal_id}
+                      </button>
+                      {payment.reversal_journal_id ? (
+                        <button type="button" onClick={() => navigate(`/journal/view/${payment.reversal_journal_id}`)}>
+                          <i className="fas fa-rotate-left" aria-hidden="true" /> Reversal journal #{payment.reversal_journal_id}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {payment.notes ? <p>{payment.notes}</p> : null}
                   {reversed && payment.reversal_reason ? (
                     <div className="invoice-payment-item__reversal-note">

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import MontserratRegular from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
-import MontserratBold from '../../assets/fonts/Montserrat/Montserrat-Bold.ttf';
-import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
+import MontserratRegular from '../../../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
+import MontserratLight from '../../../../assets/fonts/Montserrat/Montserrat-Light.ttf';
+import MontserratMedium from '../../../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
+import MontserratBold from '../../../../assets/fonts/Montserrat/Montserrat-Bold.ttf';
+import CompanyLogo from '../../../../assets/images/smartbooks/az-logo.png';
 
 Font.register({ family: 'Montserrat-Regular', src: MontserratRegular });
 Font.register({ family: 'Montserrat-Light', src: MontserratLight });
@@ -77,8 +77,8 @@ const DownloadBankReconciliation = ({ reconciliation = {}, bankLines = [], ledge
 export default DownloadBankReconciliation;
 
 const S = StyleSheet.create({
-  page:{fontFamily:'Montserrat-Regular',fontSize:7,paddingTop:66,paddingBottom:36,paddingHorizontal:22,backgroundColor:'#fff'},
-  header:{position:'absolute',top:0,left:0,right:0,paddingHorizontal:22,paddingTop:12,paddingBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},logo:{width:104},headerRight:{alignItems:'flex-end'},title:{fontFamily:'Montserrat-Bold',fontSize:13,color:TEXT1},meta:{fontFamily:'Montserrat-Medium',fontSize:7,color:TEXT2,marginTop:2},metaLight:{fontFamily:'Montserrat-Light',fontSize:6.2,color:TEXT3,marginTop:2},divider:{position:'absolute',top:58,left:22,right:22,height:1.5,backgroundColor:BRAND},
-  kpiRow:{flexDirection:'row',marginBottom:10},kpi:{flex:1,borderWidth:1,borderColor:BORDER,borderRadius:6,padding:8,marginRight:6},kpiOk:{backgroundColor:'rgba(0,177,150,0.06)'},kpiWarn:{backgroundColor:'rgba(220,38,38,0.06)',borderColor:'rgba(220,38,38,0.25)'},kpiLabel:{fontFamily:'Montserrat-Medium',fontSize:5.8,color:TEXT3,textTransform:'uppercase'},kpiValue:{fontFamily:'Montserrat-Bold',fontSize:10,color:TEXT1,marginTop:3},
-  note:{borderWidth:1,borderColor:BORDER,backgroundColor:GRAY,borderRadius:5,padding:7,marginBottom:8},noteText:{fontFamily:'Montserrat-Light',color:TEXT2,lineHeight:1.35},sectionTitle:{fontFamily:'Montserrat-Bold',fontSize:8.5,color:TEXT1,marginBottom:5,marginTop:5},table:{borderWidth:1,borderColor:BORDER,borderRadius:4,overflow:'hidden',marginBottom:8},trHead:{flexDirection:'row',backgroundColor:'#009e87'},tr:{flexDirection:'row',borderBottomWidth:0.5,borderBottomColor:BORDER},alt:{backgroundColor:GRAY},th:{fontFamily:'Montserrat-Bold',fontSize:6,color:'#fff',padding:5},td:{fontFamily:'Montserrat-Light',fontSize:6.4,color:TEXT2,padding:5,borderRightWidth:0.5,borderRightColor:BORDER},empty:{padding:10,color:TEXT3},c1:{width:86},c2:{width:70,textAlign:'right'},c3:{width:92},c4:{flex:1},d1:{width:64},d2:{flex:1},d3:{width:76,textAlign:'right'},d4:{width:95},footer:{position:'absolute',bottom:0,left:0,right:0,paddingHorizontal:22,paddingVertical:8,borderTopWidth:1,borderTopColor:BORDER,flexDirection:'row',justifyContent:'space-between',color:TEXT3,fontSize:6.2}
+  page:{fontFamily:'Montserrat-Regular',fontSize:6.3,paddingTop:66,paddingBottom:36,paddingHorizontal:22,backgroundColor:'#fff'},
+  header:{position:'absolute',top:0,left:0,right:0,paddingHorizontal:22,paddingTop:12,paddingBottom:8,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},logo:{width:104},headerRight:{alignItems:'flex-end'},title:{fontFamily:'Montserrat-Bold',fontSize:11.7,color:TEXT1},meta:{fontFamily:'Montserrat-Medium',fontSize:6.3,color:TEXT2,marginTop:2},metaLight:{fontFamily:'Montserrat-Light',fontSize:6.2,color:TEXT3,marginTop:2},divider:{position:'absolute',top:58,left:22,right:22,height:1.5,backgroundColor:BRAND},
+  kpiRow:{flexDirection:'row',marginBottom:10},kpi:{flex:1,borderWidth:1,borderColor:BORDER,borderRadius:6,padding:8,marginRight:6},kpiOk:{backgroundColor:'rgba(0,177,150,0.06)'},kpiWarn:{backgroundColor:'rgba(220,38,38,0.06)',borderColor:'rgba(220,38,38,0.25)'},kpiLabel:{fontFamily:'Montserrat-Medium',fontSize:5.8,color:TEXT3,textTransform:'uppercase'},kpiValue:{fontFamily:'Montserrat-Bold',fontSize:9,color:TEXT1,marginTop:3},
+  note:{borderWidth:1,borderColor:BORDER,backgroundColor:GRAY,borderRadius:5,padding:7,marginBottom:8},noteText:{fontFamily:'Montserrat-Light',color:TEXT2,lineHeight:1.35},sectionTitle:{fontFamily:'Montserrat-Bold',fontSize:7.7,color:TEXT1,marginBottom:5,marginTop:5},table:{borderWidth:1,borderColor:BORDER,borderRadius:4,overflow:'hidden',marginBottom:8},trHead:{flexDirection:'row',backgroundColor:'#009e87'},tr:{flexDirection:'row',borderBottomWidth:0.5,borderBottomColor:BORDER},alt:{backgroundColor:GRAY},th:{fontFamily:'Montserrat-Bold',fontSize:6,color:'#fff',padding:5},td:{fontFamily:'Montserrat-Light',fontSize:6.4,color:TEXT2,padding:5,borderRightWidth:0.5,borderRightColor:BORDER},empty:{padding:10,color:TEXT3},c1:{width:86},c2:{width:70,textAlign:'right'},c3:{width:92},c4:{flex:1},d1:{width:64},d2:{flex:1},d3:{width:76,textAlign:'right'},d4:{width:95},footer:{position:'absolute',bottom:0,left:0,right:0,paddingHorizontal:22,paddingVertical:8,borderTopWidth:1,borderTopColor:BORDER,flexDirection:'row',justifyContent:'space-between',color:TEXT3,fontSize:6.2}
 });

@@ -6,6 +6,7 @@ import DownloadInvoiceAging from "./DownloadInvoiceAging";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
+import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
 import useInvoiceAgingReportStore from "../../stores/useInvoiceAgingReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
@@ -281,11 +282,12 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
           </thead>
           <tbody>
             {data.length === 0 ? (
-              <tr>
-                <td colSpan={9} style={{ textAlign: "center", padding: "40px 20px", color: "var(--sb-text-3, #7aada6)", fontStyle: "italic" }}>
-                  No pending invoices found for {meta?.currency}.
-                </td>
-              </tr>
+              <EmptyTable
+                tableColSpan={9}
+                icon="fas fa-file-circle-check"
+                message={`No pending invoices found for ${meta?.currency || "the selected currency"}`}
+                description="Adjust the aging filters or currency to review another receivables period."
+              />
             ) : (
               data.map((row, i) => {
                 const b0   = Number(row.bucket_0_30)       || 0;

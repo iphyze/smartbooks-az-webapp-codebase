@@ -67,6 +67,7 @@ function createEmptyItem(defaultDescription = "", journalDate = new Date()) {
     journal_description: defaultDescription,
     journal_date: parseDateValue(journalDate),
     journal_date_touched: false,
+    rate_touched: false,
     sides: "",
     jcurrency: "NGN",
     jrate: "",
@@ -81,7 +82,52 @@ function createEmptyItem(defaultDescription = "", journalDate = new Date()) {
 }
 
 
-const EPSILON = 0.001;
+const EPSILON = 0.005;
+
+function normalizeBalanceValue(value) {
+  const number = Number(value) || 0;
+  return Math.abs(number) < EPSILON ? 0 : number;
+}
+
+
+function clearItemRate(item) {
+  return {
+    ...item,
+    jrate: "",
+    currencyRate: "",
+    rate_date: "",
+    ngn_rate: "",
+    usd_rate: "",
+    eur_rate: "",
+    gbp_rate: "",
+  };
+}
+
+function applyRateRecord(item, rateRecord, rateId, currency = item.jcurrency) {
+  if (!rateRecord || !rateId) return clearItemRate(item);
+
+  const currencyKey = String(currency || "NGN").toLowerCase();
+  return {
+    ...item,
+    jrate: String(rateId),
+    currencyRate: parseFloat(rateRecord[`${currencyKey}_rate`]) || 0,
+    rate_date: rateRecord.created_at || "",
+    ngn_rate: rateRecord.ngn_rate ?? "",
+    usd_rate: rateRecord.usd_rate ?? "",
+    eur_rate: rateRecord.eur_rate ?? "",
+    gbp_rate: rateRecord.gbp_rate ?? "",
+  };
+}
+
+function resolveItemRateForDate(item, rates, date = item.journal_date, currency = item.jcurrency) {
+  const effectiveId = findEffectiveRateId(rates, currency || "NGN", date);
+  const rateRecord = effectiveId
+    ? rates.find((rate) => String(rate.id) === String(effectiveId))
+    : null;
+
+  return applyRateRecord(item, rateRecord, effectiveId, currency);
+}
+
 const JOURNAL_FAVOURITE_LEDGERS_KEY = "smartbooks_journal_favourite_ledgers";
 
 function readFavouriteLedgers() {
@@ -137,14 +183,17 @@ function calculateTotals(items) {
     }
   }
 
+  const grandTotalNGN = normalizeBalanceValue(totalDebit - totalCredit);
+  const grandTotalUSD = normalizeBalanceValue(totalCreditUSD - totalDebitUSD);
+
   return {
     total_debit_ngn: totalDebit,
     total_credit_ngn: totalCredit,
     total_debit_usd: totalDebitUSD,
     total_credit_usd: totalCreditUSD,
-    grand_total_ngn: totalDebit - totalCredit,
-    grand_total_usd: totalCreditUSD - totalDebitUSD,
-    grand_total: totalDebit - totalCredit,
+    grand_total_ngn: grandTotalNGN,
+    grand_total_usd: grandTotalUSD,
+    grand_total: grandTotalNGN,
   };
 }
 
@@ -262,40 +311,28 @@ const CreateJournalForm = () => {
     })),
     [rates]);
 
-  /* ── Auto-set master rate from journal_date when rates load ── */
+  /* Keep the header's default rate current and seed rows that do not yet have a rate. */
   useEffect(() => {
     if (!journalDetails.journal_date || !rates.length) return;
 
-    const effectiveId = findEffectiveRateId(
-      rates,
-      "NGN",
-      journalDetails.journal_date
-    );
-
+    const effectiveId = findEffectiveRateId(rates, "NGN", journalDetails.journal_date);
     setMasterRateId(effectiveId || "");
-  }, [journalDetails.journal_date, rates]);
 
-  /* ── When masterRateId changes, push rate to ALL rows ── */
-  useEffect(() => {
-    if (!masterRateId) return;
-    const found = rates.find((r) => String(r.id) === masterRateId);
-    if (!found) return;
-    setJournalItems((prev) =>
-      prev.map((item) => {
-        const curr = item.jcurrency.toLowerCase();
+    setJournalItems((items) =>
+      items.map((item) => {
+        if (item.jrate && (item.journal_date_touched || item.rate_touched)) return item;
         return {
-          ...item,
-          jrate: masterRateId,
-          currencyRate: parseFloat(found[`${curr}_rate`]) || 0,
-          rate_date: found.created_at,
-          ngn_rate: found.ngn_rate,
-          usd_rate: found.usd_rate,
-          eur_rate: found.eur_rate,
-          gbp_rate: found.gbp_rate,
+          ...resolveItemRateForDate(
+            item,
+            rates,
+            item.journal_date || journalDetails.journal_date,
+            item.jcurrency
+          ),
+          rate_touched: false,
         };
       })
     );
-  }, [masterRateId, rates]);
+  }, [journalDetails.journal_date, rates]);
 
   useEffect(() => { prevJournalItemsRef.current = journalItems; }, [journalItems]);
 
@@ -327,9 +364,8 @@ const CreateJournalForm = () => {
     if (!journalDetails.transaction_type) e.transaction_type = "Transaction type is required";
     if (!journalDetails.main_journal_description?.trim()) e.main_journal_description = "Description is required";
     if (!journalDetails.cost_center) e.cost_center = "Cost center is required";
-    if (!masterRateId) e.master_rate = "Exchange rate is required";
     return e;
-  }, [journalDetails, masterRateId]);
+  }, [journalDetails]);
 
   const validateItems = useCallback(() =>
     journalItems.map((item) => {
@@ -372,12 +408,24 @@ const CreateJournalForm = () => {
           const shouldInheritHeaderDate =
             !item.journal_date_touched || sameDateKey(item.journal_date, previousHeaderDate);
 
-          return shouldInheritHeaderDate
-            ? { ...item, journal_date: nextDate, journal_date_touched: false }
-            : item;
+          if (!shouldInheritHeaderDate) return item;
+
+          return {
+            ...resolveItemRateForDate(
+              { ...item, journal_date: nextDate },
+              rates,
+              nextDate,
+              item.jcurrency
+            ),
+            journal_date: nextDate,
+            journal_date_touched: false,
+            rate_touched: false,
+          };
         })
       );
 
+      const effectiveId = findEffectiveRateId(rates, "NGN", nextDate);
+      setMasterRateId(effectiveId || "");
       setJournalDetails((prev) => ({ ...prev, journal_date: nextDate }));
       return;
     }
@@ -392,9 +440,18 @@ const CreateJournalForm = () => {
         const updated = { ...item, [field]: value };
 
         if (field === "journal_date") {
-          updated.journal_date = parseDateValue(value, journalDetails.journal_date);
-          updated.journal_date_touched = !sameDateKey(updated.journal_date, journalDetails.journal_date);
-          return updated;
+          const lineDate = parseDateValue(value, journalDetails.journal_date);
+          return {
+            ...resolveItemRateForDate(
+              { ...updated, journal_date: lineDate },
+              rates,
+              lineDate,
+              updated.jcurrency
+            ),
+            journal_date: lineDate,
+            journal_date_touched: !sameDateKey(lineDate, journalDetails.journal_date),
+            rate_touched: false,
+          };
         }
 
         if (field === "ledger_name") {
@@ -408,26 +465,33 @@ const CreateJournalForm = () => {
           }
         }
 
-        /* When row currency changes, re-apply master rate at the new currency's column */
+        /* Currency changes use the rate effective on or before this line's own date. */
         if (field === "jcurrency") {
-          const found = masterRateId ? rates.find((r) => String(r.id) === masterRateId) : null;
-          if (found) {
-            const curr = value.toLowerCase();
-            updated.jrate = masterRateId;
-            updated.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
-            updated.rate_date = found.created_at;
-            updated.ngn_rate = found.ngn_rate;
-            updated.usd_rate = found.usd_rate;
-            updated.eur_rate = found.eur_rate;
-            updated.gbp_rate = found.gbp_rate;
-          } else {
-            updated.jrate = ""; updated.currencyRate = ""; updated.rate_date = "";
-            updated.ngn_rate = ""; updated.usd_rate = ""; updated.eur_rate = ""; updated.gbp_rate = "";
-          }
-          updated.amount = "";
+          const resolved = resolveItemRateForDate(
+            updated,
+            rates,
+            updated.journal_date || journalDetails.journal_date,
+            value
+          );
+          Object.assign(updated, resolved, { rate_touched: false, amount: "" });
         }
 
         return updated;
+      })
+    );
+  };
+
+  const handleItemRateChange = (id, rateId) => {
+    setJournalItems((items) =>
+      items.map((item) => {
+        if (item.id !== id) return item;
+        if (!rateId) return { ...clearItemRate(item), rate_touched: false };
+
+        const rateRecord = rates.find((rate) => String(rate.id) === String(rateId));
+        return {
+          ...applyRateRecord(item, rateRecord, rateId, item.jcurrency),
+          rate_touched: true,
+        };
       })
     );
   };
@@ -548,6 +612,7 @@ const CreateJournalForm = () => {
       ...row,
       journal_date: parseDateValue(row.journal_date, importedDate),
       journal_date_touched: !sameDateKey(row.journal_date || importedDate, importedDate),
+      rate_touched: Boolean(row.jrate),
     }));
 
     setJournalDetails({
@@ -716,7 +781,7 @@ const CreateJournalForm = () => {
             setShowCreateLedgerModal={setShowCreateLedgerModal}
             setShowCreateRateModal={setShowCreateRateModal}
             setActiveRowId={setActiveRowId}
-            setMasterRateId={setMasterRateId}
+            handleRateChange={handleItemRateChange}
             onRemoveItem={(item) => requestRemoveItem(item.id)}
             addItem={addItem}
             onDuplicateItem={duplicateItem}

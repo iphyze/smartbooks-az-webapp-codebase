@@ -142,7 +142,7 @@ export default DownloadAccount;
 const styles = StyleSheet.create({
     page: {
         fontFamily: 'Montserrat-Regular',
-        fontSize: 10,
+        fontSize: 9,
         paddingTop: 30,
         paddingBottom: 40,
         paddingHorizontal: 30,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     },
     metaLabel: {
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         width: 95,
         color: '#000000',
         lineHeight: 1.5,
@@ -185,14 +185,14 @@ const styles = StyleSheet.create({
     metaValue: {
         width: '70%',
         fontFamily: 'Montserrat-Light',
-        fontSize: 8,
+        fontSize: 7.2,
         flex: 1,
         color: '#000000',
         lineHeight: 1.5,
     },
     headerTypeText: {
         fontFamily: 'Montserrat-Medium',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#000000',
         textTransform: 'uppercase',
         marginBottom: 1,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     },
     headerId: {
         fontFamily: 'Montserrat-Bold',
-        fontSize: 16,
+        fontSize: 14.4,
         color: '#00b196',
         letterSpacing: 0.5,
         marginBottom: 5,
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontFamily: 'Montserrat-Medium',
-        fontSize: 9,
+        fontSize: 8.1,
         color: '#a4acb4',
         marginBottom: 8,
     },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     tableCell: {
         paddingVertical: 6,
         paddingHorizontal: 5,
-        fontSize: 8,
+        fontSize: 7.2,
         fontFamily: 'Montserrat-Light',
         color: '#000000',
         borderRightWidth: 0.5,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     },
     emptyStateText: {
         fontFamily: 'Montserrat-Light',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#a4acb4',
     },
 
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     cardHeaderText: {
         color: 'white',
         fontFamily: 'Montserrat-SemiBold',
-        fontSize: 8,
+        fontSize: 7.2,
         letterSpacing: 0.5,
     },
     cardBody: {
@@ -329,11 +329,11 @@ const styles = StyleSheet.create({
     },
     cardLabel: {
         fontFamily: 'Montserrat-Regular',
-        fontSize: 8,
+        fontSize: 7.2,
         color: '#000000',
     },
     cardValue: {
         fontFamily: 'Montserrat-SemiBold',
-        fontSize: 8,
+        fontSize: 7.2,
     }
 });

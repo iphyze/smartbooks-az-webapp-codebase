@@ -6,6 +6,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
+import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
@@ -305,14 +306,14 @@ const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSe
             </thead>
             <tbody>
               {sorted.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="gl-empty-row">
-                    <div className="gl-empty-inner">
-                      <i className="fas fa-inbox" />
-                      <span>{search ? "No ledgers match your filter" : "No data for this period"}</span>
-                    </div>
-                  </td>
-                </tr>
+                <EmptyTable
+                  tableColSpan={6}
+                  icon="fas fa-book-open"
+                  message={search ? "No ledgers match your filter" : "No ledger activity found"}
+                  description={search
+                    ? "Try a different ledger name or clear the table filter."
+                    : "There is no ledger activity for the selected period and currency."}
+                />
               ) : (
                 sorted.map((row, i) => {
                   const bal = Number(row.balance || 0);

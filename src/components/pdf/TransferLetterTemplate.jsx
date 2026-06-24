@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   page: {
     padding: 40,
     fontFamily: 'Montserrat-Regular',
-    fontSize: '10px'
+    fontSize: '9px'
   },
   date: {
     textAlign: 'right',
@@ -123,20 +123,20 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontFamily: 'Montserrat-Regular',
-    fontSize: '10px',
+    fontSize: '9px',
     marginBottom: '10px'
   },
   attention: {
     marginBottom: 10,
     fontFamily: 'Montserrat-SemiBold',
-    fontSize: '10px',
+    fontSize: '9px',
     textDecoration: 'underline'
   },
   subject: {
     marginTop: 20,
     marginBottom: 20,
     fontFamily: 'Montserrat-SemiBoldItalic',
-    fontSize: '10px',
+    fontSize: '9px',
     textDecoration: 'underline'
   },
   tableRow: {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   tableLabel: {
     width: 80,
     fontFamily: 'Montserrat-SemiBold',
-    fontSize: '10px'
+    fontSize: '9px'
   },
   tableValue: {
     flex: 1,
