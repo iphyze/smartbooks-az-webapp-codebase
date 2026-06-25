@@ -42,6 +42,7 @@ const navigationForOperationalUser = (isAdmin) => [
     ...(isAdmin ? [{ type: "submenu", key: "users", label: "User Administration", icon: "fa-users-gear" }] : []),
     { type: "link", path: "/lock-period/home", label: "Lock Period", icon: "fa-calendar-xmark" },
     { type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" },
+    { type: "link", path: "/activity-logs", label: "Activity Logs", icon: "fa-clock-rotate-left" },
     { type: "link", path: "/users/my-profile", label: "My Profile", icon: "fa-circle-user" },
   ] },
 ];

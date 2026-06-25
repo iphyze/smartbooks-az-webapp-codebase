@@ -1,0 +1,37 @@
+.users-last-login {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 96px;
+  color: var(--text-color, inherit);
+  line-height: 1.25;
+}
+
+.users-last-login__date {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.users-last-login__time {
+  color: var(--sub-text-color, #7f91aa);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.users-last-login--never {
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--sub-text-color, #7f91aa);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.users-last-login--never i {
+  font-size: 9px;
+  opacity: 0.8;
+}

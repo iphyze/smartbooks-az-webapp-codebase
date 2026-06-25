@@ -76,6 +76,7 @@ const EditUser = lazy(() => import('./pages/users/EditUser'));
 const ViewUser = lazy(() => import('./pages/users/ViewUser'));
 const MyProfile = lazy(() => import('./pages/users/MyProfile'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
+const ActivityLogsPage = lazy(() => import('./pages/activity-logs/ActivityLogsPage'));
 
 const AllowedRoute = ({ roles, children }) => (
   <ProtectedRoute>
@@ -187,6 +188,9 @@ const App = () => {
 
           {/* Notifications */}
           <Route path="/notifications" element={<AllowedRoute roles={TIMESHEET_ROLES}><NotificationsPage /></AllowedRoute>} />
+
+          {/* Activity Logs */}
+          <Route path="/activity-logs" element={<AllowedRoute roles={OPERATIONAL_ROLES}><ActivityLogsPage /></AllowedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

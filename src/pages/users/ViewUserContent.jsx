@@ -137,6 +137,13 @@ const ViewUserContent = ({ user }) => {
             <strong>{user.linked_staff_name || (role === "Timesheet" ? "Not linked" : "Not required")}</strong>
           </div>
         </article>
+        <article className="user-view-highlight">
+          <span className="user-view-highlight__icon"><i className="fas fa-right-to-bracket" /></span>
+          <div>
+            <span>Last login</span>
+            <strong title={formatDateTime(user.last_login_at)}>{formatDateTime(user.last_login_at)}</strong>
+          </div>
+        </article>
       </div>
 
       <div className="user-view-grid">

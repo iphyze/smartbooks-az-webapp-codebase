@@ -16,6 +16,7 @@ import ErrorModal from "../../components/modals/ErrorModal"; // 1. Import the ne
 import useJournalStore from "../../stores/useJournalStore";
 import useAuthStore from "../../stores/useAuthStore";
 import { formatCurrencyDecimals } from "../../utils/helper";
+import "./JournalOverview.css";
 
 const JournalOverview = () => {
   const [nav, setNav] = useState(false);
@@ -191,6 +192,46 @@ const JournalOverview = () => {
     }
   };
 
+  const getJournalAmount = (journal) => {
+    const currency = String(journal?.journal_currency || "NGN").toUpperCase();
+    const items = Array.isArray(journal?.items) ? journal.items : [];
+    const asAmount = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
+    };
+
+    const sumSideForCurrency = (side) => items.reduce((total, item) => {
+      if (String(item?.journal_currency || "").toUpperCase() !== currency) return total;
+      return total + asAmount(item?.[side]);
+    }, 0);
+
+    const ngnEquivalent = Math.max(
+      asAmount(journal?.debit_ngn),
+      asAmount(journal?.credit_ngn),
+      asAmount(journal?.debit),
+      asAmount(journal?.credit),
+    );
+
+    if (currency === "NGN") {
+      const lineAmount = Math.max(sumSideForCurrency("debit"), sumSideForCurrency("credit"));
+      return { currency, amount: lineAmount || ngnEquivalent, ngnEquivalent: null };
+    }
+
+    const lineAmount = Math.max(sumSideForCurrency("debit"), sumSideForCurrency("credit"));
+    const storedForeignAmount = Math.max(
+      asAmount(journal?.debit_others),
+      asAmount(journal?.credit_others),
+    );
+    const rate = asAmount(journal?.rate);
+    const convertedFallback = rate > 0 ? ngnEquivalent / rate : 0;
+
+    return {
+      currency,
+      amount: lineAmount || storedForeignAmount || convertedFallback,
+      ngnEquivalent,
+    };
+  };
+
   return (
     <div className={`main-container theme-${theme}`}>
       <Header setNav={setNav} nav={nav} />
@@ -284,7 +325,7 @@ const JournalOverview = () => {
                               <th onClick={() => handleSort('journal_type')} className="sortable">
                                 Type {getSortIcon('journal_type')}
                               </th>
-                              <th>Amt</th>
+                              <th>Amount</th>
                               <th>Actions</th>
                             </tr>
                           </thead>
@@ -311,7 +352,23 @@ const JournalOverview = () => {
                                     <span className={`badge-circle badge-circle-${voucherType(journal.journal_type)}`} /> {journal.journal_type}
                                   </span>
                                 </td>
-                                <td className="data-table-bold-text">{formatCurrencyDecimals(journal.debit, journal.journal_currency)}</td>
+                                <td className="data-table-bold-text journal-overview-amount-cell">
+                                  {(() => {
+                                    const displayAmount = getJournalAmount(journal);
+                                    return (
+                                      <div className="journal-overview-amount">
+                                        <span className="journal-overview-amount__primary">
+                                          {formatCurrencyDecimals(displayAmount.amount, displayAmount.currency)}
+                                        </span>
+                                        {displayAmount.ngnEquivalent !== null && (
+                                          <span className="journal-overview-amount__equivalent">
+                                            NGN equivalent {formatCurrencyDecimals(displayAmount.ngnEquivalent, "NGN")}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                                </td>
                                 <td>
                                   <div className="action-buttons">
                                     <button className="btn-edit" title="Edit" onClick={() => handleEditJournal(journal)}>

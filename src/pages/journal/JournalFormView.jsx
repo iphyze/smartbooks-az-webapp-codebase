@@ -602,7 +602,12 @@ export default function JournalFormView({
                     </div>
 
                     <div className="journal-form-field journal-form-field--amount">
-                      <label className={`input-form-label ${rowErr.amount ? "input-label-message" : ""}`} htmlFor={`amount_${item.id}`}>Amount</label>
+                      <label className={`input-form-label ${rowErr.amount ? "input-label-message" : ""}`} htmlFor={`amount_${item.id}`}>
+                        <span>Amount</span>
+                        {item.amount_auto_suggested ? (
+                          <em className="journal-form-auto-amount"><i className="fas fa-wand-magic-sparkles" /> Auto-filled</em>
+                        ) : null}
+                      </label>
                       <div className={`input-form-group ${rowErr.amount ? "input-form-error" : ""}`}>
                         <div className="form-wrapper journal-form-amount-wrapper">
                           <span className="journal-form-amount-prefix">{item.jcurrency || "NGN"}</span>

@@ -1,0 +1,35 @@
+.journal-overview-amount-cell {
+  min-width: 170px;
+}
+
+.journal-overview-amount {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  line-height: 1.25;
+}
+
+.journal-overview-amount__primary {
+  color: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.journal-overview-amount__equivalent {
+  color: var(--sub-text-color, #7f91aa);
+  font-size: 9px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .journal-overview-amount-cell {
+    min-width: 148px;
+  }
+
+  .journal-overview-amount__equivalent {
+    white-space: normal;
+  }
+}

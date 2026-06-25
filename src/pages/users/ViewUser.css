@@ -201,7 +201,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   padding: 24px 0;
 }
@@ -385,7 +385,7 @@
   }
 
   .user-view-highlight-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -407,6 +407,7 @@
     font-size: 19px;
   }
 
+  .user-view-highlight-grid,
   .user-view-grid,
   .user-view-audit-grid {
     grid-template-columns: 1fr;

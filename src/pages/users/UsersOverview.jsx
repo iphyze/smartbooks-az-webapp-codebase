@@ -13,6 +13,7 @@ import ChartSearchableSelect from "../../components/ChartSearchableSelect";
 import EmptyTable from "../../components/EmptyTable";
 import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationModal";
 import ErrorModal from "../../components/modals/ErrorModal";
+import "./UsersOverview.css";
 
 const ROLE_BADGE = {
   Admin: { color: "#7c3aed", bg: "rgba(124,58,237,0.12)" },
@@ -152,6 +153,31 @@ const UsersOverview = () => {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-GB") : "—";
 
+  const formatLastLogin = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return {
+      date: date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      time: date.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      full: date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+  };
+
   const getRoleBadge = (role) => {
     const style = ROLE_BADGE[role] || { color: "#6b7280", bg: "rgba(107,114,128,0.12)" };
     return (
@@ -262,6 +288,9 @@ const UsersOverview = () => {
                               <th onClick={() => handleSort("integrity")} className="sortable">
                                 Role {getSortIcon("integrity")}
                               </th>
+                              <th onClick={() => handleSort("last_login_at")} className="sortable">
+                                Last Login {getSortIcon("last_login_at")}
+                              </th>
                               <th onClick={() => handleSort("created_at")} className="sortable">
                                 Created {getSortIcon("created_at")}
                               </th>
@@ -291,6 +320,22 @@ const UsersOverview = () => {
                                 </td>
                                 <td>{u.email}</td>
                                 <td>{getRoleBadge(u.integrity)}</td>
+                                <td>
+                                  {(() => {
+                                    const lastLogin = formatLastLogin(u.last_login_at);
+                                    return lastLogin ? (
+                                      <div className="users-last-login" title={lastLogin.full}>
+                                        <span className="users-last-login__date">{lastLogin.date}</span>
+                                        <span className="users-last-login__time">{lastLogin.time}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="users-last-login users-last-login--never">
+                                        <i className="fas fa-clock" aria-hidden="true" />
+                                        Never signed in
+                                      </span>
+                                    );
+                                  })()}
+                                </td>
                                 <td className="number-tab">{formatDate(u.created_at)}</td>
                                 <td>
                                   <div className="action-buttons">

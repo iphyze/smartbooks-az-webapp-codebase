@@ -1276,3 +1276,96 @@
   .journal-form-shortcuts small { line-height: 1.7; }
   .journal-line-card__tools { justify-content: flex-start; }
 }
+
+/* Light-mode smart-entry helpers use the journal theme tokens rather than dark fallbacks. */
+.journal-builder.theme-light {
+  --journal-text: var(--jf-text);
+  --journal-muted: var(--jf-text-soft);
+  --journal-border: var(--jf-border);
+  --journal-control: var(--jf-input);
+  --journal-accent: var(--jf-brand);
+}
+
+.journal-builder.theme-dark {
+  --journal-text: var(--jf-text);
+  --journal-muted: var(--jf-muted);
+  --journal-border: var(--jf-border);
+  --journal-control: var(--jf-input);
+  --journal-accent: var(--jf-brand);
+}
+
+.journal-builder.theme-light .journal-form-shortcuts {
+  color: #53657a;
+  border-color: #d9e4ec;
+  background: #f7fafc;
+}
+
+.journal-builder.theme-light .journal-form-shortcuts > span,
+.journal-builder.theme-light .journal-form-shortcuts kbd,
+.journal-builder.theme-light .journal-smart-ledgers__label > span,
+.journal-builder.theme-light .journal-smart-ledger-chip__select {
+  color: #17283b;
+}
+
+.journal-builder.theme-light .journal-form-shortcuts small,
+.journal-builder.theme-light .journal-smart-ledgers__label small,
+.journal-builder.theme-light .journal-smart-ledger-chip__select span,
+.journal-builder.theme-light .journal-selected-ledger-meta {
+  color: #66788d;
+}
+
+.journal-builder.theme-light .journal-form-shortcuts kbd,
+.journal-builder.theme-light .journal-line-card__tools > button {
+  border-color: #d5e1ea;
+  color: #67809c;
+  background: #ffffff;
+}
+
+.journal-builder.theme-light .journal-line-card__tools > button:hover:not(:disabled) {
+  color: #07989d;
+  border-color: rgba(7, 152, 157, .35);
+  background: rgba(18, 185, 187, .08);
+}
+
+.journal-builder.theme-light .journal-smart-ledgers {
+  border-color: rgba(7, 152, 157, .24);
+  background: rgba(18, 185, 187, .065);
+}
+
+.journal-builder.theme-light .journal-smart-ledger-chip {
+  border-color: #d7e3eb;
+  background: #ffffff;
+  box-shadow: 0 5px 14px rgba(28, 52, 74, .035);
+}
+
+.journal-builder.theme-light .journal-smart-ledger-chip__star {
+  border-left-color: #d7e3eb;
+  color: #7890aa;
+}
+
+.journal-builder.theme-light .journal-smart-ledger-chip__star.is-favourite {
+  color: #d99a13;
+}
+
+.journal-form-field--amount .input-form-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.journal-form-auto-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--jf-brand);
+  font-size: 8.2px;
+  font-style: normal;
+  font-weight: 760;
+  letter-spacing: .035em;
+  text-transform: none;
+}
+
+.journal-form-auto-amount i {
+  font-size: 8px;
+}

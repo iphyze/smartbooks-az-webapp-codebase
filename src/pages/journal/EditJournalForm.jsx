@@ -66,6 +66,7 @@ function createEmptyItem(defaultDescription = "", journalDate = new Date()) {
     rate_touched: false,
     sides: "", jcurrency: "NGN",
     jrate: "", currencyRate: "", amount: "",
+    amount_touched: false, amount_auto_suggested: false,
     rate_date: "", ngn_rate: "", usd_rate: "", eur_rate: "", gbp_rate: "",
     _db_rate_date: null, _db_usd_rate: null, _db_ngn_rate: null,
     _db_eur_rate: null, _db_gbp_rate: null, _rate_resolved: true,
@@ -101,6 +102,8 @@ function createItemFromDb(row) {
     jrate: "",
     currencyRate: parseFloat(row.rate) || "",
     amount: String(parseFloat(rawAmount) || ""),
+    amount_touched: true,
+    amount_auto_suggested: false,
     rate_date: row.rate_date || "",
     ngn_rate: row.ngn_rate ?? "", usd_rate: row.usd_rate ?? "",
     eur_rate: row.eur_rate ?? "", gbp_rate: row.gbp_rate ?? "",
@@ -263,6 +266,38 @@ function calculateTotals(items) {
   };
 }
 
+
+function formatSuggestedAmount(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "";
+  return String(Number(numeric.toFixed(6)));
+}
+
+function getBalanceSuggestion(items, targetId, item) {
+  const totalsWithoutTarget = calculateTotals(items.filter((entry) => entry.id !== targetId));
+  const difference = normalizeBalanceValue(totalsWithoutTarget.grand_total);
+  const requiredSide = difference > EPSILON ? "Credit" : difference < -EPSILON ? "Debit" : "";
+
+  if (!requiredSide || item.sides !== requiredSide) return "";
+
+  const rate = item.jcurrency === "NGN" ? 1 : Number(item.currencyRate || 0);
+  if (!Number.isFinite(rate) || rate <= 0) return "";
+
+  return formatSuggestedAmount(Math.abs(difference) / rate);
+}
+
+function applyBalanceSuggestion(items, targetId, item) {
+  if (item.amount_touched && !item.amount_auto_suggested) return item;
+
+  const amount = getBalanceSuggestion(items, targetId, item);
+  return {
+    ...item,
+    amount,
+    amount_touched: false,
+    amount_auto_suggested: Boolean(amount),
+  };
+}
+
 /* ─────────────────────────────────────────────
    Main Component
 ───────────────────────────────────────────── */
@@ -387,8 +422,8 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     const effectiveId = findEffectiveRateId(rates, "NGN", journalDetails.journal_date);
     setMasterRateId(effectiveId || "");
 
-    setJournalItems((items) =>
-      items.map((item) => {
+    setJournalItems((items) => {
+      const updatedItems = items.map((item) => {
         if (item.jrate && (item.journal_date_touched || item.rate_touched)) return item;
         return {
           ...resolveItemRateForDate(
@@ -400,8 +435,12 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
           rate_touched: false,
           _rate_resolved: true,
         };
-      })
-    );
+      });
+
+      return updatedItems.map((item) =>
+        item.amount_auto_suggested ? applyBalanceSuggestion(updatedItems, item.id, item) : item
+      );
+    });
   }, [journalDetails.journal_date, rates]);
 
   /* ── Cost center options ── */
@@ -498,8 +537,8 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
       const nextDate = parseDateValue(value, journalDetails.journal_date);
       const previousHeaderDate = journalDetails.journal_date;
 
-      setJournalItems((items) =>
-        items.map((item) => {
+      setJournalItems((items) => {
+        const updatedItems = items.map((item) => {
           const shouldInheritHeaderDate =
             !item.journal_date_touched || sameDateKey(item.journal_date, previousHeaderDate);
 
@@ -517,8 +556,12 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             rate_touched: false,
             _rate_resolved: true,
           };
-        })
-      );
+        });
+
+        return updatedItems.map((item) =>
+          item.amount_auto_suggested ? applyBalanceSuggestion(updatedItems, item.id, item) : item
+        );
+      });
 
       const effectiveId = findEffectiveRateId(rates, "NGN", nextDate);
       setMasterRateId(effectiveId || "");
@@ -535,9 +578,17 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
         if (item.id !== id) return item;
         const updated = { ...item, [field]: value };
 
+        if (field === "amount") {
+          return {
+            ...updated,
+            amount_touched: String(value ?? "").trim() !== "",
+            amount_auto_suggested: false,
+          };
+        }
+
         if (field === "journal_date") {
           const lineDate = parseDateValue(value, journalDetails.journal_date);
-          return {
+          const resolved = {
             ...resolveItemRateForDate(
               { ...updated, journal_date: lineDate },
               rates,
@@ -549,6 +600,11 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             rate_touched: false,
             _rate_resolved: true,
           };
+          return applyBalanceSuggestion(prev, id, resolved);
+        }
+
+        if (field === "sides") {
+          return applyBalanceSuggestion(prev, id, updated);
         }
 
         if (field === "ledger_name") {
@@ -574,6 +630,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             rate_touched: false,
             _rate_resolved: true,
           });
+          return applyBalanceSuggestion(prev, id, updated);
         }
 
         return updated;
@@ -586,15 +643,17 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
       items.map((item) => {
         if (item.id !== id) return item;
         if (!rateId) {
-          return { ...clearItemRate(item), rate_touched: false, _rate_resolved: true };
+          const cleared = { ...clearItemRate(item), rate_touched: false, _rate_resolved: true };
+          return applyBalanceSuggestion(items, id, cleared);
         }
 
         const rateRecord = rates.find((rate) => String(rate.id) === String(rateId));
-        return {
+        const resolved = {
           ...applyRateRecord(item, rateRecord, rateId, item.jcurrency),
           rate_touched: true,
           _rate_resolved: true,
         };
+        return applyBalanceSuggestion(items, id, resolved);
       })
     );
   };
@@ -629,6 +688,8 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
           id: shell.id,
           db_id: null,
           journal_date: parseDateValue(source.journal_date, journalDetails.journal_date),
+          amount_touched: true,
+          amount_auto_suggested: false,
           _rate_resolved: true,
         }
       : shell;
@@ -686,6 +747,8 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     item.sides = totals.grand_total > 0 ? "Credit" : "Debit";
     item.jcurrency = currency;
     item.amount = String(Number((Math.abs(totals.grand_total) / rate).toFixed(6)));
+    item.amount_touched = false;
+    item.amount_auto_suggested = true;
     item.journal_description = journalDetails.main_journal_description || "Balancing entry";
     if (found) {
       item.jrate = masterRateId;
