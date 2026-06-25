@@ -4,9 +4,6 @@ import useAuthStore from '../stores/useAuthStore';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost/smartbooks-server/api',
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 const csrfCookieName = import.meta.env.VITE_CSRF_COOKIE_NAME || 'smartbooks_csrf_token';
@@ -29,6 +26,23 @@ export const clearCsrfToken = () => {
 
 api.interceptors.request.use(
   (config) => {
+    // FormData must be sent without a pre-set Content-Type. The browser/axios
+    // will add multipart/form-data together with the required boundary. Keeping
+    // the instance-level application/json header causes File values to be
+    // serialised as JSON objects, leaving PHP's $_FILES empty.
+    const isFormDataRequest =
+      typeof FormData !== 'undefined' && config.data instanceof FormData;
+
+    if (isFormDataRequest && config.headers) {
+      if (typeof config.headers.delete === 'function') {
+        config.headers.delete('Content-Type');
+        config.headers.delete('content-type');
+      } else {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    }
+
     // Migration safety: older stores still pass Authorization headers. Never send
     // them now that the JWT is protected inside an HttpOnly cookie.
     if (typeof config.headers?.delete === 'function') {
