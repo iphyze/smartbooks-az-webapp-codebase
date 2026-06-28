@@ -12,7 +12,6 @@ import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadTrialBalance from "./DownloadTrialBalance";
 import "./TrialBalance.css";
-import { useNavigate } from "react-router-dom";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -195,29 +194,65 @@ const EmptyPrompt = () => (
 ───────────────────────────────────────────── */
 const TotalsStrip = ({ totals, currency }) => {
   if (!totals) return null;
-  const bal = Number(totals.grand_total_balance || 0);
-  const isBalanced = Math.abs(bal) < 0.01;
+
+  const phases = [
+    {
+      key: "opening",
+      label: "Opening balance",
+      icon: "fa-door-open",
+      debit: totals.grand_total_opening_debit,
+      credit: totals.grand_total_opening_credit,
+    },
+    {
+      key: "movement",
+      label: "Period movement",
+      icon: "fa-arrow-right-arrow-left",
+      debit: totals.grand_total_movement_debit,
+      credit: totals.grand_total_movement_credit,
+    },
+    {
+      key: "closing",
+      label: "Closing balance",
+      icon: "fa-lock",
+      debit: totals.grand_total_closing_debit,
+      credit: totals.grand_total_closing_credit,
+    },
+  ];
+
+  const difference = Number(totals.grand_closing_difference ?? totals.grand_total_balance ?? 0);
+  const isBalanced = Math.abs(difference) < 0.01;
+
   return (
     <div className="tb-totals-strip">
-      <div className="tb-total-block">
-        <span className="tb-total-label">Total Debit</span>
-        <span className="tb-total-value tb-debit-val">{fmt(totals.grand_total_debit)}</span>
+      {phases.map((phase) => (
+        <div className={`tb-phase-card tb-phase-card--${phase.key}`} key={phase.key}>
+          <div className="tb-phase-heading">
+            <span className="tb-phase-icon"><i className={`fas ${phase.icon}`} /></span>
+            <span>{phase.label}</span>
+          </div>
+          <div className="tb-phase-values">
+            <div className="tb-phase-value">
+              <span className="tb-phase-side">Dr</span>
+              <strong className="tb-debit-val">{fmt(phase.debit)}</strong>
+            </div>
+            <div className="tb-phase-value">
+              <span className="tb-phase-side">Cr</span>
+              <strong className="tb-credit-val">{fmt(phase.credit)}</strong>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <div className={`tb-balance-card ${isBalanced ? "tb-balance-card--ok" : "tb-balance-card--warn"}`}>
+        <div className="tb-balance-icon">
+          <i className={`fas ${isBalanced ? "fa-check" : "fa-triangle-exclamation"}`} />
+        </div>
+        <div>
+          <span className="tb-balance-label">{isBalanced ? "Closing balance agrees" : "Closing difference"}</span>
+          <strong className="tb-balance-value">{isBalanced ? "0.00" : fmt(difference)}</strong>
+        </div>
+        <span className="tb-total-currency-pill">{currency}</span>
       </div>
-      <div className="tb-total-divider-v" />
-      <div className="tb-total-block">
-        <span className="tb-total-label">Total Credit</span>
-        <span className="tb-total-value tb-credit-val">{fmt(totals.grand_total_credit)}</span>
-      </div>
-      <div className="tb-total-divider-v" />
-      <div className={`tb-total-block ${isBalanced ? "tb-balanced-block" : "tb-unbalanced-block"}`}>
-        <span className="tb-total-label">
-          {isBalanced ? "✓ Balanced" : "⚠ Difference"}
-        </span>
-        <span className={`tb-total-value ${isBalanced ? "tb-balanced-val" : "tb-unbalanced-val"}`}>
-          {isBalanced ? "0.00" : fmt(bal)}
-        </span>
-      </div>
-      <div className="tb-total-currency-pill">{currency}</div>
     </div>
   );
 };
@@ -226,27 +261,32 @@ const TotalsStrip = ({ totals, currency }) => {
    CLASS SECTION
 ───────────────────────────────────────────── */
 const ClassSection = ({ className, group, search }) => {
-  const config  = CLASS_CONFIG[className] || { label: className, icon: "fa-folder", color: "#7aada6" };
+  const config = CLASS_CONFIG[className] || { label: className, icon: "fa-folder", color: "#7aada6" };
   const records = group?.records || [];
-  const navigate = useNavigate();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return records;
-    return records.filter(r =>
-      r.ledger_name?.toLowerCase().includes(q) ||
-      String(r.ledger_number)?.toLowerCase().includes(q)
+    return records.filter((record) =>
+      record.ledger_name?.toLowerCase().includes(q) ||
+      String(record.ledger_number)?.toLowerCase().includes(q)
     );
   }, [records, search]);
 
   if (filtered.length === 0 && search) return null;
 
-  const subDr = filtered.reduce((s, r) => s + (parseFloat(r.total_debit) || 0), 0);
-  const subCr = filtered.reduce((s, r) => s + (parseFloat(r.total_credit) || 0), 0);
+  const sum = (field) => filtered.reduce((total, record) => total + (Number(record[field]) || 0), 0);
+  const subtotals = {
+    openingDebit: sum("opening_debit"),
+    openingCredit: sum("opening_credit"),
+    movementDebit: sum("movement_debit"),
+    movementCredit: sum("movement_credit"),
+    closingDebit: sum("closing_debit"),
+    closingCredit: sum("closing_credit"),
+  };
 
   return (
     <div className="tb-class-section">
-      {/* Class header */}
       <div className="tb-class-header" style={{ borderLeftColor: config.color }}>
         <div className="tb-class-header-left">
           <div className="tb-class-icon-wrap" style={{ background: `${config.color}15`, color: config.color }}>
@@ -259,43 +299,64 @@ const ClassSection = ({ className, group, search }) => {
             </span>
           </div>
         </div>
+
         <div className="tb-class-header-right">
+          <span className="tb-class-summary-title">Closing</span>
           <div className="tb-class-subtotal">
             <span className="tb-class-subtotal-label">Dr</span>
-            <span className="tb-class-subtotal-val tb-debit-val">{fmt(subDr)}</span>
+            <span className="tb-class-subtotal-val tb-debit-val">{fmt(subtotals.closingDebit)}</span>
           </div>
           <div className="tb-class-subtotal-div" />
           <div className="tb-class-subtotal">
             <span className="tb-class-subtotal-label">Cr</span>
-            <span className="tb-class-subtotal-val tb-credit-val">{fmt(subCr)}</span>
+            <span className="tb-class-subtotal-val tb-credit-val">{fmt(subtotals.closingCredit)}</span>
           </div>
         </div>
       </div>
 
-      {/* Records table */}
       <div className="tb-table-wrap">
-        <table className="tb-table">
+        <table className="tb-table tb-table--expanded">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Ledger No.</th>
-              <th className="tb-th-wide">Ledger Name</th>
+            <tr className="tb-table-group-head">
+              <th rowSpan={2}>#</th>
+              <th rowSpan={2}>Ledger No.</th>
+              <th rowSpan={2} className="tb-th-wide">Ledger Name</th>
+              <th colSpan={2} className="tb-head-opening">Opening Balance</th>
+              <th colSpan={2} className="tb-head-movement">Period Movement</th>
+              <th colSpan={2} className="tb-head-closing">Closing Balance</th>
+            </tr>
+            <tr className="tb-table-sub-head">
+              <th className="tb-th-num">Debit</th>
+              <th className="tb-th-num">Credit</th>
+              <th className="tb-th-num">Debit</th>
+              <th className="tb-th-num">Credit</th>
               <th className="tb-th-num">Debit</th>
               <th className="tb-th-num">Credit</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((row, i) => {
-              const isActive = Number(row.total_debit) !== 0 || Number(row.total_credit) !== 0;
+            {filtered.map((row, index) => {
+              const isActive = [
+                row.opening_debit,
+                row.opening_credit,
+                row.movement_debit,
+                row.movement_credit,
+                row.closing_debit,
+                row.closing_credit,
+              ].some((value) => Math.abs(Number(value) || 0) >= 0.005);
+
               return (
                 <tr key={row.ledger_number} className={!isActive ? "tb-row-zero" : ""}>
-                  <td className="tb-td-sn">{i + 1}</td>
+                  <td className="tb-td-sn">{index + 1}</td>
                   <td className="tb-mono">
-                    <button 
-                      className="ls-ref-link"
-                      onClick={() => window.open(`/ledger/view/${row.ledger_number}`, '_blank')}
+                    <button
+                      type="button"
+                      className="tb-ledger-link"
+                      onClick={() => window.open(`/ledger/view/${row.ledger_number}`, "_blank", "noopener,noreferrer")}
+                      aria-label={`Open ledger ${row.ledger_number}`}
                     >
                       {row.ledger_number}
+                      <i className="fas fa-arrow-up-right-from-square" />
                     </button>
                   </td>
                   <td>
@@ -304,20 +365,27 @@ const ClassSection = ({ className, group, search }) => {
                       {isActive && <span className="tb-active-dot" style={{ background: config.color }} />}
                     </div>
                   </td>
-                  <td className="tb-td-num">{fmt(row.total_debit)}</td>
-                  <td className="tb-td-num">{fmt(row.total_credit)}</td>
+                  <td className="tb-td-num tb-cell-opening">{fmt(row.opening_debit)}</td>
+                  <td className="tb-td-num tb-cell-opening">{fmt(row.opening_credit)}</td>
+                  <td className="tb-td-num tb-cell-movement">{fmt(row.movement_debit)}</td>
+                  <td className="tb-td-num tb-cell-movement">{fmt(row.movement_credit)}</td>
+                  <td className="tb-td-num tb-cell-closing">{fmt(row.closing_debit)}</td>
+                  <td className="tb-td-num tb-cell-closing">{fmt(row.closing_credit)}</td>
                 </tr>
               );
             })}
           </tbody>
-          {/* Section subtotal row */}
           <tfoot>
             <tr className="tb-tfoot-row" style={{ "--class-color": config.color }}>
               <td colSpan={3} className="tb-tfoot-label" style={{ color: config.color }}>
                 Total {config.label}
               </td>
-              <td className="tb-td-num tb-tfoot-val">{fmt(subDr)}</td>
-              <td className="tb-td-num tb-tfoot-val">{fmt(subCr)}</td>
+              <td className="tb-td-num tb-tfoot-val">{fmt(subtotals.openingDebit)}</td>
+              <td className="tb-td-num tb-tfoot-val">{fmt(subtotals.openingCredit)}</td>
+              <td className="tb-td-num tb-tfoot-val">{fmt(subtotals.movementDebit)}</td>
+              <td className="tb-td-num tb-tfoot-val">{fmt(subtotals.movementCredit)}</td>
+              <td className="tb-td-num tb-tfoot-val tb-tfoot-closing">{fmt(subtotals.closingDebit)}</td>
+              <td className="tb-td-num tb-tfoot-val tb-tfoot-closing">{fmt(subtotals.closingCredit)}</td>
             </tr>
           </tfoot>
         </table>
@@ -332,7 +400,7 @@ const ClassSection = ({ className, group, search }) => {
 const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
   const [search, setSearch] = useState("");
 
-  const totalLedgers = Object.values(data).reduce((s, g) => s + (g?.records?.length || 0), 0);
+  const totalLedgers = Object.values(data || {}).reduce((s, g) => s + (g?.records?.length || 0), 0);
 
   const pdfDocument = useMemo(() => (
     <DownloadTrialBalance data={data} totals={totals} meta={meta} />

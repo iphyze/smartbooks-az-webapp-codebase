@@ -89,7 +89,7 @@ const useJournalStore = create(
       deleteSingleLine: async (lineItemId) => {
         const token = useAuthStore.getState().token;
         try {
-          await api.delete('/journal/delete-single-journal', {
+          await api.delete('/journal/delete-single-line', {
             headers: { Authorization: `Bearer ${token}` },
             data: { line_item_id: lineItemId },
           });
