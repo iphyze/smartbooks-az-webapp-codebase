@@ -11,7 +11,7 @@
  *  6. CAT_CONFIG extended to include PettyCash and OutsourcingAgent
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DatePicker from "react-datepicker";
 import Select from "react-select";
@@ -24,6 +24,7 @@ import useFXRevaluationStore from "../../stores/useFXRevaluationStore";
 import useRateSearchStore from "../../stores/useRateSearchStore";
 import "./FXRevaluation.css";
 import { fmt, fmtDate, fmtDatetime, toLocalISO } from "../../utils/helper";
+import useReportPagePersistence, { parseReportDate } from "../../hooks/useReportPagePersistence";
 
 const CURRENCY_OPTIONS = [
   { value: "USD", label: "USD — US Dollar" },
@@ -693,14 +694,58 @@ const FXRevaluation = () => {
   const { theme } = useThemeStore();
   const { preview, posting, postingZero, reversing, fetchRevaluation, postRevaluation, postZeroRevaluation, reverseRevaluation } = useFXRevaluationStore();
   const { rates, searchRates, isLoading: ratesLoading } = useRateSearchStore();
+  const previousCurrencyRef = useRef(null);
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredDateFrom = parseReportDate(saved.dateFrom);
+    const restoredDateTo = parseReportDate(saved.dateTo);
+    const restoredCurrency = saved.currency || null;
+    const restoredRateDate = saved.rateDate || null;
+
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setCurrency(restoredCurrency);
+    setRateDate(restoredRateDate);
+
+    if (saved.hasCalculated && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
+      return fetchRevaluation({
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        currency: restoredCurrency.value,
+        rate_date: restoredRateDate,
+      }).then((result) => {
+        if (result) setHasCalculated(true);
+      });
+    }
+  }, [fetchRevaluation]);
+
+  useReportPagePersistence(
+    "smartbooks:report:fx-revaluation",
+    {
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      currency,
+      rateDate,
+      hasCalculated,
+    },
+    restoreReportState
+  );
 
   useEffect(() => { document.title = "Smartbooks | FX Gain / Loss"; }, []);
 
   useEffect(() => {
-    if (currency?.value) {
+    const currentCurrency = currency?.value || null;
+
+    if (
+      currentCurrency &&
+      previousCurrencyRef.current &&
+      previousCurrencyRef.current !== currentCurrency
+    ) {
       setRateDate(null);
-      searchRates("");
     }
+
+    if (currentCurrency) searchRates("");
+    previousCurrencyRef.current = currentCurrency;
   }, [currency?.value, searchRates]);
 
   const rateOptions = useMemo(() => {

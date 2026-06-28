@@ -12,6 +12,7 @@ import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadTrialBalance from "./DownloadTrialBalance";
 import "./TrialBalance.css";
+import useReportPagePersistence, { openReportDetail, parseReportDate } from "../../hooks/useReportPagePersistence";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -352,7 +353,7 @@ const ClassSection = ({ className, group, search }) => {
                     <button
                       type="button"
                       className="tb-ledger-link"
-                      onClick={() => window.open(`/ledger/view/${row.ledger_number}`, "_blank", "noopener,noreferrer")}
+                      onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
                       aria-label={`Open ledger ${row.ledger_number}`}
                     >
                       {row.ledger_number}
@@ -397,8 +398,7 @@ const ClassSection = ({ className, group, search }) => {
 /* ─────────────────────────────────────────────
    RESULTS VIEW
 ───────────────────────────────────────────── */
-const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
-  const [search, setSearch] = useState("");
+const ResultsView = ({ data, totals, meta, onExcel, excelLoading, search, setSearch }) => {
 
   const totalLedgers = Object.values(data || {}).reduce((s, g) => s + (g?.records?.length || 0), 0);
 
@@ -503,6 +503,7 @@ const TrialBalance = () => {
   const [hasSearched,  setHasSearched]  = useState(false);
   const [excelLoading, setExcelLoading] = useState(false);
   const [errors,       setErrors]       = useState({});
+  const [search,       setSearch]       = useState("");
 
   const [dateFrom, setDateFrom] = useState(null);
   const [dateTo,   setDateTo]   = useState(null);
@@ -511,6 +512,43 @@ const TrialBalance = () => {
 
   const { theme } = useThemeStore();
   const { trialBalance, fetchTrialBalance, downloadTrialBalanceExcel } = useLedgerReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredDateFrom = parseReportDate(saved.dateFrom);
+    const restoredDateTo = parseReportDate(saved.dateTo);
+    const restoredCurrency = saved.currency || null;
+    const restoredZeroBalance = saved.zerobal || ZEROBAL_OPTIONS[1];
+
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setCurrency(restoredCurrency);
+    setZerobal(restoredZeroBalance);
+    setSearch(saved.search || "");
+
+    if (saved.hasSearched && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
+      return fetchTrialBalance({
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        currency: restoredCurrency.value,
+        zerobal: restoredZeroBalance?.value || "No",
+      }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchTrialBalance]);
+
+  useReportPagePersistence(
+    "smartbooks:report:trial-balance",
+    {
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      currency,
+      zerobal,
+      search,
+      hasSearched,
+    },
+    restoreReportState
+  );
 
   useEffect(() => { document.title = "Smartbooks | Trial Balance"; }, []);
 
@@ -587,6 +625,8 @@ const TrialBalance = () => {
                     meta={trialBalance.meta}
                     onExcel={handleExcel}
                     excelLoading={excelLoading}
+                    search={search}
+                    setSearch={setSearch}
                   />
                 </motion.div>
               )}

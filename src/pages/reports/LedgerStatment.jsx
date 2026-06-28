@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -15,6 +14,7 @@ import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import "./LedgerStatement.css";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import DownloadLedgerStatement from "./DownloadLedgerStatement";
+import useReportPagePersistence, { openReportDetail, parseReportDate } from "../../hooks/useReportPagePersistence";
 
 
 /* ─────────────────────────────────────────────
@@ -322,7 +322,6 @@ const ReportMeta = ({ meta, title }) => (
    SINGLE LEDGER BLOCK
 ───────────────────────────────────────────── */
 const LedgerBlock = ({ ledger, index }) => {
-  const navigate = useNavigate();
   const { summary, transactions, ledger_number, ledger_name, ledger_currency } = ledger;
 
   return (
@@ -410,9 +409,12 @@ const LedgerBlock = ({ ledger, index }) => {
                     </span>
                   </td>
                   <td>
-                    <button 
+                    <button
+                      type="button"
                       className="ls-ref-link"
-                      onClick={() => window.open(`/ledger/view/${t.ref}`, '_blank')}
+                      onClick={() => openReportDetail(`/journal/view/${t.ref}`)}
+                      aria-label={`Open journal ${t.ref} in a new tab`}
+                      title="Open journal in a new tab"
                     >
                       {t.ref}
                     </button>
@@ -573,6 +575,54 @@ const LedgerStatement = () => {
 
   const { theme } = useThemeStore();
   const { ledgerStatement, fetchLedgerStatement, downloadLedgerStatementExcel } = useLedgerReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredFromLedger = saved.fromLedger || null;
+    const restoredToLedger = saved.toLedger || null;
+    const restoredDateFrom = parseReportDate(saved.dateFrom);
+    const restoredDateTo = parseReportDate(saved.dateTo);
+    const restoredFunctionalCurrency = saved.functionalCurrency || null;
+
+    setFromLedger(restoredFromLedger);
+    setToLedger(restoredToLedger);
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setFunctionalCurrency(restoredFunctionalCurrency);
+
+    if (
+      saved.hasSearched &&
+      restoredFromLedger?.value &&
+      restoredToLedger?.value &&
+      restoredDateFrom &&
+      restoredDateTo &&
+      restoredFunctionalCurrency?.value
+    ) {
+      return fetchLedgerStatement({
+        fromledger: restoredFromLedger.value,
+        fromledgerName: restoredFromLedger.name,
+        toledger: restoredToLedger.value,
+        toledgerName: restoredToLedger.name,
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        functionalCurrency: restoredFunctionalCurrency.value,
+      }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchLedgerStatement]);
+
+  useReportPagePersistence(
+    "smartbooks:report:ledger-statement",
+    {
+      fromLedger,
+      toLedger,
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      functionalCurrency,
+      hasSearched,
+    },
+    restoreReportState
+  );
 
   const links = [
     { label: "Home", to: "/", active: true },

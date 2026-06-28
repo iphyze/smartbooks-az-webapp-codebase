@@ -38,6 +38,9 @@
   --jf-row-shadow: 0 8px 23px rgba(28, 52, 74, 0.045);
   --jf-select-option: #ffffff;
   --jf-select-hover: #eef8f8;
+  --jf-line-even: #eef6f8;
+  --jf-line-even-header: #e7f2f5;
+  --jf-line-even-border: #cfe3e8;
 
   --f-bg: #ffffff;
   --f-surface: #f7fafc;
@@ -71,6 +74,9 @@
   --jf-row-shadow: 0 10px 28px rgba(0, 0, 0, 0.13);
   --jf-select-option: #16243a;
   --jf-select-hover: #1d3247;
+  --jf-line-even: #111f33;
+  --jf-line-even-header: #152740;
+  --jf-line-even-border: #31506a;
 
   --f-bg: #0b1524;
   --f-surface: #111e31;
@@ -551,13 +557,28 @@
   box-shadow: var(--jf-row-shadow);
 }
 
+/* Alternate line surfaces make long journal entries easier to scan without
+   changing any form behaviour. This shared stylesheet covers Create and Edit. */
+.journal-form-lines > .journal-line-card:nth-child(even) {
+  border-color: var(--jf-line-even-border);
+  background: var(--jf-line-even);
+}
+
+.journal-form-lines > .journal-line-card:nth-child(even) .journal-line-card__header {
+  background: var(--jf-line-even-header);
+}
+
 .journal-line-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
+  width: 100%;
+  box-sizing: border-box;
   padding: 14px 16px;
   border-bottom: 1px solid var(--jf-border-soft);
+  border-radius: 14px 14px 0 0;
+  background-clip: padding-box;
 }
 
 .journal-line-card__identity,

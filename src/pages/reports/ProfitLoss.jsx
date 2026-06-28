@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import DatePicker from "react-datepicker";
 import Select from "react-select";
@@ -13,6 +12,7 @@ import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadProfitLoss from "./DownloadProfitLoss";
 import "./ProfitLoss.css";
+import useReportPagePersistence, { openReportDetail, parseReportDate } from "../../hooks/useReportPagePersistence";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -89,7 +89,6 @@ const MilestoneRow = ({ label, value, isPAT }) => {
    CATEGORY SECTION
 ───────────────────────────────────────────── */
 const CategorySection = ({ config, group, currency }) => {
-  const navigate = useNavigate();
   const records = group?.records || [];
   const total   = group?.total   || 0;
 
@@ -133,7 +132,7 @@ const CategorySection = ({ config, group, currency }) => {
                     <td>
                       <button
                         className="pl-ledger-link"
-                        onClick={() => window.open(`/ledger/view/${row.ledger_number}`, '_blank')}
+                        onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
                         title={`View ledger ${row.ledger_number}`}
                       >
                         {row.ledger_number}
@@ -415,6 +414,41 @@ const ProfitLoss = () => {
 
   const { theme } = useThemeStore();
   const { profitLoss, fetchProfitLoss, downloadProfitLossExcel } = useLedgerReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredDateFrom = parseReportDate(saved.dateFrom);
+    const restoredDateTo = parseReportDate(saved.dateTo);
+    const restoredCurrency = saved.currency || null;
+    const restoredZeroBalance = saved.zerobal || ZEROBAL_OPTIONS[1];
+
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setCurrency(restoredCurrency);
+    setZerobal(restoredZeroBalance);
+
+    if (saved.hasSearched && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
+      return fetchProfitLoss({
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        currency: restoredCurrency.value,
+        zerobal: restoredZeroBalance?.value || "No",
+      }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchProfitLoss]);
+
+  useReportPagePersistence(
+    "smartbooks:report:profit-loss",
+    {
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      currency,
+      zerobal,
+      hasSearched,
+    },
+    restoreReportState
+  );
 
   useEffect(() => { document.title = "Smartbooks | Profit & Loss"; }, []);
 

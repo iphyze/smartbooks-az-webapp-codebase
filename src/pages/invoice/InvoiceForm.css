@@ -42,6 +42,9 @@
   --invoice-section-shadow: 0 9px 25px rgba(25, 48, 72, 0.045);
   --invoice-hero-gradient: linear-gradient(135deg, rgba(11, 174, 181, 0.11), rgba(11, 174, 181, 0.025) 56%, transparent 100%);
   --invoice-row-hover: rgba(11, 174, 181, 0.045);
+  --invoice-line-even: #f1f7f9;
+  --invoice-line-even-header: #e9f3f6;
+  --invoice-line-even-border: #cfe2e8;
 
   --f-bg: #ffffff;
   --f-surface: #f7fafc;
@@ -74,6 +77,9 @@
   --invoice-section-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
   --invoice-hero-gradient: linear-gradient(135deg, rgba(21, 195, 200, 0.12), rgba(21, 195, 200, 0.025) 58%, transparent 100%);
   --invoice-row-hover: rgba(21, 195, 200, 0.055);
+  --invoice-line-even: #101f33;
+  --invoice-line-even-header: #14263e;
+  --invoice-line-even-border: #31506a;
 
   --f-bg: #0d1728;
   --f-surface: #111d30;
@@ -1193,6 +1199,17 @@
   background: var(--invoice-panel);
   box-shadow: 0 11px 28px rgba(5, 18, 35, 0.07);
   transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+/* Shared by Create Invoice and Edit Invoice. Even service lines use a slightly
+   different surface so users can follow wide forms more accurately. */
+.invoice-line-list > .invoice-line-card:nth-child(even) {
+  border-color: var(--invoice-line-even-border);
+  background: var(--invoice-line-even);
+}
+
+.invoice-line-list > .invoice-line-card:nth-child(even) .invoice-line-card__header {
+  background: var(--invoice-line-even-header);
 }
 
 .invoice-line-card:hover {

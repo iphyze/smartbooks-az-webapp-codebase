@@ -27,7 +27,7 @@ const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFile
             <label
               className="br-drop"
               style={{ minHeight: 80 }}
-              title="Click to replace the existing file"
+              title="Upload a refreshed statement file"
             >
               <input
                 type="file"
@@ -40,7 +40,7 @@ const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFile
               <span className="br-drop-name" style={{ fontSize: 12 }}>
                 Current: <strong>{currentName || '—'}</strong>
               </span>
-              <span className="br-drop-hint">Click to replace (optional)</span>
+              <span className="br-drop-hint">Upload refreshed file (optional)</span>
             </label>
           ) : (
             <div className="br-drop br-drop--ok" style={{ minHeight: 80, cursor: 'default' }}>
@@ -51,7 +51,7 @@ const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFile
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#f47c7c', marginTop: 4 }}
                 onClick={() => { onClear(null); if (inputRef.current) inputRef.current.value = ''; }}
               >
-                <i className="fas fa-xmark" style={{ marginRight: 4 }} />Remove replacement
+                <i className="fas fa-xmark" style={{ marginRight: 4 }} />Remove refreshed file
               </button>
             </div>
           )}
@@ -192,7 +192,7 @@ const EditBankRecon = () => {
                 <div className="invoice-form-header">
                   <div className="invoice-form-htxt">Edit Reconciliation</div>
                   <div className="invoice-form-sub-htxt">
-                    Update header details and optionally replace the statement files. Replacing a file will re-process all transactions and reset all existing matches for that side.
+                    Update the reconciliation details or upload a refreshed statement. Existing lines are updated by reference, unchanged rows are kept once, and only genuinely new transactions are added.
                   </div>
                 </div>
 

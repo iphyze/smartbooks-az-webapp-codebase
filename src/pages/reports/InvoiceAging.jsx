@@ -11,6 +11,7 @@ import useThemeStore from "../../stores/useThemeStore";
 import useInvoiceAgingReportStore from "../../stores/useInvoiceAgingReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import "./InvoiceAging.css";
+import useReportPagePersistence from "../../hooks/useReportPagePersistence";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -348,6 +349,23 @@ const InvoiceAging = () => {
 
   const { theme } = useThemeStore();
   const { agingReport, fetchAgingReport, downloadAgingExcel } = useInvoiceAgingReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredCurrency = saved.currency || null;
+    setCurrency(restoredCurrency);
+
+    if (saved.hasSearched && restoredCurrency?.value) {
+      return fetchAgingReport({ currency: restoredCurrency.value }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchAgingReport]);
+
+  useReportPagePersistence(
+    "smartbooks:report:invoice-aging",
+    { currency, hasSearched },
+    restoreReportState
+  );
 
   useEffect(() => { document.title = "Smartbooks | Invoice Aging Report"; }, []);
 

@@ -16,6 +16,7 @@ import { isTimesheetOnly } from '../../utils/permissions';
 import DownloadTimesheetReport from './DownloadTimesheetReport';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
 import './TimesheetReport.css';
+import useReportPagePersistence, { parseReportDate } from '../../hooks/useReportPagePersistence';
 
 const ALL_STAFF_OPTION = { value: 'All Staff', label: 'All Staff' };
 const DEFAULT_LIMIT = 25;
@@ -430,6 +431,45 @@ const TimesheetReport = () => {
   const { user } = useAuthStore();
   const isTimesheetUser = isTimesheetOnly(user);
   const { timesheetReport, fetchPaginatedTimesheetReport, fetchTimesheetReportForExport, downloadTimesheetExcel } = useTimesheetReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredDateFrom = parseReportDate(saved.dateFrom) || monthStartDate();
+    const restoredDateTo = parseReportDate(saved.dateTo) || new Date();
+    const restoredStaffFilter = saved.staffFilter || ALL_STAFF_OPTION;
+    const restoredSearch = saved.search || '';
+    const restoredPage = Math.max(1, Number(saved.page || 1));
+
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setStaffFilter(restoredStaffFilter);
+    setSearch(restoredSearch);
+
+    if (saved.hasSearched) {
+      return fetchPaginatedTimesheetReport({
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        staff: isTimesheetUser ? 'My Timesheet' : (restoredStaffFilter?.value || 'All Staff'),
+        search: restoredSearch.trim(),
+        page: restoredPage,
+        limit: pageLimit,
+      }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchPaginatedTimesheetReport, isTimesheetUser, pageLimit]);
+
+  useReportPagePersistence(
+    'smartbooks:report:timesheet',
+    {
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      staffFilter,
+      search,
+      page: timesheetReport.pagination?.page || 1,
+      hasSearched,
+    },
+    restoreReportState
+  );
 
   useEffect(() => { document.title = 'Smartbooks | Timesheet Report'; }, []);
 

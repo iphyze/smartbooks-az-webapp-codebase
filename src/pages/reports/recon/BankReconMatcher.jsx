@@ -12,6 +12,7 @@ import { LineCard } from './BankReconCommon';
 import BankReconClassifyModal from './BankReconClassifyModal';
 import BankReconEditLineModal from './BankReconEditLineModal';
 import BankReconDeleteConfirmModal from './BankReconDeleteConfirmModal';
+import BankReconUnclassifyConfirmModal from './BankReconUnclassifyConfirmModal';
 
 /* ── Status filter tabs ────────────────────────────────────── */
 const STATUS_TABS = [
@@ -318,6 +319,7 @@ const BankReconMatcher = () => {
   const [classifyTarget, setClassifyTarget] = useState(null);
   const [editTarget,     setEditTarget]     = useState(null); // { line, source }
   const [deleteTarget,   setDeleteTarget]   = useState(null); // { source, lineIds, label, sideLabel, countText }
+  const [unclassifyTarget, setUnclassifyTarget] = useState(null); // { source, lineIds, label, titleSide }
 
   const toggleId = (setter) => (id) => setter((ids) => (
     ids.includes(Number(id)) ? ids.filter((x) => x !== Number(id)) : [...ids, Number(id)]
@@ -380,12 +382,32 @@ const BankReconMatcher = () => {
     if (res) setEditTarget(null);
   };
 
-  const handleUnclassify = async (source, lineIds) => {
-    if (!lineIds?.length) return;
-    await unclassifyLines({ source, lineIds });
-    // Clear these IDs from selections
-    if (source === 'bank')   setSelectedBankIds((ids) => ids.filter((id) => !lineIds.includes(id)));
-    if (source === 'ledger') setSelectedLedgerIds((ids) => ids.filter((id) => !lineIds.includes(id)));
+  const requestUnclassify = (source, lineIds, label = '') => {
+    const ids = [...new Set((Array.isArray(lineIds) ? lineIds : [lineIds]).map(Number).filter(Boolean))];
+    if (!ids.length) return;
+
+    setUnclassifyTarget({
+      source,
+      lineIds: ids,
+      label,
+      titleSide: source === 'bank' ? 'Bank Statement' : 'Ledger',
+    });
+  };
+
+  const confirmUnclassify = async () => {
+    if (!unclassifyTarget?.lineIds?.length) return;
+
+    const { source, lineIds } = unclassifyTarget;
+    const result = await unclassifyLines({ source, lineIds });
+    if (!result) return;
+
+    if (source === 'bank') {
+      setSelectedBankIds((ids) => ids.filter((id) => !lineIds.includes(id)));
+    }
+    if (source === 'ledger') {
+      setSelectedLedgerIds((ids) => ids.filter((id) => !lineIds.includes(id)));
+    }
+    setUnclassifyTarget(null);
   };
 
   const handleDeleteLines = (source, lineIds, label = '') => {
@@ -480,7 +502,7 @@ const BankReconMatcher = () => {
           {/* Unclassify bulk — only show when classified lines are selected */}
           {selectedBankIds.some((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status)) && (
             <button className="br-btn-ghost-sm" style={{ color: '#f47c7c', borderColor: '#f47c7c' }}
-              onClick={() => handleUnclassify('bank', selectedBankIds.filter((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status)))}
+              onClick={() => requestUnclassify('bank', selectedBankIds.filter((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status)))}
               disabled={saving}
             >
               <i className="fas fa-tag-slash" />Remove from Class
@@ -488,7 +510,7 @@ const BankReconMatcher = () => {
           )}
           {selectedLedgerIds.some((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status)) && (
             <button className="br-btn-ghost-sm" style={{ color: '#f47c7c', borderColor: '#f47c7c' }}
-              onClick={() => handleUnclassify('ledger', selectedLedgerIds.filter((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status)))}
+              onClick={() => requestUnclassify('ledger', selectedLedgerIds.filter((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status)))}
               disabled={saving}
             >
               <i className="fas fa-tag-slash" />Remove from Class
@@ -585,7 +607,7 @@ const BankReconMatcher = () => {
                 onUnmatch={unmatchLines}
                 onClassify={(lineIds, source) => setClassifyTarget({ source, lineIds })}
                 onEditLine={(l, s) => setEditTarget({ line: l, source: s })}
-                onUnclassify={(lineId) => handleUnclassify('bank', [lineId])}
+                onUnclassify={(lineId) => requestUnclassify('bank', [lineId], line.reference || line.description?.slice(0, 50))}
                 onDeleteLine={(line) => handleDeleteLines('bank', [line.id], line.reference || line.description?.slice(0, 50))}
               />
             ))}
@@ -644,7 +666,7 @@ const BankReconMatcher = () => {
                 onUnmatch={unmatchLines}
                 onClassify={(lineIds, source) => setClassifyTarget({ source, lineIds })}
                 onEditLine={(l, s) => setEditTarget({ line: l, source: s })}
-                onUnclassify={(lineId) => handleUnclassify('ledger', [lineId])}
+                onUnclassify={(lineId) => requestUnclassify('ledger', [lineId], line.reference || line.description?.slice(0, 50))}
                 onDeleteLine={(line) => handleDeleteLines('ledger', [line.id], line.reference || line.description?.slice(0, 50))}
               />
             ))}
@@ -676,6 +698,14 @@ const BankReconMatcher = () => {
             saving={saving}
             onClose={() => !saving && setDeleteTarget(null)}
             onConfirm={confirmDeleteLines}
+          />
+        )}
+        {unclassifyTarget && (
+          <BankReconUnclassifyConfirmModal
+            target={unclassifyTarget}
+            saving={saving}
+            onClose={() => !saving && setUnclassifyTarget(null)}
+            onConfirm={confirmUnclassify}
           />
         )}
       </AnimatePresence>

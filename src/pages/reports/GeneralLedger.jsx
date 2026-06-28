@@ -11,10 +11,10 @@ import useThemeStore from "../../stores/useThemeStore";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import "./GeneralLedger.css";
-import { useNavigate } from "react-router-dom";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import DownloadGeneralLedger from "./DownloadGeneralLedger";
 import { fmt, fmtDate, toLocalISO } from "../../utils/helper";
+import useReportPagePersistence, { openReportDetail, parseReportDate } from "../../hooks/useReportPagePersistence";
 
 
 const CURRENCY_OPTIONS = [
@@ -175,8 +175,6 @@ const TotalsStrip = ({ totals, currency }) => {
 const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSearch }) => {
   const [sortCol, setSortCol]   = useState("ledger_name");
   const [sortDir, setSortDir]   = useState("asc");
-  const navigate = useNavigate();
-
   const handleSort = (col) => {
     if (sortCol === col) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortCol(col); setSortDir("asc"); }
@@ -324,7 +322,7 @@ const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSe
                       <td className="gl-mono">
                         <button 
                           className="ls-ref-link"
-                          onClick={() => window.open(`/ledger/view/${row.ledger_number}`, '_blank')}
+                          onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
                         >
                           {row.ledger_number}
                         </button>
@@ -386,6 +384,39 @@ const GeneralLedger = () => {
 
   const { theme } = useThemeStore();
   const { generalLedger, fetchGeneralLedger, downloadGeneralLedgerExcel } = useLedgerReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredDateFrom = parseReportDate(saved.dateFrom);
+    const restoredDateTo = parseReportDate(saved.dateTo);
+    const restoredCurrency = saved.currency || null;
+
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setCurrency(restoredCurrency);
+    setSearch(saved.search || "");
+
+    if (saved.hasSearched && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
+      return fetchGeneralLedger({
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        currency: restoredCurrency.value,
+      }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchGeneralLedger]);
+
+  useReportPagePersistence(
+    "smartbooks:report:general-ledger",
+    {
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      currency,
+      search,
+      hasSearched,
+    },
+    restoreReportState
+  );
 
   useEffect(() => {
     document.title = "Smartbooks | General Ledger";

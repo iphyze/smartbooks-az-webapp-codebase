@@ -12,6 +12,7 @@ import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadBalanceSheet from "./DownloadBalanceSheet";
 import "./BalanceSheet.css";
+import useReportPagePersistence, { openReportDetail, parseReportDate } from "../../hooks/useReportPagePersistence";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -81,7 +82,7 @@ const CategoryTable = ({ title, group, isLess = false }) => {
                 <td>
                   <button
                     className="bs-ledger-link"
-                    onClick={() => window.open(`/ledger/view/${row.ledger_number}`, "_blank")}
+                    onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
                   >
                     {row.ledger_number}
                   </button>
@@ -349,6 +350,41 @@ const BalanceSheet = () => {
 
   const { theme } = useThemeStore();
   const { balanceSheet, fetchBalanceSheet, downloadBalanceSheetExcel } = useLedgerReportStore();
+
+  const restoreReportState = useCallback((saved = {}) => {
+    const restoredDateFrom = parseReportDate(saved.dateFrom);
+    const restoredDateTo = parseReportDate(saved.dateTo);
+    const restoredCurrency = saved.currency || null;
+    const restoredZeroBalance = saved.zerobal || ZEROBAL_OPTIONS[1];
+
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    setCurrency(restoredCurrency);
+    setZerobal(restoredZeroBalance);
+
+    if (saved.hasSearched && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
+      return fetchBalanceSheet({
+        datefrom: toLocalISO(restoredDateFrom),
+        dateto: toLocalISO(restoredDateTo),
+        currency: restoredCurrency.value,
+        zerobal: restoredZeroBalance?.value || "No",
+      }).then((result) => {
+        if (result) setHasSearched(true);
+      });
+    }
+  }, [fetchBalanceSheet]);
+
+  useReportPagePersistence(
+    "smartbooks:report:balance-sheet",
+    {
+      dateFrom: toLocalISO(dateFrom),
+      dateTo: toLocalISO(dateTo),
+      currency,
+      zerobal,
+      hasSearched,
+    },
+    restoreReportState
+  );
 
   useEffect(() => { document.title = "Smartbooks | Balance Sheet"; }, []);
 

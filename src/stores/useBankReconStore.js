@@ -259,6 +259,7 @@ const useBankReconStore = create(
       ui: { ...emptyUi },
       creating: false,
       saving: false,
+      downloadingExcelId: null,
       autoRules: { data: [], loading: false },
 
       // ── Pagination / sort (persisted) ──────────────────────────────────
@@ -353,7 +354,7 @@ const useBankReconStore = create(
       },
 
       /* ═══════════════════════════════════════════════════════════════════
-         Update (header fields only — no file re-upload)
+         Update header fields and merge optional refreshed statement files
       ═══════════════════════════════════════════════════════════════════ */
       updateReconciliation: async (payload) => {
         set({ saving: true });
@@ -825,6 +826,10 @@ const useBankReconStore = create(
       },
 
       downloadExcel: async (id, filename = 'Bank_Reconciliation') => {
+        const downloadId = String(id);
+        if (get().downloadingExcelId === downloadId) return false;
+
+        set({ downloadingExcelId: downloadId });
         try {
           const res = await api.get(`/bank-recon/export-excel?id=${id}`, {
             headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
@@ -838,10 +843,15 @@ const useBankReconStore = create(
           a.click();
           a.remove();
           window.URL.revokeObjectURL(url);
+          useToastStore.getState().showToast('Excel download is ready.', 'success');
           return true;
         } catch (err) {
           useToastStore.getState().showToast('Failed to download Excel', 'error');
           return false;
+        } finally {
+          set((state) => ({
+            downloadingExcelId: state.downloadingExcelId === downloadId ? null : state.downloadingExcelId,
+          }));
         }
       },
 

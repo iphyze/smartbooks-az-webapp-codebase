@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../../NavBar';
 import Header from '../../Header';
@@ -11,6 +11,7 @@ import EmptyTable from '../../../components/EmptyTable';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import DeleteConfirmationModal from '../../../components/modals/DeleteConfirmationModal';
 import useBankReconStore from '../../../stores/useBankReconStore';
+import useReportPagePersistence from '../../../hooks/useReportPagePersistence';
 
 const fmtDate = (s) => s ? new Date(`${s}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 const fmtAmt  = (n) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -30,6 +31,21 @@ const BankReconOverview = () => {
   const [selectedAction, setSelectedAction]   = useState('');
   const [deleteTarget, setDeleteTarget]       = useState(null);
 
+  const restoreReportState = useCallback((saved = {}) => {
+    useBankReconStore.setState({
+      currentPage: Math.max(1, Number(saved.currentPage || 1)),
+      itemsPerPage: Number(saved.itemsPerPage || 10),
+      searchQuery: saved.searchQuery || '',
+      selectedItems: [],
+    });
+  }, []);
+
+  const reportStateReady = useReportPagePersistence(
+    'smartbooks:report:bank-reconciliation-overview',
+    { currentPage, itemsPerPage, searchQuery },
+    restoreReportState
+  );
+
   const links = [
     { label: 'Home', to: '/', active: true },
     { label: 'Reports & Analytics', to: '/reports/ledger', active: true },
@@ -40,7 +56,9 @@ const BankReconOverview = () => {
   const actionOptions    = [{ id: '', label: 'Select Action' }, { id: 'delete', label: 'Delete Selected' }];
 
   useEffect(() => { document.title = 'Smartbooks | Bank Reconciliations'; }, []);
-  useEffect(() => { fetchList(); }, [currentPage, itemsPerPage]);
+  useEffect(() => {
+    if (reportStateReady) fetchList();
+  }, [reportStateReady, currentPage, itemsPerPage, fetchList]);
 
   const totalPages = getTotalPages();
   const data       = list.data || [];
