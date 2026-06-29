@@ -116,12 +116,10 @@ const useTimesheetStore = create(
 
       setCurrentPage: (page) => {
         set({ currentPage: page });
-        get().fetchData();
       },
 
       setItemsPerPage: (items) => {
         set({ itemsPerPage: items, currentPage: 1 });
-        get().fetchData();
       },
 
       /* ═══════════════════════════════════════════════════════════════

@@ -87,6 +87,7 @@ function SectionHeader({ icon, eyebrow, title, description, action }) {
 
 export default function JournalFormView({
   mode,
+  duplicateInfo,
   journalDetails,
   headerErrors,
   handleDetailChange,
@@ -122,20 +123,29 @@ export default function JournalFormView({
   onCancel,
 }) {
   const isEdit = mode === "edit";
+  const isDuplicate = !isEdit && Boolean(duplicateInfo?.source_journal_id);
 
   return (
     <div className="journal-form-layout">
       <header className="journal-form-hero">
         <div className="journal-form-hero__copy">
           <span className="journal-form-hero__badge">
-            <i className={`fas ${isEdit ? "fa-pen" : "fa-plus"}`} />
-            {isEdit ? "Edit journal" : "New journal"}
+            <i className={`fas ${isEdit ? "fa-pen" : isDuplicate ? "fa-copy" : "fa-plus"}`} />
+            {isEdit ? "Edit journal" : isDuplicate ? "Duplicate journal" : "New journal"}
           </span>
-          <h2>{isEdit ? "Update journal entry" : "Create journal entry"}</h2>
+          <h2>
+            {isEdit
+              ? "Update journal entry"
+              : isDuplicate
+                ? "Review duplicated journal"
+                : "Create journal entry"}
+          </h2>
           <p>
             {isEdit
               ? "Review the posting details and journal lines, then save a balanced entry."
-              : "Capture the posting details, add debit and credit lines, and confirm the journal balances."}
+              : isDuplicate
+                ? "The source posting has been copied into a new, unsaved journal for review."
+                : "Capture the posting details, add debit and credit lines, and confirm the journal balances."}
           </p>
         </div>
 
@@ -154,6 +164,27 @@ export default function JournalFormView({
           </div>
         </div>
       </header>
+
+      {isDuplicate ? (
+        <section className="journal-duplicate-banner" aria-label="Duplicate journal information">
+          <span className="journal-duplicate-banner__icon" aria-hidden="true">
+            <i className="fas fa-copy" />
+          </span>
+          <div className="journal-duplicate-banner__copy">
+            <span>Creating a copy of {duplicateInfo.source_reference || `Journal #${duplicateInfo.source_journal_id}`}</span>
+            <strong>This is a new unsaved journal</strong>
+            <p>
+              The posting date has been moved to the current date and the exchange rates are tied to that date.
+              Changing a header or line date will re-resolve the applicable rate before submission.
+            </p>
+          </div>
+          <div className="journal-duplicate-banner__reference">
+            <span>Expected new reference</span>
+            <strong>{duplicateInfo.expected_reference || "Generated on save"}</strong>
+            <small>Final reference is assigned when submitted</small>
+          </div>
+        </section>
+      ) : null}
 
       <section className="journal-form-section journal-form-section--details">
         <SectionHeader

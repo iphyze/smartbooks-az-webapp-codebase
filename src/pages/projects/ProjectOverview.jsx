@@ -1,101 +1,65 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import NavBar from "../NavBar";
 import Header from "../Header";
-import 'aos/dist/aos.css';
-import useThemeStore from "../../stores/useThemeStore";
-import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { fadeInUp } from "../../utils/animation";
-import PageNav from "../../components/PageNav";
-import TableLoaderComponent from "../../components/TableLoaderComponent";
-import ChartSearchableSelect from "../../components/ChartSearchableSelect";
-import EmptyTable from "../../components/EmptyTable";
 import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationModal";
 import ErrorModal from "../../components/modals/ErrorModal";
+import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
+import useThemeStore from "../../stores/useThemeStore";
 import useProjectStore from "../../stores/useProjectStore";
+import {
+  formatOverviewDate,
+  formatOverviewNumber,
+  getOverviewInitials,
+  getOverviewPageNumbers,
+  overviewDeleteActions,
+  overviewPageLimits,
+} from "../../utils/overviewHelpers";
 
 const ProjectOverview = () => {
   const [nav, setNav] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
 
-  // Consume the Project Store
   const {
-    data, loading, error, total, currentPage, itemsPerPage, sortBy,
-    sortOrder, searchQuery, selectedItems, fetchData, setCurrentPage,
-    setItemsPerPage, setSearchQuery, setSorting, toggleItemSelection,
-    clearSelection, deleteSelectedItems, exportToExcel, getTotalPages
+    data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
+    searchQuery, selectedItems, fetchData, setCurrentPage, setItemsPerPage,
+    setSearchQuery, setSorting, toggleItemSelection, clearSelection,
+    deleteSelectedItems, exportToExcel, getTotalPages,
   } = useProjectStore();
-
-  // Local UI states for modals and actions
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedAction, setSelectedAction] = useState("");
-
-  const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Projects", to: "/project/home", active: false }
-  ];
-
-  // Options for Bulk Actions dropdown
-  const actionOptions = [
-    { id: "", label: "Select Action" },
-    { id: "delete", label: "Delete" }
-  ];
 
   useEffect(() => {
     document.title = "Smartbooks | Project Overview";
   }, []);
 
-  // Fetch data whenever relevant store states change
   useEffect(() => {
     fetchData();
-  }, [currentPage, itemsPerPage, sortBy, sortOrder]);
+  }, [currentPage, itemsPerPage, sortBy, sortOrder, fetchData]);
 
   const totalPages = getTotalPages();
+  const currentPageIds = useMemo(() => data.map((item) => item.id), [data]);
+  const allSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedItems.includes(id));
+  const currentYear = new Date().getFullYear();
 
-  // Handlers
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    if (!query) fetchData();
-  };
-
-  const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter') fetchData();
-  };
-
-  const handleSearchClick = () => {
-    fetchData();
-  };
-
-  const handleSort = (key) => {
-    const newDirection = sortBy === key && sortOrder === 'ASC' ? 'DESC' : 'ASC';
-    setSorting(key, newDirection);
-  };
-
-  const handlePageLimitChange = (limit) => {
-    setItemsPerPage(limit);
-  };
+  const handleSort = (key) => setSorting(key, sortBy === key && sortOrder === "ASC" ? "DESC" : "ASC");
+  const sortIcon = (key) => sortBy !== key
+    ? <i className="fas fa-sort invoice-sort-icon invoice-sort-icon--idle" />
+    : <i className={`fas ${sortOrder === "ASC" ? "fa-sort-up" : "fa-sort-down"} invoice-sort-icon`} />;
 
   const handleSelectAll = () => {
-    const currentPageIds = data.map(item => item.id);
-    const allSelected = currentPageIds.every(id => selectedItems.includes(id));
-
-    if (allSelected) {
-      const newSelection = selectedItems.filter(id => !currentPageIds.includes(id));
-      useProjectStore.setState({ selectedItems: newSelection });
-    } else {
-      const newSelection = [...new Set([...selectedItems, ...currentPageIds])];
-      useProjectStore.setState({ selectedItems: newSelection });
-    }
+    useProjectStore.setState({
+      selectedItems: allSelected
+        ? selectedItems.filter((id) => !currentPageIds.includes(id))
+        : [...new Set([...selectedItems, ...currentPageIds])],
+    });
   };
 
-  const handleActionChange = (actionId) => {
-    setSelectedAction(actionId);
-    if (actionId === "delete") {
-      setShowDeleteModal(true);
-    }
+  const openSingleDelete = (id) => {
+    useProjectStore.setState({ selectedItems: [id] });
+    setShowDeleteModal(true);
   };
 
   const handleDelete = async () => {
@@ -105,310 +69,116 @@ const ProjectOverview = () => {
     clearSelection();
   };
 
-  const handleDeleteProject = async (projectId) => {
-    if (projectId !== "") {
-      useProjectStore.setState({ selectedItems: [projectId] });
-      setShowDeleteModal(true);
-    }
-  };
+  const rowActions = (project, compact = false) => (
+    <OverviewRowActions compact={compact} actions={[
+      { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/project/view/${project.project_code}`, { state: { project } }) },
+      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/project/edit/${project.project_code}`, { state: { project } }) },
+      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(project.id) },
+    ]} />
+  );
 
-  const handleCloseErrorModal = () => {
-    useProjectStore.setState({ error: null });
-  };
-
-  const handleViewProject = (project) => {
-    navigate(`/project/view/${project.project_code}`, { state: { project } });
-  };
-
-  const handleEditProject = (project) => {
-    navigate(`/project/edit/${project.project_code}`, { state: { project } });
-  };
-
-  const handleExport = () => {
-    exportToExcel();
-  };
-
-  const getSortIcon = (columnKey) => {
-    if (sortBy !== columnKey) {
-      return <i className="fas fa-sort active-table-sort-icon"></i>;
-    }
-    return sortOrder === 'ASC'
-      ? <i className="fas fa-sort-up table-sort-icon"></i>
-      : <i className="fas fa-sort-down table-sort-icon"></i>;
-  };
-
-  const pageLimitOptions = [
-    { id: 5, label: "5" },
-    { id: 10, label: "10" },
-    { id: 25, label: "25" },
-    { id: 50, label: "50" },
-    { id: 100, label: "100" },
-    { id: 200, label: "200" },
-    { id: 500, label: "500" },
+  const columns = [
+    {
+      key: "name", label: "Project", sortKey: "project_name", onSort: handleSort, sortIcon,
+      render: (project) => (
+        <div className="entity-overview-primary">
+          <span className="entity-overview-avatar">{getOverviewInitials(project.project_name, "PR")}</span>
+          <div>
+            <button type="button" className="entity-overview-link" onClick={() => navigate(`/project/view/${project.project_code}`, { state: { project } })}>{project.project_name || "Unnamed project"}</button>
+            <small>{project.project_code || "No project code"}</small>
+          </div>
+        </div>
+      ),
+    },
+    { key: "projectCode", label: "Project code", sortKey: "project_code", onSort: handleSort, sortIcon, render: (project) => <span className="entity-overview-mono">{project.project_code || "—"}</span> },
+    { key: "code", label: "Internal code", sortKey: "code", onSort: handleSort, sortIcon, render: (project) => <OverviewBadge tone="blue">{project.code || "Not assigned"}</OverviewBadge> },
+    { key: "created", label: "Created", sortKey: "created_at", onSort: handleSort, sortIcon, render: (project) => <span className="entity-overview-muted">{formatOverviewDate(project.created_at)}</span> },
+    { key: "createdBy", label: "Created by", sortKey: "created_by", onSort: handleSort, sortIcon, render: (project) => <span className="entity-overview-muted">{project.created_by || "—"}</span> },
+    { key: "actions", label: "Actions", render: (project) => rowActions(project) },
   ];
 
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  const getPageNumbers = () => {
-    const maxVisiblePages = 5;
-    const pages = [];
-
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-      if (startPage > 1) {
-        pages.push(1);
-        if (startPage > 2) pages.push('...');
-      }
-
-      for (let i = startPage; i <= endPage; i++) pages.push(i);
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) pages.push('...');
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
+  const cards = [
+    { key: "total", label: "Projects", value: formatOverviewNumber(total), note: "Full project register", icon: "fa-diagram-project", tone: "teal" },
+    { key: "codes", label: "Codes assigned", value: formatOverviewNumber(data.filter((item) => item.code).length), note: "Records on this page", icon: "fa-hashtag", tone: "blue" },
+    { key: "year", label: `Created in ${currentYear}`, value: formatOverviewNumber(data.filter((item) => new Date(item.created_at).getFullYear() === currentYear).length), note: "Records on this page", icon: "fa-calendar-check", tone: "green" },
+    { key: "selected", label: "Selected projects", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+  ];
 
   return (
     <div className={`main-container theme-${theme}`}>
       <Header setNav={setNav} nav={nav} />
       <NavBar setNav={setNav} nav={nav} />
-
       <div className={`content-container theme-${theme}`}>
+        <OverviewWorkspace
+          theme={theme}
+          pageTitle="Project Overview"
+          links={[{ label: "Home", to: "/", active: true }, { label: "Projects", to: "/project/home", active: false }]}
+          hero={{
+            icon: "fa-diagram-project",
+            eyebrow: "Project workspace",
+            title: "Keep project records structured and accessible",
+            description: "Review project identities, internal codes and ownership details without losing the existing project actions and controls.",
+            createLink: "/project/create",
+            createLabel: "Create project",
+            onExport: exportToExcel,
+            exportDisabled: loading || data.length === 0,
+          }}
+          cards={cards}
+          register={{ eyebrow: "Project register", title: "All projects", itemLabel: "project" }}
+          data={data}
+          loading={loading}
+          total={total}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          totalPages={totalPages}
+          searchQuery={searchQuery}
+          onSearchChange={(event) => { setSearchQuery(event.target.value); if (!event.target.value) fetchData(); }}
+          onSearchSubmit={fetchData}
+          onClearSearch={() => { setSearchQuery(""); fetchData(); }}
+          searchPlaceholder="Search project name, code or creator"
+          pageLimitOptions={overviewPageLimits}
+          onItemsPerPageChange={setItemsPerPage}
+          selectedCount={selectedItems.length}
+          selectedAction={selectedAction}
+          actionOptions={overviewDeleteActions}
+          onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
+          onClearSelection={clearSelection}
+          columns={columns}
+          getRowKey={(project) => project.id || project.project_code}
+          isSelected={(project) => selectedItems.includes(project.id)}
+          onToggleSelection={(project) => toggleItemSelection(project.id)}
+          allSelected={allSelected}
+          onToggleSelectAll={handleSelectAll}
+          mobile={{
+            title: (project) => project.project_name || "Unnamed project",
+            subtitle: (project) => `Project ${project.project_code || "—"}`,
+            badge: (project) => <OverviewBadge tone="blue">{project.code || "No code"}</OverviewBadge>,
+            fields: [
+              { key: "created", label: "Created", render: (project) => formatOverviewDate(project.created_at) },
+              { key: "creator", label: "Created by", render: (project) => project.created_by || "—" },
+              { key: "projectCode", label: "Project code", render: (project) => project.project_code || "—", wide: true },
+            ],
+            actions: (project) => rowActions(project, true),
+          }}
+          pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
+          onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
+          empty={{ icon: "fas fa-diagram-project", message: "No projects found matching your criteria", link: "/project/create" }}
+        />
 
-        <div className={`db-root theme-${theme}`}>
-          <div className="db-page">
-            <PageNav pageTitle='Project Overview' links={links} />
-
-            <motion.div variants={fadeInUp} initial="hidden" animate="show"
-              transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
-              className={`invoice-section theme-${theme}`}
-            >
-              <div className="top-action-wrapper">
-                <Link to='/project/create' className="create-new-invoice-btn">
-                  <span className="fas fa-circle-plus"></span>
-                  <span>Create Project</span>
-                </Link>
-                {/* <button className="create-new-invoice-btn export-btn" onClick={handleExport} title="Export to Excel">
-              <span className="fas fa-file-excel"></span>
-              <span>Export</span>
-            </button> */}
-              </div>
-
-              <div className="main-table-box">
-                {loading ? (
-                  <TableLoaderComponent />
-                ) : (
-                  <>
-                    <div className="table-controls">
-                      <div className="table-search-box">
-                        <input
-                          type="text"
-                          placeholder="Search by project name or code..."
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                          onKeyDown={handleSearchSubmit}
-                          className="table-search-input"
-                        />
-                        <span
-                          className="fas fa-search table-search-icon"
-                          onClick={handleSearchClick}
-                          style={{ cursor: 'pointer' }}
-                        />
-                      </div>
-
-                      <div className="filters-box">
-                        <div className="filter-wrapper">
-                          <label className="filter-wrapper-label">Page limit</label>
-                          <ChartSearchableSelect
-                            options={pageLimitOptions}
-                            value={itemsPerPage}
-                            onChange={handlePageLimitChange}
-                            className="box-filter-limit"
-                          />
-                        </div>
-
-                        {selectedItems.length > 0 && (
-                          <div className="filter-wrapper bulk-actions">
-                            <label className="filter-wrapper-label">Select Action</label>
-                            <ChartSearchableSelect
-                              options={actionOptions}
-                              value={selectedAction}
-                              onChange={handleActionChange}
-                              className="box-filter-action"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="table-box">
-                      <div className="table-wrapper">
-                        <table className="data-table invoice-table">
-                          <thead>
-                            <tr>
-                              <th className="checkbox-cell">
-                                <input
-                                  type="checkbox"
-                                  checked={data.length > 0 && selectedItems.length === data.length}
-                                  onChange={handleSelectAll}
-                                  className={`table-checkbox fas fa-check 
-                            ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
-                                />
-                              </th>
-                              <th onClick={() => handleSort('project_name')} className="sortable">
-                                Project Name {getSortIcon('project_name')}
-                              </th>
-                              <th onClick={() => handleSort('project_code')} className="sortable">
-                                Project Code {getSortIcon('project_code')}
-                              </th>
-                              <th onClick={() => handleSort('code')} className="sortable">
-                                Code {getSortIcon('code')}
-                              </th>
-                              <th onClick={() => handleSort('created_at')} className="sortable">
-                                Created At {getSortIcon('created_at')}
-                              </th>
-                              <th onClick={() => handleSort('created_by')} className="sortable">
-                                Created By {getSortIcon('created_by')}
-                              </th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {data.map((project) => (
-                              <tr key={project.id} className={selectedItems.includes(project.id) ? 'selected' : ''}>
-                                <td className="checkbox-cell">
-                                  <input
-                                    type="checkbox"
-                                    className={`table-checkbox fas fa-check ${selectedItems.includes(project.id) && 'selected-checkbox'}`}
-                                    checked={selectedItems.includes(project.id)}
-                                    onChange={() => toggleItemSelection(project.id)}
-                                  />
-                                </td>
-                                <td>
-                                  <div className="table-flex-box">
-                                    <span className="table-customer-text">{project.project_name}</span>
-                                  </div>
-                                </td>
-                                <td className="number-tab">{project.project_code}</td>
-                                <td className="number-tab">{project.code}</td>
-                                <td className="number-tab">{new Date(project.created_at).toLocaleDateString('en-GB')}</td>
-                                <td>
-                                  <div className="table-flex-box">
-                                    <span className="table-customer-text number-tab">{project.created_by}</span>
-                                  </div>
-                                </td>
-                                <td>
-                                  <div className="action-buttons">
-                                    <button className="btn-view" title="View" onClick={() => handleViewProject(project)}>
-                                      <span className="fas fa-file"></span>
-                                    </button>
-                                    <button className="btn-edit" title="Edit" onClick={() => handleEditProject(project)}>
-                                      <span className="fas fa-pen"></span>
-                                    </button>
-                                    <button className="btns-delete" title="Delete" onClick={() => handleDeleteProject(project.id)}>
-                                      <span className="fas fa-trash"></span>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="pagination-container">
-                        <div className="pagination-info">
-                          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries
-                        </div>
-                        <div className="pagination-controls">
-                          <button
-                            className="pagination-btn"
-                            onClick={() => goToPage(currentPage - 1)}
-                            disabled={currentPage === 1}
-                          >
-                            <span>Previous</span>
-                          </button>
-
-                          {getPageNumbers().map((page, index) => (
-                            page === '...' ? (
-                              <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
-                            ) : (
-                              <button
-                                key={page}
-                                className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
-                                onClick={() => goToPage(page)}
-                              >
-                                {page}
-                              </button>
-                            )
-                          ))}
-
-                          <button
-                            className="pagination-btn"
-                            onClick={() => goToPage(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                          >
-                            <span>Next</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {data.length === 0 && (
-                      <EmptyTable
-                        icon="fas fa-project-diagram"
-                        message="No projects found matching your criteria"
-                        link="/project/create"
-                      />
-                    )}
-                  </>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Delete Confirmation Modal */}
-            <AnimatePresence>
-              {showDeleteModal && (
-                <DeleteConfirmationModal
-                  isOpen={showDeleteModal}
-                  onClose={() => {
-                    setShowDeleteModal(false);
-                    setSelectedAction("");
-                    clearSelection();
-                  }}
-                  onConfirm={handleDelete}
-                  count={selectedItems.length}
-                  page="project"
-                />
-              )}
-            </AnimatePresence>
-
-            {/* Error Modal Integration */}
-            <AnimatePresence>
-              {error && (
-                <ErrorModal
-                  isOpen={!!error}
-                  onClose={handleCloseErrorModal}
-                  onRetry={fetchData}
-                  message={error}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+        <AnimatePresence>
+          {showDeleteModal && (
+            <DeleteConfirmationModal
+              isOpen={showDeleteModal}
+              onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}
+              onConfirm={handleDelete}
+              count={selectedItems.length}
+              page="project"
+            />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {error && <ErrorModal isOpen={Boolean(error)} onClose={() => useProjectStore.setState({ error: null })} onRetry={fetchData} message={error} />}
+        </AnimatePresence>
       </div>
     </div>
   );

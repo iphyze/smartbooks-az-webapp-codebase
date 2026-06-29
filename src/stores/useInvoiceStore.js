@@ -171,12 +171,10 @@ const useInvoiceStore = create(
 
       setCurrentPage: (page) => {
         set({ currentPage: page });
-        get().fetchData();
       },
 
       setItemsPerPage: (items) => {
         set({ itemsPerPage: items, currentPage: 1 });
-        get().fetchData();
       },
 
       /* ═════════════════════════════════════════════════════════════════════
@@ -195,7 +193,7 @@ const useInvoiceStore = create(
           delete updatedData[id];
         } else {
           // Note: Using 'id' for invoices based on sample data
-          const row = data.find((item) => item.id === id);
+          const row = data.find((item) => item.invoice_number === id || item.id === id);
           if (row) updatedData[id] = row;
         }
 

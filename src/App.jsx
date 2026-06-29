@@ -12,71 +12,73 @@ import { ADMIN_ONLY_ROLES, OPERATIONAL_ROLES, TIMESHEET_ROLES } from './utils/pe
 import Toast from './services/Toast';
 import PublicRoute from './services/PublicRoute';
 import useThemeStore from './stores/useThemeStore';
+import useAuthStore from './stores/useAuthStore';
+import routeLoaders, { preloadRoute, preloadRoutes } from './utils/routePreloader';
 
-const NotFound = lazy(() => import('./pages/NotFound'));
-const Login = lazy(() => import('./pages/auth/Login'));
-const ChangePassword = lazy(() => import('./pages/auth/ChangePassword'));
-const Dashboard = lazy(() => import('./pages/home/Dashboard'));
-const CreateInvoice = lazy(() => import('./pages/invoice/CreateInvoice'));
-const InvoiceOverview = lazy(() => import('./pages/invoice/InvoiceOverview'));
-const EditInvoice = lazy(() => import('./pages/invoice/EditInvoice'));
-const ViewInvoice = lazy(() => import('./pages/invoice/ViewInvoice'));
-const CreateJournal = lazy(() => import('./pages/journal/CreateJournal'));
-const JournalOverview = lazy(() => import('./pages/journal/JournalOverview'));
-const EditJournal = lazy(() => import('./pages/journal/EditJournal'));
-const ViewJournal = lazy(() => import('./pages/journal/ViewJournal'));
-const RateOverview = lazy(() => import('./pages/rates/RateOverview'));
-const CreateRate = lazy(() => import('./pages/rates/CreateRate'));
-const EditRate = lazy(() => import('./pages/rates/EditRate'));
-const ClientOverview = lazy(() => import('./pages/clients/ClientOverview'));
-const CreateClient = lazy(() => import('./pages/clients/CreateClient'));
-const EditClient = lazy(() => import('./pages/clients/EditClient'));
-const ViewClient = lazy(() => import('./pages/clients/ViewClient'));
-const ProjectOverview = lazy(() => import('./pages/projects/ProjectOverview'));
-const CreateProject = lazy(() => import('./pages/projects/CreateProject'));
-const EditProject = lazy(() => import('./pages/projects/EditProject'));
-const ViewProject = lazy(() => import('./pages/projects/ViewProject'));
-const AccountOverview = lazy(() => import('./pages/account/AccountOverview'));
-const CreateAccount = lazy(() => import('./pages/account/CreateAccount'));
-const EditAccount = lazy(() => import('./pages/account/EditAccount'));
-const ViewAccount = lazy(() => import('./pages/account/ViewAccount'));
-const BankOverview = lazy(() => import('./pages/banks/BankOverview'));
-const CreateBank = lazy(() => import('./pages/banks/CreateBank'));
-const EditBank = lazy(() => import('./pages/banks/EditBank'));
-const ViewBank = lazy(() => import('./pages/banks/ViewBank'));
-const LedgerOverview = lazy(() => import('./pages/ledger/LegderOverview'));
-const CreateLedger = lazy(() => import('./pages/ledger/CreateLedger'));
-const EditLedger = lazy(() => import('./pages/ledger/EditLedger'));
-const ViewLedger = lazy(() => import('./pages/ledger/ViewLedger'));
-const StaffOverview = lazy(() => import('./pages/staff/StaffOverview'));
-const CreateStaff = lazy(() => import('./pages/staff/CreateStaff'));
-const EditStaff = lazy(() => import('./pages/staff/EditStaff'));
-const ViewStaff = lazy(() => import('./pages/staff/ViewStaff'));
-const TimesheetOverview = lazy(() => import('./pages/timesheet/TimesheetOverview'));
-const CreateTimesheet = lazy(() => import('./pages/timesheet/CreateTimesheet'));
-const EditTimesheet = lazy(() => import('./pages/timesheet/EditTimesheet'));
-const ViewTimesheet = lazy(() => import('./pages/timesheet/ViewTimesheet'));
-const LedgerReports = lazy(() => import('./pages/reports/LedgerReports'));
-const LedgerStatement = lazy(() => import('./pages/reports/LedgerStatment'));
-const GeneralLedger = lazy(() => import('./pages/reports/GeneralLedger'));
-const TrialBalance = lazy(() => import('./pages/reports/TrialBalance'));
-const ProfitLoss = lazy(() => import('./pages/reports/ProfitLoss'));
-const BalanceSheet = lazy(() => import('./pages/reports/BalanceSheet'));
-const FXRevaluation = lazy(() => import('./pages/reports/FXRevaluation'));
-const InvoiceAging = lazy(() => import('./pages/reports/InvoiceAging'));
-const TimesheetReport = lazy(() => import('./pages/reports/TimesheetReport'));
-const BankReconOverview = lazy(() => import('./pages/reports/recon/BankReconOverview'));
-const EditBankRecon = lazy(() => import('./pages/reports/recon/EditBankRecon'));
-const CreateBankRecon = lazy(() => import('./pages/reports/recon/CreateBankRecon'));
-const BankReconWorkspace = lazy(() => import('./pages/reports/recon/BankReconWorkspace'));
-const LockPeriodOverview = lazy(() => import('./pages/accounting-period/LockPeriodOverview'));
-const UsersOverview = lazy(() => import('./pages/users/UsersOverview'));
-const CreateUser = lazy(() => import('./pages/users/CreateUser'));
-const EditUser = lazy(() => import('./pages/users/EditUser'));
-const ViewUser = lazy(() => import('./pages/users/ViewUser'));
-const MyProfile = lazy(() => import('./pages/users/MyProfile'));
-const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
-const ActivityLogsPage = lazy(() => import('./pages/activity-logs/ActivityLogsPage'));
+const NotFound = lazy(routeLoaders.NotFound);
+const Login = lazy(routeLoaders.Login);
+const ChangePassword = lazy(routeLoaders.ChangePassword);
+const Dashboard = lazy(routeLoaders.Dashboard);
+const CreateInvoice = lazy(routeLoaders.CreateInvoice);
+const InvoiceOverview = lazy(routeLoaders.InvoiceOverview);
+const EditInvoice = lazy(routeLoaders.EditInvoice);
+const ViewInvoice = lazy(routeLoaders.ViewInvoice);
+const CreateJournal = lazy(routeLoaders.CreateJournal);
+const JournalOverview = lazy(routeLoaders.JournalOverview);
+const EditJournal = lazy(routeLoaders.EditJournal);
+const ViewJournal = lazy(routeLoaders.ViewJournal);
+const RateOverview = lazy(routeLoaders.RateOverview);
+const CreateRate = lazy(routeLoaders.CreateRate);
+const EditRate = lazy(routeLoaders.EditRate);
+const ClientOverview = lazy(routeLoaders.ClientOverview);
+const CreateClient = lazy(routeLoaders.CreateClient);
+const EditClient = lazy(routeLoaders.EditClient);
+const ViewClient = lazy(routeLoaders.ViewClient);
+const ProjectOverview = lazy(routeLoaders.ProjectOverview);
+const CreateProject = lazy(routeLoaders.CreateProject);
+const EditProject = lazy(routeLoaders.EditProject);
+const ViewProject = lazy(routeLoaders.ViewProject);
+const AccountOverview = lazy(routeLoaders.AccountOverview);
+const CreateAccount = lazy(routeLoaders.CreateAccount);
+const EditAccount = lazy(routeLoaders.EditAccount);
+const ViewAccount = lazy(routeLoaders.ViewAccount);
+const BankOverview = lazy(routeLoaders.BankOverview);
+const CreateBank = lazy(routeLoaders.CreateBank);
+const EditBank = lazy(routeLoaders.EditBank);
+const ViewBank = lazy(routeLoaders.ViewBank);
+const LedgerOverview = lazy(routeLoaders.LedgerOverview);
+const CreateLedger = lazy(routeLoaders.CreateLedger);
+const EditLedger = lazy(routeLoaders.EditLedger);
+const ViewLedger = lazy(routeLoaders.ViewLedger);
+const StaffOverview = lazy(routeLoaders.StaffOverview);
+const CreateStaff = lazy(routeLoaders.CreateStaff);
+const EditStaff = lazy(routeLoaders.EditStaff);
+const ViewStaff = lazy(routeLoaders.ViewStaff);
+const TimesheetOverview = lazy(routeLoaders.TimesheetOverview);
+const CreateTimesheet = lazy(routeLoaders.CreateTimesheet);
+const EditTimesheet = lazy(routeLoaders.EditTimesheet);
+const ViewTimesheet = lazy(routeLoaders.ViewTimesheet);
+const LedgerReports = lazy(routeLoaders.LedgerReports);
+const LedgerStatement = lazy(routeLoaders.LedgerStatement);
+const GeneralLedger = lazy(routeLoaders.GeneralLedger);
+const TrialBalance = lazy(routeLoaders.TrialBalance);
+const ProfitLoss = lazy(routeLoaders.ProfitLoss);
+const BalanceSheet = lazy(routeLoaders.BalanceSheet);
+const FXRevaluation = lazy(routeLoaders.FXRevaluation);
+const InvoiceAging = lazy(routeLoaders.InvoiceAging);
+const TimesheetReport = lazy(routeLoaders.TimesheetReport);
+const BankReconOverview = lazy(routeLoaders.BankReconOverview);
+const EditBankRecon = lazy(routeLoaders.EditBankRecon);
+const CreateBankRecon = lazy(routeLoaders.CreateBankRecon);
+const BankReconWorkspace = lazy(routeLoaders.BankReconWorkspace);
+const LockPeriodOverview = lazy(routeLoaders.LockPeriodOverview);
+const UsersOverview = lazy(routeLoaders.UsersOverview);
+const CreateUser = lazy(routeLoaders.CreateUser);
+const EditUser = lazy(routeLoaders.EditUser);
+const ViewUser = lazy(routeLoaders.ViewUser);
+const MyProfile = lazy(routeLoaders.MyProfile);
+const NotificationsPage = lazy(routeLoaders.NotificationsPage);
+const ActivityLogsPage = lazy(routeLoaders.ActivityLogsPage);
 
 const AllowedRoute = ({ roles, children }) => (
   <ProtectedRoute>
@@ -86,10 +88,57 @@ const AllowedRoute = ({ roles, children }) => (
 
 const App = () => {
   const initTheme = useThemeStore((state) => state.init);
+  const initializeAuth = useAuthStore((state) => state.initialize);
+  const authReady = useAuthStore((state) => state.authReady);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     initTheme();
-  }, [initTheme]);
+    initializeAuth();
+    preloadRoute(window.location.pathname);
+  }, [initTheme, initializeAuth]);
+
+  useEffect(() => {
+    const preloadLinkedRoute = (event) => {
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!link) return;
+
+      const url = new URL(link.href, window.location.origin);
+      if (url.origin === window.location.origin) preloadRoute(url.pathname);
+    };
+
+    document.addEventListener('pointerover', preloadLinkedRoute, { passive: true });
+    document.addEventListener('focusin', preloadLinkedRoute);
+    document.addEventListener('touchstart', preloadLinkedRoute, { passive: true });
+
+    return () => {
+      document.removeEventListener('pointerover', preloadLinkedRoute);
+      document.removeEventListener('focusin', preloadLinkedRoute);
+      document.removeEventListener('touchstart', preloadLinkedRoute);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authReady || !isAuthenticated) return undefined;
+
+    const routeBatches = [
+      ['/', '/invoice/home', '/journal/home', '/client/home'],
+      ['/invoice/create', '/invoice/view/preload', '/invoice/edit/preload', '/journal/create', '/journal/view/preload', '/journal/edit/preload'],
+      ['/account/home', '/ledger/home', '/banks/home', '/rate/home'],
+      ['/project/home', '/staff/home', '/timesheet/home', '/reports/ledger'],
+      ['/notifications', '/activity-logs', '/users/my-profile'],
+    ];
+    const timers = routeBatches.map((paths, index) => window.setTimeout(() => {
+      const run = () => preloadRoutes(paths);
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(run, { timeout: 1400 });
+      } else {
+        run();
+      }
+    }, 180 + (index * 420)));
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [authReady, isAuthenticated]);
 
   return (
     <>

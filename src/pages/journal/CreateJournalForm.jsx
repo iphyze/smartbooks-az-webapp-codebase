@@ -16,9 +16,10 @@ import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
 import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateLedgerModal from "../../components/modals/CreateLedgerModal";
 import CreateRateModal from "../../components/modals/CreateRateModal";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { findEffectiveRateId } from "../../utils/helper";
 import JournalImportModal from "../../components/journal/JournalImportModal";
+import EditLoaderComponent from "../../components/EditLoaderComponent";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -241,6 +242,8 @@ const CreateJournalForm = () => {
   const { rates, searchRates } = useRateSearchStore();
   const { clients, searchClients } = useClientSearchStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const duplicateSourceId = searchParams.get("duplicate");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -255,6 +258,11 @@ const CreateJournalForm = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [ledgerSuggestions, setLedgerSuggestions] = useState([]);
   const [favoriteLedgerNames, setFavoriteLedgerNames] = useState(readFavouriteLedgers);
+  const [duplicateInfo, setDuplicateInfo] = useState(null);
+  const [duplicateError, setDuplicateError] = useState("");
+  const [isPreparingDuplicate, setIsPreparingDuplicate] = useState(Boolean(duplicateSourceId));
+  const [duplicateReloadKey, setDuplicateReloadKey] = useState(0);
+  const duplicateRequestRef = useRef({ sourceId: null, promise: null });
 
   /* ── Header state ── */
   const [journalDetails, setJournalDetails] = useState({
@@ -307,6 +315,110 @@ const CreateJournalForm = () => {
 
     loadLedgerSuggestions();
   }, []);
+
+  /* Prepare a sanitized duplicate without inserting journal records. */
+  useEffect(() => {
+    if (!duplicateSourceId) {
+      setIsPreparingDuplicate(false);
+      setDuplicateInfo(null);
+      setDuplicateError("");
+      return undefined;
+    }
+
+    let active = true;
+    setIsPreparingDuplicate(true);
+    setDuplicateError("");
+
+    if (
+      duplicateRequestRef.current.sourceId !== duplicateSourceId ||
+      !duplicateRequestRef.current.promise
+    ) {
+      duplicateRequestRef.current = {
+        sourceId: duplicateSourceId,
+        promise: api.post("/journal/duplicate-journal", {
+          journal_id: duplicateSourceId,
+        }),
+      };
+    }
+
+    duplicateRequestRef.current.promise
+      .then((response) => {
+        if (!active) return;
+
+        const duplicate = response.data?.data;
+        const duplicateDetails = duplicate?.journalDetails;
+        const duplicateItems = Array.isArray(duplicate?.journalItems)
+          ? duplicate.journalItems
+          : [];
+
+        if (!duplicateDetails || duplicateItems.length === 0) {
+          throw new Error("The duplicate journal data was incomplete.");
+        }
+
+        const duplicateDate = parseDateValue(duplicateDetails.journal_date, new Date());
+        const preparedItems = duplicateItems.map((row) => {
+          const item = createEmptyItem(
+            row.journal_description || duplicateDetails.main_journal_description || "",
+            row.journal_date || duplicateDate
+          );
+
+          return {
+            ...item,
+            ledger_name: row.ledger_name || "",
+            ledger_number: row.ledger_number || "",
+            ledger_class: row.ledger_class || "",
+            ledger_class_code: row.ledger_class_code || "",
+            ledger_sub_class: row.ledger_sub_class || "",
+            ledger_type: row.ledger_type || "",
+            journal_description: row.journal_description || "",
+            journal_date: parseDateValue(row.journal_date, duplicateDate),
+            journal_date_touched: false,
+            rate_touched: false,
+            sides: row.sides || "",
+            jcurrency: row.jcurrency || "NGN",
+            jrate: String(row.jrate || ""),
+            currencyRate: row.currencyRate ?? "",
+            amount: row.amount ?? "",
+            amount_touched: true,
+            amount_auto_suggested: false,
+            rate_date: row.rate_date || "",
+            ngn_rate: row.ngn_rate ?? "",
+            usd_rate: row.usd_rate ?? "",
+            eur_rate: row.eur_rate ?? "",
+            gbp_rate: row.gbp_rate ?? "",
+          };
+        });
+
+        setJournalDetails({
+          journal_date: duplicateDate,
+          journal_type: duplicateDetails.journal_type || "",
+          journal_currency: duplicateDetails.journal_currency || "NGN",
+          transaction_type: duplicateDetails.transaction_type || "",
+          main_journal_description: duplicateDetails.main_journal_description || "",
+          cost_center: duplicateDetails.cost_center || "Overhead",
+        });
+        setMasterRateId(preparedItems[0]?.jrate || "");
+        setJournalItems(preparedItems);
+        setDuplicateInfo(duplicate);
+        setSubmitted(false);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setDuplicateError(
+          error.response?.data?.message ||
+            error.message ||
+            "The journal could not be prepared for duplication."
+        );
+        setDuplicateInfo(null);
+      })
+      .finally(() => {
+        if (active) setIsPreparingDuplicate(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [duplicateSourceId, duplicateReloadKey]);
 
   /* ── Cost center options ── */
   const costCenterOptions = useMemo(() => {
@@ -822,6 +934,44 @@ const CreateJournalForm = () => {
   /* ─────────────────────────────────────────────
      Render
   ───────────────────────────────────────────── */
+  if (isPreparingDuplicate) {
+    return <EditLoaderComponent text="Preparing duplicate journal…" />;
+  }
+
+  if (duplicateError) {
+    return (
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate="show"
+        className={`journal-duplicate-state theme-${theme}`}
+      >
+        <span className="journal-duplicate-state__icon" aria-hidden="true">
+          <i className="fas fa-triangle-exclamation" />
+        </span>
+        <div className="journal-duplicate-state__copy">
+          <span>Duplicate journal unavailable</span>
+          <h2>The source journal could not be prepared</h2>
+          <p>{duplicateError}</p>
+        </div>
+        <div className="journal-duplicate-state__actions">
+          <button
+            type="button"
+            onClick={() => {
+              duplicateRequestRef.current = { sourceId: null, promise: null };
+              setDuplicateReloadKey((value) => value + 1);
+            }}
+          >
+            <i className="fas fa-rotate-right" /> Retry
+          </button>
+          <button type="button" className="is-secondary" onClick={() => navigate("/journal/create", { replace: true })}>
+            Start a blank journal
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <>
       <motion.div
@@ -834,6 +984,7 @@ const CreateJournalForm = () => {
         <form className="invoice-form-f-container journal-builder__form" onSubmit={handleSubmit} noValidate>
           <JournalFormView
             mode="create"
+            duplicateInfo={duplicateInfo}
             journalDetails={journalDetails}
             headerErrors={headerErrors}
             handleDetailChange={handleDetailChange}

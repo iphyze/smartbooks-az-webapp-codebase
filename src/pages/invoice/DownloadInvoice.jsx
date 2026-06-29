@@ -130,85 +130,79 @@ const DownloadInvoice = ({ invoice }) => {
                 </View>
 
                 {/* Summary / Footer Section */}
-                <View style={styles.footerContainer}>
-                    {/* Signatures */}
-                    <View style={styles.signatureSection} />
+                <View style={styles.invoiceClosing} wrap={false}>
+                    <View style={styles.footerContainer}>
+                        <View style={styles.signatureSection} />
 
-                    {/* Totals Grid */}
-                    <View style={styles.totalsSection}>
+                        <View style={styles.totalsSection}>
+                            {showVat && showDiscount &&
+                                <View style={styles.totalsRow}>
+                                    <Text style={styles.totalsLabel}>Subtotal</Text>
+                                    <Text style={styles.totalsValue}>{formatWithDecimals(total_amount)}</Text>
+                                </View>
+                            }
 
-                        {showVat && showDiscount &&
-                        <View style={styles.totalsRow}>
-                            <Text style={styles.totalsLabel}>Subtotal</Text>
-                            <Text style={styles.totalsValue}>{formatWithDecimals(total_amount)}</Text>
-                        </View>
-                        }
+                            {showDiscount &&
+                                <View style={styles.totalsRow}>
+                                    <Text style={styles.totalsLabel}>Discount</Text>
+                                    <Text style={styles.totalsValue}>{formatWithDecimals(total_discount)}</Text>
+                                </View>
+                            }
 
-                        {showDiscount &&
+                            {showVat &&
+                                <View style={styles.totalsRow}>
+                                    <Text style={styles.totalsLabel}>VAT (7.5%)</Text>
+                                    <Text style={styles.totalsValue}>{formatWithDecimals(total_vat)}</Text>
+                                </View>
+                            }
+
                             <View style={styles.totalsRow}>
-                                <Text style={styles.totalsLabel}>Discount</Text>
-                                <Text style={styles.totalsValue}>{formatWithDecimals(total_discount)}</Text>
+                                <Text style={[styles.totalsLabel, styles.totalsMain]}>Total</Text>
+                                <Text style={[styles.totalsValue, styles.totalsMain]}>{formatCurrencyDecimals(invoice_amount, currency)}</Text>
                             </View>
-                        }
-
-                        {showVat && 
-                        <View style={styles.totalsRow}>
-                            <Text style={styles.totalsLabel}>VAT (7.5%)</Text>
-                            <Text style={styles.totalsValue}>{formatWithDecimals(total_vat)}</Text>
                         </View>
-                        }
-
-                        <View style={styles.totalsRow}>
-                            <Text style={[styles.totalsLabel, styles.totalsMain]}>Total</Text>
-                            <Text style={[styles.totalsValue, styles.totalsMain]}>{formatCurrencyDecimals(invoice_amount, currency)}</Text>
-                        </View>
-
                     </View>
+
+                    {bank_name && bank_name !== "N/A" &&
+                        <View style={styles.vcPaymentDetailsBox}>
+                            <Text style={styles.vcPaymentHeading}>Kindly make your payment into:</Text>
+
+                            <View style={styles.vcPaymentGroup}>
+                                <Text style={styles.vcPaymentTitle}>Account Name:</Text>
+                                <Text style={styles.vcPaymentText}>{account_name}</Text>
+                            </View>
+
+                            <View style={styles.vcPaymentGroup}>
+                                <Text style={styles.vcPaymentTitle}>Account Number:</Text>
+                                <Text style={styles.vcPaymentText}>{account_number}</Text>
+                            </View>
+
+                            <View style={styles.vcPaymentGroup}>
+                                <Text style={styles.vcPaymentTitle}>Bank Name:</Text>
+                                <Text style={styles.vcPaymentText}>{bank_name}</Text>
+                            </View>
+
+                            <View style={styles.vcPaymentGroup}>
+                                <Text style={styles.vcPaymentTitle}>Currency:</Text>
+                                <Text style={styles.vcPaymentText}>{account_currency}</Text>
+                            </View>
+                        </View>
+                    }
+
+                    <View style={styles.vcSignatureBox}>
+                        <View style={styles.vcSignatureGroup}>
+                            <View style={styles.vcSigLine} />
+                            <Text style={styles.vcSigText}>Authorized Signatory</Text>
+                        </View>
+
+                        <View style={[styles.vcSignatureGroup, styles.vcSignatureGroupRight]}>
+                            <View style={styles.vcSigLine} />
+                            <Text style={styles.vcSigText}>Authorized Signatory</Text>
+                        </View>
+                    </View>
+
+                    <Text style={styles.vcThanksText}>Thank you for doing business with us!</Text>
                 </View>
-
-
-                {bank_name !== "" && bank_name !== "N/A" && 
-
-                    <View style={styles.vcPaymentDetailsBox}>
-                        <Text style={styles.vcPaymentHeading}>Kindly make your payment into:</Text>
-
-                        <View style={styles.vcPaymentGroup}>
-                            <Text style={styles.vcPaymentTitle}>Account Name:</Text>
-                            <Text style={styles.vcPaymentText}>{account_name}</Text>
-                        </View>
-
-                        <View style={styles.vcPaymentGroup}>
-                            <Text style={styles.vcPaymentTitle}>Account Number:</Text>
-                            <Text style={styles.vcPaymentText}>{account_number}</Text>
-                        </View>
-
-                        <View style={styles.vcPaymentGroup}>
-                            <Text style={styles.vcPaymentTitle}>Bank Name:</Text>
-                            <Text style={styles.vcPaymentText}>{bank_name}</Text>
-                        </View>
-
-                        <View style={styles.vcPaymentGroup}>
-                            <Text style={styles.vcPaymentTitle}>Currency:</Text>
-                            <Text style={styles.vcPaymentText}>{account_currency}</Text>
-                        </View>
-
-                    </View>
-                
-                }
-
-                <View style={styles.vcSignatureBox}>
-                    <View style={styles.vcSignatureGroup}>
-                        <Text style={styles.vcSigLine}>______________________</Text>
-                        <Text style={styles.vcSigText}>Authorized Signatory</Text>
-                    </View>
-
-                    <View style={[styles.vcSignatureGroup, styles.vcSignatureGroupRight]}>
-                        <Text style={styles.vcSigLine}>______________________</Text>
-                        <Text style={styles.vcSigText}>Authorized Signatory</Text>
-                    </View>
-                </View>
-
-                <Text style={styles.vcThanksText}>Thank you for doing business with us!</Text>
 
             </Page>
         </Document>
@@ -371,10 +365,14 @@ const styles = StyleSheet.create({
     },
 
     // Footer
+    invoiceClosing: {
+        width: '100%',
+        marginTop: 12,
+    },
     footerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 10,
+        marginTop: 0,
     },
     signatureSection: {
         width: '68%',
@@ -451,8 +449,8 @@ const styles = StyleSheet.create({
     vcPaymentDetailsBox: {
         position: 'relative',
         width: '100%',
-        marginVertical: 30,
-        marginBottom: 40,
+        marginTop: 26,
+        marginBottom: 0,
     },
     vcPaymentHeading: {
         position: 'relative',
@@ -493,25 +491,29 @@ const styles = StyleSheet.create({
     vcSignatureBox: {
         position: 'relative',
         width: '100%',
-        height: 'auto',
-        flexWrap: 'wrap',
+        minHeight: 44,
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         flexDirection: 'row',
-        marginBottom: 40,
+        marginTop: 58,
+        marginBottom: 22,
     },
     vcSignatureGroup: {
         position: 'relative',
+        width: '42%',
         textAlign: 'left'
     },
     vcSignatureGroupRight: {
         position: 'relative',
+        width: '42%',
         textAlign: 'right',
-        alignSelf: 'flex-end'
+        alignSelf: 'flex-start'
     },
     vcSigLine: {
         position: 'relative',
-        color: '#373c40',
+        width: '100%',
+        borderTopWidth: 0.7,
+        borderTopColor: '#373c40',
         marginBottom: 8
     },
     vcSigText: {
@@ -525,7 +527,7 @@ const styles = StyleSheet.create({
         color: '#373c40',
         fontFamily: 'Montserrat-Light',
         fontSize: 7.2,
-        marginVertical: 20,
-        marginBottom: 40
+        marginTop: 12,
+        marginBottom: 0
     }
 });

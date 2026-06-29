@@ -1,108 +1,140 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import NavBar from "../NavBar";
 import Header from "../Header";
-import 'aos/dist/aos.css';
-import useThemeStore from "../../stores/useThemeStore";
-import { Link, NavLink } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { fadeIn, fadeInUp, fadeInDown } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import TableLoaderComponent from "../../components/TableLoaderComponent";
 import ChartSearchableSelect from "../../components/ChartSearchableSelect";
 import EmptyTable from "../../components/EmptyTable";
 import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationModal";
 import ErrorModal from "../../components/modals/ErrorModal";
-import useInvoiceStore from "../../stores/useInvoiceStore"; // Updated Store
-import useAuthStore from "../../stores/useAuthStore";
+import useThemeStore from "../../stores/useThemeStore";
+import useInvoiceStore from "../../stores/useInvoiceStore";
 import { formatCurrencyDecimals } from "../../utils/helper";
+import { fadeInUp } from "../../utils/animation";
 import InvoiceKPICards from "./InvoiceKPICards";
 import "./InvoiceWorkflow.css";
+import "./InvoiceOverview.css";
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const text = String(value);
+  const parsed = new Date(text.includes("T") ? text : `${text.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const clientInitials = (name) => String(name || "Client")
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join("")
+  .toUpperCase();
 
 const InvoiceOverview = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
 
-  // Consume the Invoice Store
   const {
-    data, loading, error, total, currentPage, itemsPerPage, sortBy,
-    sortOrder, searchQuery, selectedItems, fetchData, setCurrentPage,
-    setItemsPerPage, setSearchQuery, setSorting, toggleItemSelection,
-    clearSelection, deleteSelectedItems, exportToExcel, getTotalPages,
-    fetchKPIs, kpis, kpisLoading,
+    data,
+    loading,
+    error,
+    total,
+    currentPage,
+    itemsPerPage,
+    sortBy,
+    sortOrder,
+    searchQuery,
+    selectedItems,
+    fetchData,
+    setCurrentPage,
+    setItemsPerPage,
+    setSearchQuery,
+    setSorting,
+    toggleItemSelection,
+    clearSelection,
+    deleteSelectedItems,
+    exportToExcel,
+    getTotalPages,
+    fetchKPIs,
+    kpis,
+    kpisLoading,
   } = useInvoiceStore();
 
-  // Local UI states for modals and actions
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Invoices", to: "/invoice/home", active: false }
+    { label: "Invoices", to: "/invoice/home", active: false },
   ];
 
-  // Options for Bulk Actions dropdown
   const actionOptions = [
     { id: "", label: "Select Action" },
-    { id: "delete", label: "Delete" }
+    { id: "delete", label: "Delete" },
   ];
+
+  const pageLimitOptions = [5, 10, 25, 50, 100, 200, 500]
+    .map((limit) => ({ id: limit, label: String(limit) }));
 
   useEffect(() => {
     document.title = "Smartbooks | Invoice Overview";
     fetchKPIs();
-  }, []);
+  }, [fetchKPIs]);
 
-  // Fetch data whenever relevant store states change
   useEffect(() => {
     fetchData();
-  }, [currentPage, itemsPerPage, sortBy, sortOrder]); 
+  }, [currentPage, itemsPerPage, sortBy, sortOrder, fetchData]);
 
   const totalPages = getTotalPages();
+  const currentPageIds = useMemo(() => data.map((item) => item.invoice_number), [data]);
+  const allCurrentPageSelected = currentPageIds.length > 0
+    && currentPageIds.every((invoiceNumber) => selectedItems.includes(invoiceNumber));
 
-  // Handlers
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
+  const handleSearchChange = (event) => {
+    const query = event.target.value;
     setSearchQuery(query);
-    if (!query) fetchData(); 
+    if (!query) fetchData();
   };
 
-  const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter') fetchData();
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    fetchData();
   };
 
-  const handleSearchClick = () => {
+  const handleClearSearch = () => {
+    setSearchQuery("");
     fetchData();
   };
 
   const handleSort = (key) => {
-    const newDirection = sortBy === key && sortOrder === 'ASC' ? 'DESC' : 'ASC';
+    const newDirection = sortBy === key && sortOrder === "ASC" ? "DESC" : "ASC";
     setSorting(key, newDirection);
   };
 
-  const handlePageLimitChange = (limit) => {
-    setItemsPerPage(limit);
-  };
-
   const handleSelectAll = () => {
-    // Invoice data uses 'id' as primary key based on sample
-    const currentPageIds = data.map(item => item.invoice_number);
-    const allSelected = currentPageIds.every(invoice_number => selectedItems.includes(invoice_number));
-
-    if (allSelected) {
-      const newSelection = selectedItems.filter(invoice_number => !currentPageIds.includes(invoice_number));
-      useInvoiceStore.setState({ selectedItems: newSelection });
-    } else {
-      const newSelection = [...new Set([...selectedItems, ...currentPageIds])];
-      useInvoiceStore.setState({ selectedItems: newSelection });
+    if (allCurrentPageSelected) {
+      useInvoiceStore.setState({
+        selectedItems: selectedItems.filter((invoiceNumber) => !currentPageIds.includes(invoiceNumber)),
+      });
+      return;
     }
+
+    useInvoiceStore.setState({
+      selectedItems: [...new Set([...selectedItems, ...currentPageIds])],
+    });
   };
 
   const handleActionChange = (actionId) => {
     setSelectedAction(actionId);
-    if (actionId === "delete") {
-      setShowDeleteModal(true);
-    }
+    if (actionId === "delete") setShowDeleteModal(true);
   };
 
   const handleDelete = async () => {
@@ -110,15 +142,14 @@ const InvoiceOverview = () => {
     setShowDeleteModal(false);
     setSelectedAction("");
     clearSelection();
+    fetchKPIs();
   };
 
-
-  const handleDeleteInvoice = async (invoice_id) => {
-    if(invoice_id !== ""){
-      useInvoiceStore.setState({ selectedItems: [invoice_id] });
-      setShowDeleteModal(true);
-    }
-  }
+  const handleDeleteInvoice = (invoiceNumber) => {
+    if (!invoiceNumber) return;
+    useInvoiceStore.setState({ selectedItems: [invoiceNumber] });
+    setShowDeleteModal(true);
+  };
 
   const handleCloseErrorModal = () => {
     useInvoiceStore.setState({ error: null });
@@ -133,23 +164,32 @@ const InvoiceOverview = () => {
   };
 
   const getSortIcon = (columnKey) => {
-    if (sortBy !== columnKey) {
-      return <i className="fas fa-sort active-table-sort-icon"></i>;
-    }
-    return sortOrder === 'ASC'
-      ? <i className="fas fa-sort-up table-sort-icon"></i>
-      : <i className="fas fa-sort-down table-sort-icon"></i>;
+    if (sortBy !== columnKey) return <i className="fas fa-sort invoice-sort-icon invoice-sort-icon--idle" />;
+    return sortOrder === "ASC"
+      ? <i className="fas fa-sort-up invoice-sort-icon" />
+      : <i className="fas fa-sort-down invoice-sort-icon" />;
   };
-
 
   const getWorkflowStyle = (status) => {
     const normalized = String(status || "Issued").toLowerCase();
     return ["issued", "cancelled", "void"].includes(normalized) ? normalized : "issued";
   };
 
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "Paid": return "success";
+      case "Pending":
+      case "Partially Paid": return "warning";
+      case "Overdue":
+      case "Cancelled":
+      case "Rejected": return "danger";
+      default: return "neutral";
+    }
+  };
+
   const formatDeliveryDate = (value) => {
     if (!value) return "";
-    const parsed = new Date(value.replace(" ", "T"));
+    const parsed = new Date(String(value).replace(" ", "T"));
     if (Number.isNaN(parsed.getTime())) return "";
     return parsed.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -158,58 +198,90 @@ const InvoiceOverview = () => {
     });
   };
 
-  const pageLimitOptions = [
-    { id: 5, label: "5" },
-    { id: 10, label: "10" },
-    { id: 25, label: "25" },
-    { id: 50, label: "50" },
-    { id: 100, label: "100" },
-    { id: 200, label: "200" },
-    { id: 500, label: "500" },
-  ];
-
   const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   const getPageNumbers = () => {
     const maxVisiblePages = 5;
     const pages = [];
-    
+
     if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
-      if (startPage > 1) {
-        pages.push(1);
-        if (startPage > 2) pages.push('...');
-      }
-      
-      for (let i = startPage; i <= endPage; i++) pages.push(i);
-      
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) pages.push('...');
-        pages.push(totalPages);
-      }
+      for (let page = 1; page <= totalPages; page += 1) pages.push(page);
+      return pages;
     }
+
+    const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - maxVisiblePages + 1));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) pages.push("...");
+    }
+
+    for (let page = startPage; page <= endPage; page += 1) pages.push(page);
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
     return pages;
   };
 
-  // Helper for status styles
-  const getStatusStyle = (type) => {
-      switch (type) {
-          case 'Paid': return 'success';
-          case 'Pending': return 'warning';
-          case 'Partially Paid': return 'warning';
-          case 'Overdue': return 'danger';
-          case 'Cancelled': return 'danger';
-          default: return null;
-      }
-  };
+  const renderDeliveryState = (invoice) => (
+    Number(invoice.sent_count || 0) > 0 ? (
+      <div className="invoice-delivery-state invoice-delivery-state--sent">
+        <span className="invoice-delivery-state__label">
+          <i className="fas fa-paper-plane" aria-hidden="true" />
+          Sent {Number(invoice.sent_count) > 1 ? `${invoice.sent_count}×` : ""}
+        </span>
+        {invoice.last_sent_at && <small>{formatDeliveryDate(invoice.last_sent_at)}</small>}
+      </div>
+    ) : (
+      <div className="invoice-delivery-state invoice-delivery-state--not-sent">
+        <span className="invoice-delivery-state__label">
+          <i className="fas fa-envelope" aria-hidden="true" />
+          Not sent
+        </span>
+      </div>
+    )
+  );
+
+  const renderRowActions = (invoice, compact = false) => (
+    <div className={`invoice-row-actions ${compact ? "invoice-row-actions--mobile" : ""}`}>
+      <button
+        type="button"
+        className="invoice-row-action invoice-row-action--edit"
+        title="Edit invoice"
+        aria-label={`Edit invoice ${invoice.invoice_number}`}
+        onClick={() => handleEditInvoice(invoice)}
+      >
+        <i className="fas fa-pen" />
+        {compact && <span>Edit</span>}
+      </button>
+      <button
+        type="button"
+        className="invoice-row-action invoice-row-action--view"
+        title="View invoice"
+        aria-label={`View invoice ${invoice.invoice_number}`}
+        onClick={() => handleViewInvoice(invoice)}
+      >
+        <i className="fas fa-arrow-up-right-from-square" />
+        {compact && <span>View</span>}
+      </button>
+      <button
+        type="button"
+        className="invoice-row-action invoice-row-action--delete"
+        title="Delete invoice"
+        aria-label={`Delete invoice ${invoice.invoice_number}`}
+        onClick={() => handleDeleteInvoice(invoice.invoice_number)}
+      >
+        <i className="fas fa-trash" />
+        {compact && <span>Delete</span>}
+      </button>
+    </div>
+  );
 
   return (
     <div className={`main-container theme-${theme}`}>
@@ -217,265 +289,339 @@ const InvoiceOverview = () => {
       <NavBar setNav={setNav} nav={nav} />
 
       <div className={`content-container theme-${theme}`}>
-        <div className={`db-root theme-${theme}`}>
-          <div className="db-page">
-        
-        <PageNav pageTitle='Invoice Overview' links={links} />
+        <div className={`db-root invoice-overview-root theme-${theme}`}>
+          <div className="db-page invoice-overview-page">
+            <PageNav pageTitle="Invoice Overview" links={links} />
 
-        <InvoiceKPICards kpis={kpis} loading={kpisLoading} />
+            <motion.section
+              className="invoice-overview-hero"
+              variants={fadeInUp}
+              initial="hidden"
+              animate="show"
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="invoice-overview-hero__copy">
+                <span className="invoice-overview-eyebrow">
+                  <i className="fas fa-file-invoice-dollar" /> Billing workspace
+                </span>
+                <h1>Manage every invoice from one clear view</h1>
+                <p>Track payment, workflow and delivery status while keeping daily invoice actions within easy reach.</p>
+              </div>
+              <div className="invoice-overview-hero__actions">
+                <button
+                  type="button"
+                  className="invoice-overview-button invoice-overview-button--secondary"
+                  onClick={exportToExcel}
+                  disabled={loading || data.length === 0}
+                >
+                  <i className="fas fa-file-excel" />
+                  <span>Export current page</span>
+                </button>
+                <Link to="/invoice/create" className="invoice-overview-button invoice-overview-button--primary">
+                  <i className="fas fa-plus" />
+                  <span>Create invoice</span>
+                </Link>
+              </div>
+            </motion.section>
 
-        <motion.div variants={fadeInUp} initial="hidden" animate="show"
-          transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
-          className={`invoice-section theme-${theme}`}
-        >
-          <div className="top-action-wrapper">
-            <Link to='/invoice/create' className="create-new-invoice-btn">
-              <span className="fas fa-circle-plus"></span>
-              <span>Create Invoice</span>
-            </Link>
-          </div>
+            <InvoiceKPICards kpis={kpis} loading={kpisLoading} />
 
-          <div className="main-table-box">
-            {loading ? (
-              <TableLoaderComponent />
-            ) : (
-              <>
-                <div className="table-controls">
-                  <div className="table-search-box">
-                    <input 
-                      type="text" 
-                      placeholder="Search..."
-                      value={searchQuery} 
-                      onChange={handleSearchChange} 
-                      onKeyDown={handleSearchSubmit}
-                      className="table-search-input"
-                    />
-                    <span 
-                      className="fas fa-search table-search-icon" 
-                      onClick={handleSearchClick} 
-                      style={{ cursor: 'pointer' }}
+            <motion.section
+              variants={fadeInUp}
+              initial="hidden"
+              animate="show"
+              transition={{ duration: 0.35, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+              className="invoice-overview-panel"
+            >
+              <div className="invoice-overview-panel__header">
+                <div>
+                  <span className="invoice-overview-eyebrow">Invoice register</span>
+                  <h2>All invoices</h2>
+                  <p>{total.toLocaleString("en-US")} invoice{total === 1 ? "" : "s"} in the current register</p>
+                </div>
+                <span className="invoice-overview-panel__count">
+                  <i className="fas fa-layer-group" /> Page {currentPage} of {Math.max(totalPages, 1)}
+                </span>
+              </div>
+
+              <div className="invoice-overview-toolbar">
+                <form className="invoice-overview-search" onSubmit={handleSearchSubmit}>
+                  <i className="fas fa-magnifying-glass" aria-hidden="true" />
+                  <input
+                    type="search"
+                    placeholder="Search invoice number, client or status"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    aria-label="Search invoices"
+                  />
+                  {searchQuery && (
+                    <button type="button" className="invoice-search-clear" onClick={handleClearSearch} aria-label="Clear invoice search">
+                      <i className="fas fa-xmark" />
+                    </button>
+                  )}
+                  <button type="submit" className="invoice-search-submit">
+                    <span>Search</span>
+                    <i className="fas fa-arrow-right" />
+                  </button>
+                </form>
+
+                <div className="invoice-overview-filters">
+                  <div className="invoice-overview-filter">
+                    <label>Rows per page</label>
+                    <ChartSearchableSelect
+                      options={pageLimitOptions}
+                      value={itemsPerPage}
+                      onChange={setItemsPerPage}
+                      className="invoice-page-limit-select"
                     />
                   </div>
 
-                  <div className="filters-box">
-                    <div className="filter-wrapper">
-                      <label className="filter-wrapper-label">Page limit</label>
+                  {selectedItems.length > 0 && (
+                    <div className="invoice-overview-filter invoice-overview-filter--action">
+                      <label>Bulk action</label>
                       <ChartSearchableSelect
-                        options={pageLimitOptions}
-                        value={itemsPerPage}
-                        onChange={handlePageLimitChange}
-                        className="box-filter-limit"
+                        options={actionOptions}
+                        value={selectedAction}
+                        onChange={handleActionChange}
+                        className="invoice-bulk-action-select"
                       />
                     </div>
-                    
-                    {selectedItems.length > 0 && (
-                      <div className="filter-wrapper bulk-actions">
-                        <label className="filter-wrapper-label">Select Action</label>
-                        <ChartSearchableSelect
-                          options={actionOptions}
-                          value={selectedAction}
-                          onChange={handleActionChange}
-                          className="box-filter-action"
-                        />
+                  )}
+                </div>
+              </div>
+
+              {selectedItems.length > 0 && (
+                <div className="invoice-selection-banner">
+                  <span><i className="fas fa-circle-check" /> {selectedItems.length} selected</span>
+                  <button type="button" onClick={clearSelection}>Clear selection</button>
+                </div>
+              )}
+
+              {loading ? (
+                <div className="invoice-overview-loader"><TableLoaderComponent /></div>
+              ) : (
+                <>
+                  {data.length > 0 && (
+                    <>
+                      <div className="invoice-overview-table-wrap">
+                        <table className="invoice-overview-table">
+                          <thead>
+                            <tr>
+                              <th className="invoice-check-cell">
+                                <input
+                                  type="checkbox"
+                                  checked={allCurrentPageSelected}
+                                  onChange={handleSelectAll}
+                                  aria-label="Select all invoices on this page"
+                                  className="table-checkbox"
+                                />
+                              </th>
+                              <th className="sortable" onClick={() => handleSort("invoice_number")}>Invoice {getSortIcon("invoice_number")}</th>
+                              <th className="sortable" onClick={() => handleSort("invoice_date")}>Issued {getSortIcon("invoice_date")}</th>
+                              <th>Client</th>
+                              <th className="sortable" onClick={() => handleSort("due_date")}>Due {getSortIcon("due_date")}</th>
+                              <th className="sortable" onClick={() => handleSort("status")}>Payment {getSortIcon("status")}</th>
+                              <th className="sortable" onClick={() => handleSort("workflow_status")}>Workflow {getSortIcon("workflow_status")}</th>
+                              <th className="sortable" onClick={() => handleSort("last_sent_at")}>Delivery {getSortIcon("last_sent_at")}</th>
+                              <th>Amount</th>
+                              <th className="invoice-actions-cell">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.map((invoice) => {
+                              const selected = selectedItems.includes(invoice.invoice_number);
+                              return (
+                                <tr key={invoice.id || invoice.invoice_number} className={selected ? "selected" : ""}>
+                                  <td className="invoice-check-cell">
+                                    <input
+                                      type="checkbox"
+                                      className="table-checkbox"
+                                      checked={selected}
+                                      onChange={() => toggleItemSelection(invoice.invoice_number)}
+                                      aria-label={`Select invoice ${invoice.invoice_number}`}
+                                    />
+                                  </td>
+                                  <td>
+                                    <button type="button" className="invoice-number-link" onClick={() => handleViewInvoice(invoice)}>
+                                      <span>INV</span> {invoice.invoice_number}
+                                    </button>
+                                  </td>
+                                  <td><span className="invoice-date-value">{formatDate(invoice.invoice_date)}</span></td>
+                                  <td>
+                                    <div className="invoice-client-cell">
+                                      <span className="invoice-client-avatar">{clientInitials(invoice.clients_name)}</span>
+                                      <span>{invoice.clients_name || "Unassigned client"}</span>
+                                    </div>
+                                  </td>
+                                  <td><span className="invoice-date-value">{formatDate(invoice.due_date)}</span></td>
+                                  <td>
+                                    <span className={`invoice-status-pill invoice-status-pill--${getStatusStyle(invoice.status)}`}>
+                                      <i /> {invoice.status || "Unknown"}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span className={`invoice-list-workflow invoice-list-workflow--${getWorkflowStyle(invoice.workflow_status)}`}>
+                                      {invoice.workflow_status || "Issued"}
+                                    </span>
+                                  </td>
+                                  <td>{renderDeliveryState(invoice)}</td>
+                                  <td><strong className="invoice-amount-value">{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</strong></td>
+                                  <td className="invoice-actions-cell">{renderRowActions(invoice)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="table-box">
-                  <div className="table-wrapper">
-                    <table className="data-table invoice-table">
-                      <thead>
-                        <tr>
-                          <th className="checkbox-cell">
-                            <input
-                              type="checkbox"
-                              checked={data.length > 0 && selectedItems.length === data.length}
-                              onChange={handleSelectAll}
-                              className={`table-checkbox fas fa-check 
-                            ${selectedItems.length === data.length && data.length > 0 && 'selected-checkbox'}`}
-                            />
-                          </th>
-                          <th onClick={() => handleSort('invoice_number')} className="sortable">
-                            Inv # {getSortIcon('invoice_number')}
-                          </th>
-                          <th onClick={() => handleSort('invoice_date')} className="sortable">
-                            Date {getSortIcon('invoice_date')}
-                          </th>
-                          <th>Client</th>
-                          <th onClick={() => handleSort('due_date')} className="sortable">
-                            Due Date {getSortIcon('due_date')}
-                          </th>
-                          <th onClick={() => handleSort('status')} className="sortable">
-                            Payment {getSortIcon('status')}
-                          </th>
-                          <th onClick={() => handleSort('workflow_status')} className="sortable">
-                            Workflow {getSortIcon('workflow_status')}
-                          </th>
-                          <th onClick={() => handleSort('last_sent_at')} className="sortable">
-                            Delivery {getSortIcon('last_sent_at')}
-                          </th>
-                          <th>Amt</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((invoice) => (
-                          <tr key={invoice.id} className={selectedItems.includes(invoice.invoice_number) ? 'selected' : ''}>
-                            <td className="checkbox-cell">
-                              <input
-                                type="checkbox"
-                                className={`table-checkbox fas fa-check ${selectedItems.includes(invoice.invoice_number) && 'selected-checkbox'}`}
-                                checked={selectedItems.includes(invoice.invoice_number)}
-                                onChange={() => toggleItemSelection(invoice.invoice_number)}
-                              />
-                            </td>
-                            <td className="number-tab">{invoice.invoice_number}</td>
-                            <td>{new Date(invoice.invoice_date).toLocaleDateString('en-GB')}</td>
-                            <td>
-                              <div className="table-flex-box">
-                                <span className="table-customer-text number-tab">{invoice.clients_name}</span>
+                      <div className="invoice-mobile-list">
+                        {data.map((invoice) => {
+                          const selected = selectedItems.includes(invoice.invoice_number);
+                          return (
+                            <article key={`mobile-${invoice.id || invoice.invoice_number}`} className={`invoice-mobile-card ${selected ? "selected" : ""}`}>
+                              <div className="invoice-mobile-card__top">
+                                <label className="invoice-mobile-check">
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={() => toggleItemSelection(invoice.invoice_number)}
+                                    aria-label={`Select invoice ${invoice.invoice_number}`}
+                                  />
+                                  <span />
+                                </label>
+                                <button type="button" className="invoice-mobile-number" onClick={() => handleViewInvoice(invoice)}>
+                                  INV {invoice.invoice_number}
+                                </button>
+                                <span className={`invoice-status-pill invoice-status-pill--${getStatusStyle(invoice.status)}`}>
+                                  <i /> {invoice.status || "Unknown"}
+                                </span>
                               </div>
-                            </td>
-                            <td>{new Date(invoice.due_date).toLocaleDateString('en-GB')}</td>
-                            <td>
-                              <span className={`badge badge-${getStatusStyle(invoice.status)}`}>
-                                <span className={`badge-circle badge-circle-${getStatusStyle(invoice.status)}`}/> {invoice.status}
-                              </span>
-                            </td>
-                            <td>
-                              <span className={`invoice-list-workflow invoice-list-workflow--${getWorkflowStyle(invoice.workflow_status)}`}>
-                                {invoice.workflow_status || "Issued"}
-                              </span>
-                            </td>
-                            <td>
-                              {Number(invoice.sent_count || 0) > 0 ? (
-                                <div className="invoice-delivery-state invoice-delivery-state--sent">
-                                  <span className="invoice-delivery-state__label">
-                                    <i className="fas fa-paper-plane" aria-hidden="true"></i>
-                                    Sent {Number(invoice.sent_count) > 1 ? `${invoice.sent_count}×` : ""}
-                                  </span>
-                                  {invoice.last_sent_at && (
-                                    <small>{formatDeliveryDate(invoice.last_sent_at)}</small>
-                                  )}
+
+                              <div className="invoice-mobile-client">
+                                <span className="invoice-client-avatar">{clientInitials(invoice.clients_name)}</span>
+                                <div>
+                                  <strong>{invoice.clients_name || "Unassigned client"}</strong>
+                                  <small>{formatDate(invoice.invoice_date)} · due {formatDate(invoice.due_date)}</small>
                                 </div>
-                              ) : (
-                                <div className="invoice-delivery-state invoice-delivery-state--not-sent">
-                                  <span className="invoice-delivery-state__label">
-                                    <i className="fas fa-envelope" aria-hidden="true"></i>
-                                    Not sent
-                                  </span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="data-table-bold-text">{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</td>
-                            <td>
-                              <div className="action-buttons">
-                                <button className="btn-edit" title="Edit" onClick={() => handleEditInvoice(invoice)}>
-                                  <span className="fas fa-pen"></span> 
-                                </button>
-                                <button className="btn-view" title="View" onClick={() => handleViewInvoice(invoice)}>
-                                  <span className="fas fa-file"></span> 
-                                </button>
-                                <button className="btns-delete" title="Delete" onClick={() => handleDeleteInvoice(invoice.invoice_number)}>
-                                  <span className="fas fa-trash"></span> 
-                                </button>
                               </div>
-                            </td>
-                          </tr>
+
+                              <div className="invoice-mobile-card__amount">
+                                <span>Invoice amount</span>
+                                <strong>{formatCurrencyDecimals(invoice.invoice_amount, invoice.currency)}</strong>
+                              </div>
+
+                              <div className="invoice-mobile-card__meta">
+                                <div>
+                                  <span>Workflow</span>
+                                  <strong className={`invoice-list-workflow invoice-list-workflow--${getWorkflowStyle(invoice.workflow_status)}`}>
+                                    {invoice.workflow_status || "Issued"}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Delivery</span>
+                                  {renderDeliveryState(invoice)}
+                                </div>
+                              </div>
+
+                              {renderRowActions(invoice, true)}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {totalPages > 1 && (
+                    <div className="invoice-pagination">
+                      <div className="invoice-pagination__info">
+                        <span>Showing</span>
+                        <strong>{((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, total)}</strong>
+                        <span>of {total.toLocaleString("en-US")}</span>
+                      </div>
+                      <div className="invoice-pagination__controls">
+                        <button
+                          type="button"
+                          className="invoice-page-button invoice-page-button--nav"
+                          onClick={() => goToPage(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          aria-label="Previous page"
+                        >
+                          <i className="fas fa-chevron-left" />
+                          <span>Previous</span>
+                        </button>
+
+                        {getPageNumbers().map((page, index) => (
+                          page === "..." ? (
+                            <span key={`ellipsis-${index}`} className="invoice-pagination__ellipsis">•••</span>
+                          ) : (
+                            <button
+                              type="button"
+                              key={page}
+                              className={`invoice-page-button ${currentPage === page ? "active" : ""}`}
+                              onClick={() => goToPage(page)}
+                              aria-current={currentPage === page ? "page" : undefined}
+                            >
+                              {page}
+                            </button>
+                          )
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="pagination-container">
-                    <div className="pagination-info">
-                      Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, total)} of {total} entries
+                        <button
+                          type="button"
+                          className="invoice-page-button invoice-page-button--nav"
+                          onClick={() => goToPage(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          aria-label="Next page"
+                        >
+                          <span>Next</span>
+                          <i className="fas fa-chevron-right" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="pagination-controls">
-                      <button 
-                        className="pagination-btn" 
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <span>Previous</span>
-                      </button>
-                      
-                      {getPageNumbers().map((page, index) => (
-                        page === '...' ? (
-                          <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
-                        ) : (
-                          <button
-                            key={page}
-                            className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
-                            onClick={() => goToPage(page)}
-                          >
-                            {page}
-                          </button>
-                        )
-                      ))}
-                      
-                      <button 
-                        className="pagination-btn" 
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <span>Next</span>
-                      </button>
+                  )}
+
+                  {data.length === 0 && (
+                    <div className="invoice-overview-empty">
+                      <EmptyTable
+                        icon="fas fa-file-invoice"
+                        message="No invoices found matching your criteria"
+                        link="/invoice/create"
+                      />
                     </div>
-                  </div>
-                )}
+                  )}
+                </>
+              )}
+            </motion.section>
 
-                {data.length === 0 && (
-                  <EmptyTable
-                    icon="fas fa-file-invoice" 
-                    message="No invoices found matching your criteria"
-                    link="/invoice/create"
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </motion.div>
+            <AnimatePresence>
+              {showDeleteModal && (
+                <DeleteConfirmationModal
+                  isOpen={showDeleteModal}
+                  onClose={() => {
+                    setShowDeleteModal(false);
+                    setSelectedAction("");
+                    clearSelection();
+                  }}
+                  onConfirm={handleDelete}
+                  count={selectedItems.length}
+                  page="invoice"
+                />
+              )}
+            </AnimatePresence>
 
-        {/* Delete Confirmation Modal */}
-        <AnimatePresence>
-          {showDeleteModal && (
-            <DeleteConfirmationModal
-              isOpen={showDeleteModal}
-              onClose={() => {
-                setShowDeleteModal(false);
-                setSelectedAction("");
-                clearSelection();
-              }}
-              onConfirm={handleDelete}
-              count={selectedItems.length}
-              page="invoice"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Error Modal Integration */}
-        <AnimatePresence>
-          {error && (
-            <ErrorModal
-              isOpen={!!error}
-              onClose={handleCloseErrorModal}
-              onRetry={fetchData}
-              message={error}
-            />
-          )}
-        </AnimatePresence>
-        
-        
+            <AnimatePresence>
+              {error && (
+                <ErrorModal
+                  isOpen={Boolean(error)}
+                  onClose={handleCloseErrorModal}
+                  onRetry={fetchData}
+                  message={error}
+                />
+              )}
+            </AnimatePresence>
           </div>
-          </div>
+        </div>
       </div>
-
-      
     </div>
   );
 };

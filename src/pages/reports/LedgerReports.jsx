@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
+import { preloadRoute } from "../../utils/routePreloader";
 import "./LedgerReports.css";
 
 const REPORT_GROUPS = [
   {
     key: "financial",
     title: "Financial statements",
-    copy: "Review position, performance and ledger movements with period and currency filtering.",
+    shortLabel: "Financial",
+    icon: "fa-chart-pie",
+    copy: "Review position, performance and ledger movements with period, currency and zero-balance controls.",
     reports: [
       {
         key: "ledger-statement", path: "/reports/ledger/ledger-statement", icon: "fa-book-open", label: "Ledger Statement",
@@ -35,8 +38,10 @@ const REPORT_GROUPS = [
     ],
   },
   {
-    key: "controls",
+    key: "operations",
     title: "Controls & operations",
+    shortLabel: "Controls",
+    icon: "fa-sliders",
     copy: "Monitor receivables, exchange exposure, reconciliation progress and staff time activity.",
     reports: [
       {
@@ -52,8 +57,8 @@ const REPORT_GROUPS = [
         description: "Match bank and ledger lines, classify differences and export results.", tags: ["Matching", "Exceptions"], accentClass: "lr-card--teal",
       },
       {
-        key: "timesheets", path: "/reports/timesheet", icon: "fa-business-time", label: "Timesheet Report",
-        description: "Analyse recorded staff time across projects and reporting periods.", tags: ["Hours", "Projects"], accentClass: "lr-card--violet",
+        key: "timesheets", path: "/reports/timesheet", icon: "fa-business-time", label: "Timesheet Analysis",
+        description: "Analyse recorded staff time across clients, projects and reporting periods.", tags: ["Hours", "People"], accentClass: "lr-card--violet",
       },
     ],
   },
@@ -61,10 +66,35 @@ const REPORT_GROUPS = [
 
 const LedgerReports = () => {
   const [nav, setNav] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeGroup, setActiveGroup] = useState("all");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+
   const totalReports = REPORT_GROUPS.reduce((count, group) => count + group.reports.length, 0);
-  const links = [{ label: "Home", to: "/", active: true }, { label: "Reports & Analytics", to: "/reports/ledger", active: false }];
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const visibleGroups = useMemo(() => REPORT_GROUPS
+    .filter((group) => activeGroup === "all" || group.key === activeGroup)
+    .map((group) => ({
+      ...group,
+      reports: group.reports.filter((report) => {
+        if (!normalizedQuery) return true;
+        return [report.label, report.description, ...report.tags]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
+      }),
+    }))
+    .filter((group) => group.reports.length > 0), [activeGroup, normalizedQuery]);
+
+  const visibleCount = visibleGroups.reduce((count, group) => count + group.reports.length, 0);
+  const links = [
+    { label: "Home", to: "/", active: true },
+    { label: "Report Library", to: "/reports/ledger", active: false },
+  ];
+
+  const openReport = (path) => navigate(path);
 
   return (
     <div className={`main-container theme-${theme}`}>
@@ -73,28 +103,69 @@ const LedgerReports = () => {
       <div className={`content-container theme-${theme}`}>
         <div className={`lr-root theme-${theme}`}>
           <div className="lr-page">
-            <PageNav pageTitle="Reports & Analytics" links={links} />
-            <section className="lr-hero" aria-label="Reports summary">
+            <PageNav pageTitle="Report Library" links={links} />
+
+            <section className="lr-hero" aria-label="Reporting centre summary">
               <div className="lr-hero-text">
-                <span className="lr-eyebrow">Insights centre</span>
-                <h1 className="lr-hero-title">Financial intelligence at a glance</h1>
-                <p className="lr-hero-sub">Select a report to analyse balances, cash movements, exposure, reconciliation activity and operational performance.</p>
+                <span className="lr-eyebrow"><i className="fas fa-chart-simple" /> Reporting centre</span>
+                <h1 className="lr-hero-title">Every report, organised in one intelligence workspace</h1>
+                <p className="lr-hero-sub">Open financial statements, control reports and operational analysis without searching across separate menu groups.</p>
               </div>
               <div className="lr-hero-metrics">
                 <span><strong>{totalReports}</strong><small>Available reports</small></span>
-                <span><strong>2</strong><small>Report categories</small></span>
+                <span><strong>{REPORT_GROUPS.length}</strong><small>Report families</small></span>
+                <span><strong>{visibleCount}</strong><small>Currently visible</small></span>
               </div>
             </section>
 
-            {REPORT_GROUPS.map((group) => (
+            <section className="lr-discovery" aria-label="Find a report">
+              <div className="lr-search">
+                <i className="fas fa-magnifying-glass" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search reports by name, purpose or keyword"
+                  aria-label="Search reports"
+                />
+                {query && (
+                  <button type="button" onClick={() => setQuery("")} aria-label="Clear report search">
+                    <i className="fas fa-xmark" />
+                  </button>
+                )}
+              </div>
+
+              <div className="lr-tabs" role="tablist" aria-label="Report categories">
+                <button type="button" className={activeGroup === "all" ? "active" : ""} onClick={() => setActiveGroup("all")}>
+                  <i className="fas fa-table-cells-large" /> All reports <span>{totalReports}</span>
+                </button>
+                {REPORT_GROUPS.map((group) => (
+                  <button key={group.key} type="button" className={activeGroup === group.key ? "active" : ""} onClick={() => setActiveGroup(group.key)}>
+                    <i className={`fas ${group.icon}`} /> {group.shortLabel} <span>{group.reports.length}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {visibleGroups.map((group) => (
               <section key={group.key} className="lr-section" aria-label={group.title}>
                 <div className="lr-section__head">
-                  <div><h2>{group.title}</h2><p>{group.copy}</p></div>
-                  <span className="lr-section__count">{group.reports.length} reports</span>
+                  <div className="lr-section__identity">
+                    <span className="lr-section__icon"><i className={`fas ${group.icon}`} /></span>
+                    <div><h2>{group.title}</h2><p>{group.copy}</p></div>
+                  </div>
+                  <span className="lr-section__count">{group.reports.length} report{group.reports.length === 1 ? "" : "s"}</span>
                 </div>
                 <div className="lr-grid">
                   {group.reports.map((report) => (
-                    <button key={report.key} className={`lr-card ${report.accentClass}`} onClick={() => navigate(report.path)}>
+                    <button
+                      key={report.key}
+                      className={`lr-card ${report.accentClass}`}
+                      onClick={() => openReport(report.path)}
+                      onMouseEnter={() => preloadRoute(report.path)}
+                      onFocus={() => preloadRoute(report.path)}
+                      onTouchStart={() => preloadRoute(report.path)}
+                    >
                       <div className="lr-card__head">
                         <span className="lr-card__icon-wrap"><i className={`fas ${report.icon}`} /></span>
                         <span className="lr-card__arrow"><i className="fas fa-arrow-right" /></span>
@@ -109,6 +180,15 @@ const LedgerReports = () => {
                 </div>
               </section>
             ))}
+
+            {visibleGroups.length === 0 && (
+              <section className="lr-empty">
+                <span><i className="fas fa-chart-column" /></span>
+                <h2>No matching reports</h2>
+                <p>Try another report name, purpose or category.</p>
+                <button type="button" onClick={() => { setQuery(""); setActiveGroup("all"); }}>Show all reports</button>
+              </section>
+            )}
           </div>
         </div>
       </div>

@@ -872,3 +872,15 @@
     border-bottom: none;
   }
 }
+
+.journal-view-action--duplicate {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.journal-view-action--duplicate:hover:not(:disabled) {
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.16);
+  border-color: currentColor;
+}

@@ -326,8 +326,8 @@ const CashPanel = ({ accounts, currency, loading }) => (
   <Card title="Cash and bank position" icon="fa-building-columns" action={<Link to="/banks/home">Bank accounts <i className="fas fa-arrow-right" /></Link>}>
     {loading ? <Skeleton className="analytics-skel--list" /> : accounts.length ? (
       <div className="analytics-cash">
-        {accounts.map((account) => (
-          <div key={`${account.ledger_number}-${account.source_currency}`}>
+        {accounts.map((account, index) => (
+          <div key={`${account.ledger_number}-${account.ledger_name}-${account.source_currency}-${index}`}>
             <i className="fas fa-wallet" />
             <span><strong>{account.ledger_name}</strong><small>{account.source_currency} · {account.ledger_number}</small></span>
             <b>{compactMoney(account.balance, currency)}</b>

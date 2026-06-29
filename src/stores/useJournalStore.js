@@ -10,6 +10,8 @@ const useJournalStore = create(
     (set, get) => ({
       // ── Data (Transient - Do not persist) ────────────────────────────────
       data: [],
+      kpis: null,
+      kpisLoading: false,
       loading: false,
       error: null,
       total: 0,
@@ -70,6 +72,21 @@ const useJournalStore = create(
         }
       },
 
+      fetchKPIs: async () => {
+        const token = useAuthStore.getState().token;
+        set({ kpisLoading: true });
+
+        try {
+          const response = await api.get('/journal/kpi-stats', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          set({ kpis: response.data.data, kpisLoading: false });
+        } catch (error) {
+          set({ kpisLoading: false });
+          // KPI cards are supplementary; keep the register usable if they fail.
+        }
+      },
+
       fetchSingleJournal: async (journalId) => {
         const token = useAuthStore.getState().token;
         try {
@@ -123,12 +140,10 @@ const useJournalStore = create(
 
       setCurrentPage: (page) => {
         set({ currentPage: page });
-        get().fetchData();
       },
 
       setItemsPerPage: (items) => {
         set({ itemsPerPage: items, currentPage: 1 });
-        get().fetchData();
       },
 
       /* ═════════════════════════════════════════════════════════════════════

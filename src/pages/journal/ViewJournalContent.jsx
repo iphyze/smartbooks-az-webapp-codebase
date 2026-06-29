@@ -190,6 +190,15 @@ const ViewJournalContent = ({ journal }) => {
 
           <button
             type="button"
+            className="journal-view-action journal-view-action--duplicate"
+            onClick={() => navigate(`/journal/create?duplicate=${encodeURIComponent(journal.journal_id)}`)}
+          >
+            <i className="fas fa-copy" aria-hidden="true" />
+            <span>Duplicate journal</span>
+          </button>
+
+          <button
+            type="button"
             className="journal-view-action journal-view-action--print"
             onClick={handlePrintJournal}
             disabled={isPrinting}

@@ -4,6 +4,7 @@ import useAuthStore from "../stores/useAuthStore";
 import useThemeStore from "../stores/useThemeStore";
 import useNotificationStore from "../stores/useNotificationStore";
 import { canManageUsers, isTimesheetOnly } from "../utils/permissions";
+import { preloadRoute } from "../utils/routePreloader";
 import './NavBar.css';
 
 const OPERATIONAL_SUBMENUS = {
@@ -17,7 +18,21 @@ const OPERATIONAL_SUBMENUS = {
   staff: { basePath: "/staff", items: [{ path: "/staff/home", label: "Overview", icon: "fa-list-ul" }, { path: "/staff/create-staff", label: "Add Staff", icon: "fa-user-plus" }] },
   project: { basePath: "/project", items: [{ path: "/project/home", label: "Overview", icon: "fa-list-ul" }, { path: "/project/create", label: "Create Project", icon: "fa-plus" }] },
   timesheet: { basePath: "/timesheet", items: [{ path: "/timesheet/home", label: "Entries", icon: "fa-list-ul" }, { path: "/timesheet/create-timesheet", label: "Log Time", icon: "fa-plus" }] },
-  report: { basePath: "/reports", items: [{ path: "/reports/ledger", label: "Reports & Analytics", icon: "fa-file-lines" }, { path: "/reports/fx-revaluation", label: "FX Gain / Loss", icon: "fa-arrow-trend-up" }, { path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" }, { path: "/reports/timesheet", label: "Timesheet Report", icon: "fa-business-time" }, { path: "/reports/bank-recon", label: "Bank Reconciliation", icon: "fa-scale-balanced" }] },
+  report: {
+    basePath: "/reports",
+    items: [
+      { path: "/reports/ledger", label: "Report Library", icon: "fa-table-cells-large" },
+      { path: "/reports/ledger/ledger-statement", label: "Ledger Statement", icon: "fa-book-open" },
+      { path: "/reports/ledger/general-ledger", label: "General Ledger", icon: "fa-table-list" },
+      { path: "/reports/ledger/trial-balance", label: "Trial Balance", icon: "fa-scale-balanced" },
+      { path: "/reports/ledger/profit-and-loss", label: "Profit & Loss", icon: "fa-chart-line" },
+      { path: "/reports/ledger/balance-sheet", label: "Balance Sheet", icon: "fa-building-columns" },
+      { path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" },
+      { path: "/reports/fx-revaluation", label: "FX Gain / Loss", icon: "fa-arrow-trend-up" },
+      { path: "/reports/bank-recon", label: "Bank Reconciliation", icon: "fa-scale-unbalanced-flip" },
+      { path: "/reports/timesheet", label: "Timesheet Analysis", icon: "fa-business-time" },
+    ],
+  },
   users: { basePath: "/users", items: [{ path: "/users/home", label: "All Users", icon: "fa-users" }, { path: "/users/create-user", label: "Add User", icon: "fa-user-plus" }] },
 };
 
@@ -37,7 +52,7 @@ const navigationForOperationalUser = (isAdmin) => [
     { type: "submenu", key: "project", label: "Projects", icon: "fa-diagram-project" },
     { type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" },
   ] },
-  { title: "Insights", items: [{ type: "submenu", key: "report", label: "Reports & Analytics", icon: "fa-chart-simple" }] },
+  { title: "Insights", items: [{ type: "submenu", key: "report", label: "Reporting Centre", icon: "fa-chart-simple" }] },
   { title: "Governance", items: [
     ...(isAdmin ? [{ type: "submenu", key: "users", label: "User Administration", icon: "fa-users-gear" }] : []),
     { type: "link", path: "/lock-period/home", label: "Lock Period", icon: "fa-calendar-xmark" },
@@ -97,6 +112,11 @@ const NavBar = ({ nav, setNav }) => {
   }, [nav, setNav]);
 
   const initials = `${user?.fname?.[0] || ''}${user?.lname?.[0] || ''}`.toUpperCase() || 'U';
+  const preloadProps = (path) => ({
+    onMouseEnter: () => preloadRoute(path),
+    onFocus: () => preloadRoute(path),
+    onTouchStart: () => preloadRoute(path),
+  });
 
   return (
     <>
@@ -113,7 +133,7 @@ const NavBar = ({ nav, setNav }) => {
               {category.items.map((item) => {
                 if (item.type === 'link') {
                   return (
-                    <NavLink key={item.path} to={item.path} end={item.end} onClick={() => setNav(false)} className={({ isActive }) => `sb-nav__item ${isActive ? 'sb-nav__item--active' : ''}`}>
+                    <NavLink key={item.path} to={item.path} end={item.end} {...preloadProps(item.path)} onClick={() => setNav(false)} className={({ isActive }) => `sb-nav__item ${isActive ? 'sb-nav__item--active' : ''}`}>
                       <span className="sb-nav__item-icon"><i className={`fas ${item.icon}`} /></span>
                       <span>{item.label}</span>
                       {item.badge === 'notifications' && unreadNotifications > 0 && (
@@ -134,7 +154,7 @@ const NavBar = ({ nav, setNav }) => {
                     </button>
                     <div className={`sb-nav__submenu ${isOpen ? 'open' : ''}`} style={{ maxHeight: isOpen ? `${menu.items.length * 43 + 9}px` : 0 }}>
                       {menu.items.map((sub) => (
-                        <NavLink key={sub.path} to={sub.path} onClick={() => setNav(false)} className={({ isActive: active }) => `sb-nav__sub-item ${active ? 'sb-nav__sub-item--active' : ''}`}>
+                        <NavLink key={sub.path} to={sub.path} end {...preloadProps(sub.path)} onClick={() => setNav(false)} className={({ isActive: active }) => `sb-nav__sub-item ${active ? 'sb-nav__sub-item--active' : ''}`}>
                           <i className={`fas ${sub.icon}`} />{sub.label}
                         </NavLink>
                       ))}
@@ -146,7 +166,7 @@ const NavBar = ({ nav, setNav }) => {
           ))}
         </div>
         {user && (
-          <NavLink to="/users/my-profile" className="sb-nav__footer" onClick={() => setNav(false)}>
+          <NavLink to="/users/my-profile" {...preloadProps('/users/my-profile')} className="sb-nav__footer" onClick={() => setNav(false)}>
             <span className="sb-nav__avatar">{initials}</span>
             <span className="sb-nav__identity"><strong>{user.fname} {user.lname}</strong><small>{user.integrity}</small></span>
             <i className="fas fa-chevron-right" />

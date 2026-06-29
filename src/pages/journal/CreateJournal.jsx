@@ -1,29 +1,29 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import useThemeStore from "../../stores/useThemeStore";
-import { Link, NavLink } from "react-router-dom";
-import { motion} from "framer-motion";
-import { fadeIn, fadeInUp, fadeInDown } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import CreateJournalForm from "./CreateJournalForm";
-
 
 const CreateJournal = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
-  const [isLoading, setIsLoading] = useState(true);
-
+  const [searchParams] = useSearchParams();
+  const duplicateSourceId = searchParams.get("duplicate");
+  const isDuplicate = Boolean(duplicateSourceId);
 
   const links = [
     { label: "Home", to: "/", active: true },
     { label: "Journal", to: "/journal/home", active: true },
-    { label: "Create Journal", to: "/", active: false }
-  ]
+    { label: isDuplicate ? "Duplicate Journal" : "Create Journal", to: "/", active: false },
+  ];
 
   useEffect(() => {
-    document.title = "Smartbooks | Create Journal";
-  }, []);
+    document.title = isDuplicate
+      ? "Smartbooks | Duplicate Journal"
+      : "Smartbooks | Create Journal";
+  }, [isDuplicate]);
 
   return (
     <div className={`main-container theme-${theme}`}>
@@ -33,9 +33,9 @@ const CreateJournal = () => {
       <div className={`content-container theme-${theme}`}>
         <div className={`db-root theme-${theme}`}>
           <div className="db-page">
-        <PageNav pageTitle='Journal' links={links} />
-          <CreateJournalForm />
-        </div>
+            <PageNav pageTitle="Journal" links={links} />
+            <CreateJournalForm />
+          </div>
         </div>
       </div>
     </div>
