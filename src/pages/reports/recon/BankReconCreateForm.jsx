@@ -3,10 +3,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import DatePicker from 'react-datepicker';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import useBankReconStore from '../../../stores/useBankReconStore';
+import useAuthStore from '../../../stores/useAuthStore';
 import { CURRENCY_OPTIONS, toISO } from './BankReconUtils';
 import { Field, FileDrop } from './BankReconCommon';
 
+const getCreatedReconId = (response) => {
+  const value = response?.data?.id
+    ?? response?.data?.recon_id
+    ?? response?.id
+    ?? response?.recon_id
+    ?? response?.data?.data?.id
+    ?? response?.data?.data?.recon_id;
+  const id = Number(value);
+  return Number.isFinite(id) && id > 0 ? id : null;
+};
+
 const BankReconCreateForm = ({ onCreated }) => {
+  const accountingYear = Number(useAuthStore((state) => state.user?.accounting_period) || new Date().getFullYear());
   const [open, setOpen] = useState(true);
   const [errors, setErrors] = useState({});
   const [company, setCo] = useState('');
@@ -14,8 +27,8 @@ const BankReconCreateForm = ({ onCreated }) => {
   const [acctName, setAN] = useState('');
   const [acctNo, setANo] = useState('');
   const [currency, setCCY] = useState('NGN');
-  const [from, setFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const [to, setTo] = useState(new Date());
+  const [from, setFrom] = useState(() => new Date(accountingYear, 0, 1));
+  const [to, setTo] = useState(() => new Date(accountingYear, 11, 31));
   const [bankFile, setBF] = useState(null);
   const [ledgerFile, setLF] = useState(null);
   const [bals, setBals] = useState({ bank_opening: '', bank_closing: '', ledger_opening: '', ledger_closing: '', tolerance_days: 7, tolerance_amount: 0 });
@@ -55,9 +68,10 @@ const BankReconCreateForm = ({ onCreated }) => {
       ...bals,
     });
 
-    if (res?.data?.id) {
+    const createdId = getCreatedReconId(res);
+    if (createdId) {
       setOpen(false);
-      onCreated(res.data.id);
+      onCreated(createdId);
     }
   };
 

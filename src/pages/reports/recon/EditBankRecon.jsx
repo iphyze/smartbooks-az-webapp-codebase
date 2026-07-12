@@ -18,7 +18,7 @@ const parseAmt = (v) => { const n = parseFloat(String(v || '0').replace(/[^0-9.-
 
 
 // ── Defined outside EditBankRecon so React doesn't remount it on every keystroke ──
-const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFileChange }) => (
+const FileAppendRow = ({ label, currentName, newFile, onClear, inputRef, onFileChange }) => (
     <div className="invoice-form invoice-form-half">
       <div className="input-form-wrapper">
         <div className="input-form-group">
@@ -27,7 +27,7 @@ const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFile
             <label
               className="br-drop"
               style={{ minHeight: 80 }}
-              title="Upload a refreshed statement file"
+              title="Upload an additional statement file"
             >
               <input
                 type="file"
@@ -40,7 +40,7 @@ const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFile
               <span className="br-drop-name" style={{ fontSize: 12 }}>
                 Current: <strong>{currentName || '—'}</strong>
               </span>
-              <span className="br-drop-hint">Upload refreshed file (optional)</span>
+              <span className="br-drop-hint">Append additional lines (optional)</span>
             </label>
           ) : (
             <div className="br-drop br-drop--ok" style={{ minHeight: 80, cursor: 'default' }}>
@@ -51,7 +51,7 @@ const FileReplaceRow = ({ label, currentName, newFile, onClear, inputRef, onFile
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#f47c7c', marginTop: 4 }}
                 onClick={() => { onClear(null); if (inputRef.current) inputRef.current.value = ''; }}
               >
-                <i className="fas fa-xmark" style={{ marginRight: 4 }} />Remove refreshed file
+                <i className="fas fa-xmark" style={{ marginRight: 4 }} />Remove selected file
               </button>
             </div>
           )}
@@ -128,14 +128,17 @@ const EditBankRecon = () => {
     const e = {};
     if (!form?.company_name?.trim()) e.company_name = 'Required';
     if (!form?.period_from) e.period_from = 'Required';
-    if (!form?.period_to)   e.period_to   = 'Required';
+    if (!form?.period_to) e.period_to = 'Required';
+    if (form?.period_from && form?.period_to && form.period_from > form.period_to) {
+      e.period_to = 'Must be after Period From';
+    }
     return e;
   })() : {};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
-    if (!form?.company_name?.trim()) return;
+    if (!form?.company_name?.trim() || !form?.period_from || !form?.period_to || form.period_from > form.period_to) return;
 
     // Build FormData so we can optionally include new files
     const fd = new FormData();
@@ -158,7 +161,7 @@ const EditBankRecon = () => {
     if (newLedgerFile) fd.append('ledger_file', newLedgerFile);
 
     const res = await updateReconciliation(fd);
-    if (res) navigate('/reports/bank-recon');
+    if (res) navigate(`/reports/bank-recon/workspace/${id}`);
   };
 
 
@@ -192,7 +195,7 @@ const EditBankRecon = () => {
                 <div className="invoice-form-header">
                   <div className="invoice-form-htxt">Edit Reconciliation</div>
                   <div className="invoice-form-sub-htxt">
-                    Update the reconciliation details or upload a refreshed statement. Existing lines are updated by reference, unchanged rows are kept once, and only genuinely new transactions are added.
+                    Update the reconciliation details or append an updated statement extract. Existing lines, matches and classifications are preserved; only genuinely new transactions are added.
                   </div>
                 </div>
 
@@ -263,18 +266,18 @@ const EditBankRecon = () => {
                     </FormField>
                   </div>
 
-                  {/* ── Optional file replacement ── */}
+                  {/* ── Optional statement append ── */}
                   <div className="invoice-form invoice-form-full" style={{ marginTop: 8, marginBottom: 4 }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--sb-text-2, #3d5752)', paddingBottom: 4, borderBottom: '1px solid var(--sb-border, #deeee9)' }}>
                       <i className="fas fa-file-arrow-up" style={{ marginRight: 8, color: 'var(--color-green)' }} />
-                      Replace Statement Files (optional)
+                      Append Statement Lines (optional)
                     </div>
                     <p style={{ fontSize: 12, color: 'var(--sb-text-3, #7aada6)', margin: '8px 0 0' }}>
-                      Uploading a new file will delete all existing lines and matches for that side and re-process from scratch.
+                      Uploading an updated extract only appends transactions that are not already present. Existing lines, matches, categories and manual classifications remain unchanged.
                     </p>
                   </div>
 
-                  <FileReplaceRow
+                  <FileAppendRow
                     label="Bank Statement"
                     currentName={recon?.bank_file_name}
                     newFile={newBankFile}
@@ -282,7 +285,7 @@ const EditBankRecon = () => {
                     inputRef={bankFileRef}
                     onFileChange={setNewBankFile}
                   />
-                  <FileReplaceRow
+                  <FileAppendRow
                     label="Ledger Statement"
                     currentName={recon?.ledger_file_name}
                     newFile={newLedgerFile}
@@ -300,6 +303,9 @@ const EditBankRecon = () => {
 
                 <div className="invoice-action-btn main-submit-action-btn">
                   <div className="invoice-action-btn-wrapper">
+                    <button type="button" className="br-btn-ghost" onClick={() => navigate(`/reports/bank-recon/workspace/${id}`)} disabled={saving}>
+                      Cancel
+                    </button>
                     <button type="submit" disabled={saving} className="invoice-submit-btn">
                       {saving ? <div className="invoice-loader" /> : <span className="invoice-submit-btn-text">Save Changes</span>}
                     </button>

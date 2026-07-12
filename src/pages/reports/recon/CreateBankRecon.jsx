@@ -9,16 +9,29 @@ import useThemeStore from '../../../stores/useThemeStore';
 import PageNav from '../../../components/PageNav';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import useBankReconStore from '../../../stores/useBankReconStore';
+import useAuthStore from '../../../stores/useAuthStore';
 import { CURRENCY_OPTIONS, toISO } from './BankReconUtils';
 import { Field, FileDrop } from './BankReconCommon';
 import './BankReconciliation.css';
 import 'react-datepicker/dist/react-datepicker.css';
+
+const getCreatedReconId = (response) => {
+  const value = response?.data?.id
+    ?? response?.data?.recon_id
+    ?? response?.id
+    ?? response?.recon_id
+    ?? response?.data?.data?.id
+    ?? response?.data?.data?.recon_id;
+  const id = Number(value);
+  return Number.isFinite(id) && id > 0 ? id : null;
+};
 
 const CreateBankRecon = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
   const { creating, createReconciliation } = useBankReconStore();
+  const accountingYear = Number(useAuthStore((state) => state.user?.accounting_period) || new Date().getFullYear());
 
   // Form state
   const [errors, setErrors] = useState({});
@@ -27,8 +40,8 @@ const CreateBankRecon = () => {
   const [acctName, setAN]   = useState('');
   const [acctNo, setANo]    = useState('');
   const [currency, setCCY]  = useState('NGN');
-  const [from, setFrom]     = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const [to, setTo]         = useState(new Date());
+  const [from, setFrom]     = useState(() => new Date(accountingYear, 0, 1));
+  const [to, setTo]         = useState(() => new Date(accountingYear, 11, 31));
   const [bankFile, setBF]   = useState(null);
   const [ledgerFile, setLF] = useState(null);
   const [bals, setBals]     = useState({ bank_opening: '', bank_closing: '', ledger_opening: '', ledger_closing: '', tolerance_days: 7, tolerance_amount: 0 });
@@ -68,7 +81,8 @@ const CreateBankRecon = () => {
       bank_file: bankFile, ledger_file: ledgerFile,
       notes: notes.trim(), ...bals,
     });
-    if (res?.data?.id) navigate(`/reports/bank-recon/workspace/${res.data.id}`);
+    const createdId = getCreatedReconId(res);
+    if (createdId) navigate(`/reports/bank-recon/workspace/${createdId}`);
   };
 
   return (

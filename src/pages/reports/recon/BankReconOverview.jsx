@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import NavBar from '../../NavBar';
 import Header from '../../Header';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -10,6 +10,7 @@ import TableLoaderComponent from '../../../components/TableLoaderComponent';
 import EmptyTable from '../../../components/EmptyTable';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import DeleteConfirmationModal from '../../../components/modals/DeleteConfirmationModal';
+import RefreshErrorModal from '../../../components/modals/RefreshErrorModal';
 import useBankReconStore from '../../../stores/useBankReconStore';
 import useReportPagePersistence from '../../../hooks/useReportPagePersistence';
 
@@ -20,6 +21,8 @@ const BankReconOverview = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const [urlParams, setUrlParams] = useSearchParams();
+  const requestedSearch = urlParams.get('search') || '';
 
   const {
     list, currentPage, itemsPerPage, searchQuery, selectedItems,
@@ -30,6 +33,8 @@ const BankReconOverview = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAction, setSelectedAction]   = useState('');
   const [deleteTarget, setDeleteTarget]       = useState(null);
+  const [draftSearch, setDraftSearch]         = useState(requestedSearch || searchQuery || '');
+  const [isClearingFilters, setIsClearingFilters] = useState(false);
 
   const restoreReportState = useCallback((saved = {}) => {
     useBankReconStore.setState({
@@ -52,24 +57,53 @@ const BankReconOverview = () => {
     { label: 'Bank Reconciliations', to: '/reports/bank-recon', active: false },
   ];
 
-  const pageLimitOptions = [10, 20, 50, 100].map((n) => ({ id: n, label: String(n) }));
+  const pageLimitOptions = [10, 25, 50, 100].map((n) => ({ id: n, label: String(n) }));
   const actionOptions    = [{ id: '', label: 'Select Action' }, { id: 'delete', label: 'Delete Selected' }];
 
   useEffect(() => { document.title = 'Smartbooks | Bank Reconciliations'; }, []);
   useEffect(() => {
-    if (reportStateReady) fetchList();
-  }, [reportStateReady, currentPage, itemsPerPage, fetchList]);
+    if (!reportStateReady) return;
+    const activeSearch = requestedSearch || searchQuery;
+    if (requestedSearch && requestedSearch !== searchQuery) setSearchQuery(requestedSearch);
+    setDraftSearch(activeSearch);
+    fetchList({ page: currentPage, limit: itemsPerPage, search: activeSearch });
+  }, [reportStateReady, currentPage, itemsPerPage, requestedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = getTotalPages();
   const data       = list.data || [];
   const total      = list.pagination?.total || 0;
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-    if (!e.target.value) fetchList({ page: 1 });
+  const runSearch = () => {
+    const search = draftSearch.trim();
+    setSearchQuery(search);
+    setUrlParams(search ? { search } : {}, { replace: true });
+    useBankReconStore.setState({ currentPage: 1 });
+    fetchList({ page: 1, limit: itemsPerPage, search });
   };
-  const handleSearchSubmit = (e) => { if (e.key === 'Enter') fetchList({ page: 1, search: searchQuery }); };
-  const handleSearchClick  = () => fetchList({ page: 1, search: searchQuery });
+
+  const handleSearchChange = (event) => setDraftSearch(event.target.value);
+  const handleSearchSubmit = (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    runSearch();
+  };
+
+  const clearFilters = async () => {
+    if (isClearingFilters) return;
+    setIsClearingFilters(true);
+    setDraftSearch('');
+    setSearchQuery('');
+    setUrlParams({}, { replace: true });
+    clearSelection();
+    useBankReconStore.setState({ currentPage: 1 });
+    try {
+      await fetchList({ page: 1, limit: itemsPerPage, search: '' });
+    } finally {
+      setIsClearingFilters(false);
+    }
+  };
+
+  const hasActiveFilters = Boolean(draftSearch.trim() || searchQuery.trim() || requestedSearch.trim());
 
   const handleActionChange = (id) => {
     setSelectedAction(id);
@@ -140,11 +174,11 @@ const BankReconOverview = () => {
                           type="text"
                           placeholder="Search by ref, company, bank…"
                           className="table-search-input"
-                          value={searchQuery}
+                          value={draftSearch}
                           onChange={handleSearchChange}
                           onKeyDown={handleSearchSubmit}
                         />
-                        <span className="fas fa-search table-search-icon" onClick={handleSearchClick} style={{ cursor: 'pointer' }} />
+                        <span className="fas fa-search table-search-icon" onClick={runSearch} style={{ cursor: 'pointer' }} />
                       </div>
 
                       <div className="filters-box">
@@ -152,6 +186,18 @@ const BankReconOverview = () => {
                           <label className="filter-wrapper-label">Page limit</label>
                           <ChartSearchableSelect options={pageLimitOptions} value={itemsPerPage} onChange={(v) => setItemsPerPage(v)} className="box-filter-limit" />
                         </div>
+                        {hasActiveFilters && (
+                          <button
+                            type="button"
+                            className="br-btn-ghost"
+                            onClick={clearFilters}
+                            disabled={list.loading || isClearingFilters}
+                            style={{ alignSelf: 'flex-end', whiteSpace: 'nowrap' }}
+                          >
+                            <i className={`fas ${isClearingFilters ? 'fa-spinner fa-spin' : 'fa-rotate-left'}`} />
+                            {isClearingFilters ? 'Clearing…' : 'Clear filters'}
+                          </button>
+                        )}
                         {selectedItems.length > 0 && (
                           <div className="filter-wrapper bulk-actions">
                             <label className="filter-wrapper-label">Select Action</label>
@@ -298,6 +344,19 @@ const BankReconOverview = () => {
           />
         )}
       </AnimatePresence>
+
+      {list.error && (
+        <RefreshErrorModal
+          title="Bank reconciliation records unavailable"
+          message={list.error}
+          onRetry={() => fetchList({
+            page: currentPage,
+            limit: itemsPerPage,
+            search: requestedSearch || searchQuery,
+          })}
+          loading={list.loading}
+        />
+      )}
     </div>
   );
 };

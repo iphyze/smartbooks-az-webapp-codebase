@@ -252,7 +252,7 @@ const useBankReconStore = create(
   persist(
     (set, get) => ({
       // ── List state ─────────────────────────────────────────────────────
-      list: { data: [], pagination: null, loading: false },
+      list: { data: [], pagination: null, loading: false, error: null },
 
       // ── Single recon workspace state ───────────────────────────────────
       current: { ...emptyCurrent },
@@ -280,7 +280,7 @@ const useBankReconStore = create(
         const p = page ?? currentPage;
         const l = limit ?? itemsPerPage;
         const s = search ?? searchQuery;
-        set((st) => ({ list: { ...st.list, loading: true } }));
+        set((st) => ({ list: { ...st.list, loading: true, error: null } }));
         try {
           const year = useAuthStore.getState().user?.accounting_period;
           const q = new URLSearchParams({ page: p, limit: l, search: s });
@@ -291,15 +291,16 @@ const useBankReconStore = create(
             throw new Error(getResponseMessage(responsePayload, 'Failed to load list'));
           }
           set({
-            list: { data: responsePayload.data || [], pagination: responsePayload.pagination || null, loading: false },
+            list: { data: responsePayload.data || [], pagination: responsePayload.pagination || null, loading: false, error: null },
             currentPage: p,
             searchQuery: s,
           });
           return responsePayload;
         } catch (err) {
-          set((st) => ({ list: { ...st.list, loading: false } }));
           const data = coerceApiPayload(err.response?.data);
-          useToastStore.getState().showToast(getResponseMessage(data, err.message || 'Failed to load list'), 'error');
+          const message = getResponseMessage(data, err.message || 'Failed to load list');
+          set((st) => ({ list: { ...st.list, loading: false, error: message } }));
+          useToastStore.getState().showToast(message, 'error');
           return null;
         }
       },
@@ -354,7 +355,7 @@ const useBankReconStore = create(
       },
 
       /* ═══════════════════════════════════════════════════════════════════
-         Update header fields and merge optional refreshed statement files
+         Update header fields and append optional statement files without changing reviewed rows
       ═══════════════════════════════════════════════════════════════════ */
       updateReconciliation: async (payload) => {
         set({ saving: true });
