@@ -233,7 +233,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
     if (!form.payment_method) next.payment_method = "Select a payment method";
     if (requiresBank && !form.bank_id) next.bank_id = "Select the receiving bank account";
     if (form.post_journal) {
-      if (!form.bank_ledger_number) next.bank_ledger_number = "Select the bank ledger to debit";
+      if (!form.bank_ledger_number) next.bank_ledger_number = "Select the ledger to debit";
       if (!form.credit_ledger_number) next.credit_ledger_number = "Select the ledger to credit";
       if (
         form.bank_ledger_number &&
@@ -421,7 +421,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                   {journalContextError ? <div className="invoice-payment-modal__journal-warning"><i className="fas fa-triangle-exclamation" />{journalContextError}</div> : null}
                   <div className="invoice-payment-modal__journal-ledger-grid">
                     <label className="invoice-payment-modal__field">
-                      <span>Bank ledger to debit <small>Choose manually if needed</small></span>
+                      <span>Ledger to debit <small>Choose manually if needed</small></span>
                       <Select
                         options={bankLedgerOptions}
                         value={bankLedgerOption}
@@ -434,11 +434,11 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                         styles={selectPortalStyles}
                         isClearable
                         isLoading={journalContextLoading}
-                        placeholder="Select bank ledger"
-                        noOptionsMessage={() => "No Bank Accounts ledgers found"}
+                        placeholder="Select ledger to debit"
+                        noOptionsMessage={() => "No ledgers found"}
                       />
                       <small className="invoice-payment-modal__field-hint">
-                        A matching ledger may be suggested from the receiving bank, but you can select another Bank Accounts ledger.
+                        A matching ledger may be suggested from the receiving bank, but you can select any appropriate ledger, including a partner ledger.
                       </small>
                       {errors.bank_ledger_number ? <small className="invoice-payment-modal__field-error">{errors.bank_ledger_number}</small> : null}
                     </label>
@@ -468,7 +468,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                   </div>
 
                   <div className="invoice-payment-modal__journal-preview">
-                    <div><span>Debit</span><strong>{bankLedgerOption?.ledger?.ledger_name || "Select a bank ledger"}</strong><small>{currency} {formatMoney(enteredAmount)}</small></div>
+                    <div><span>Debit</span><strong>{bankLedgerOption?.ledger?.ledger_name || "Select a debit ledger"}</strong><small>{currency} {formatMoney(enteredAmount)}</small></div>
                     <i className="fas fa-arrow-right-arrow-left" aria-hidden="true" />
                     <div><span>Credit</span><strong>{creditLedgerOption?.ledger?.ledger_name || "Select a credit ledger"}</strong><small>{currency} {formatMoney(enteredAmount)}</small></div>
                   </div>

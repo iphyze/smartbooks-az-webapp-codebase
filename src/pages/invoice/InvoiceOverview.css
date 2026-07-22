@@ -621,6 +621,12 @@
   background: var(--sb-brand-dim);
 }
 
+.invoice-row-action--print:hover {
+  color: var(--sb-info);
+  border-color: color-mix(in srgb, var(--sb-info) 28%, transparent);
+  background: var(--sb-info-bg);
+}
+
 .invoice-row-action--edit:hover {
   color: var(--sb-info);
   border-color: color-mix(in srgb, var(--sb-info) 22%, transparent);

@@ -12,6 +12,10 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import useThemeStore from "../../stores/useThemeStore";
 import useInvoiceStore from "../../stores/useInvoiceStore";
 import { formatCurrencyDecimals } from "../../utils/helper";
+import printPdfDocument from "../../utils/printPdfDocument";
+import useToastStore from "../../stores/useToastStore";
+import api from "../../services/api";
+import DownloadInvoice from "./DownloadInvoice";
 import { fadeInUp } from "../../utils/animation";
 import InvoiceKPICards from "./InvoiceKPICards";
 import "./InvoiceWorkflow.css";
@@ -41,6 +45,8 @@ const InvoiceOverview = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const { showToast } = useToastStore();
+  const [printingInvoiceNumber, setPrintingInvoiceNumber] = useState(null);
 
   const {
     data,
@@ -163,6 +169,31 @@ const InvoiceOverview = () => {
     navigate(`/invoice/edit/${invoice.invoice_number}`, { state: { invoice } });
   };
 
+  const handlePrintInvoice = async (invoice) => {
+    if (!invoice?.invoice_number || printingInvoiceNumber) return;
+
+    setPrintingInvoiceNumber(invoice.invoice_number);
+    try {
+      const response = await api.get(
+        `/invoice/fetch-single-invoice?invoice_number=${encodeURIComponent(invoice.invoice_number)}`
+      );
+      const fullInvoice = response.data?.data;
+      if (!fullInvoice) throw new Error("Invoice data was not returned.");
+
+      const reference = String(fullInvoice.invoice_number || "").startsWith("AZ-")
+        ? String(fullInvoice.invoice_number)
+        : `AZ-${fullInvoice.invoice_number || ""}`;
+      await printPdfDocument(<DownloadInvoice invoice={fullInvoice} />, `Preparing invoice ${reference}`);
+    } catch (error) {
+      showToast(
+        error.response?.data?.message || error.message || "The invoice could not be prepared for printing.",
+        "error"
+      );
+    } finally {
+      setPrintingInvoiceNumber(null);
+    }
+  };
+
   const getSortIcon = (columnKey) => {
     if (sortBy !== columnKey) return <i className="fas fa-sort invoice-sort-icon invoice-sort-icon--idle" />;
     return sortOrder === "ASC"
@@ -269,6 +300,17 @@ const InvoiceOverview = () => {
       >
         <i className="fas fa-arrow-up-right-from-square" />
         {compact && <span>View</span>}
+      </button>
+      <button
+        type="button"
+        className="invoice-row-action invoice-row-action--print"
+        title="Print invoice"
+        aria-label={`Print invoice ${invoice.invoice_number}`}
+        onClick={() => handlePrintInvoice(invoice)}
+        disabled={printingInvoiceNumber === invoice.invoice_number}
+      >
+        <i className={`fas ${printingInvoiceNumber === invoice.invoice_number ? "fa-spinner fa-spin" : "fa-print"}`} />
+        {compact && <span>Print</span>}
       </button>
       <button
         type="button"
