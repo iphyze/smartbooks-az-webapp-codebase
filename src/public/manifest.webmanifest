@@ -1,15 +1,16 @@
 {
-  "id": "./",
+  "id": "/",
   "name": "SmartBooks Accounting",
   "short_name": "SmartBooks",
   "description": "A secure accounting workspace for invoices, journals, ledgers, reports and financial operations.",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f0f7f5",
   "theme_color": "#00b196",
   "orientation": "any",
   "categories": ["business", "finance", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "./icons/icon-192.png",

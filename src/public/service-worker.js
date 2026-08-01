@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "smartbooks-pwa";
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${CACHE_VERSION}`;
 const BASE_URL = new URL("./", self.location.href);
 

@@ -3,24 +3,6 @@ const getBaseUrl = () => {
   return configuredBase.endsWith("/") ? configuredBase : `${configuredBase}/`;
 };
 
-const getSameOriginApiAssetUrl = (path) => {
-  if (typeof window === "undefined") return "";
-
-  const configuredApiBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
-  if (!configuredApiBase) return "";
-
-  try {
-    const apiBase = new URL(
-      configuredApiBase.endsWith("/") ? configuredApiBase : `${configuredApiBase}/`,
-      window.location.origin
-    );
-    if (apiBase.origin !== window.location.origin) return "";
-    return new URL(path.replace(/^\/+/, ""), apiBase).toString();
-  } catch {
-    return "";
-  }
-};
-
 const ensureLink = (rel, href, attributes = {}) => {
   let link = document.head.querySelector(`link[rel="${rel}"]`);
 
@@ -36,10 +18,6 @@ const ensureLink = (rel, href, attributes = {}) => {
   });
 };
 
-const removeLink = (rel) => {
-  document.head.querySelectorAll(`link[rel="${rel}"]`).forEach((link) => link.remove());
-};
-
 const ensureMeta = (name, content) => {
   let meta = document.head.querySelector(`meta[name="${name}"]`);
 
@@ -52,34 +30,23 @@ const ensureMeta = (name, content) => {
   meta.content = content;
 };
 
-const fetchStaticAsset = async (url, acceptedContentTypes) => {
+const fetchJavaScriptAsset = async (url) => {
   const response = await fetch(url, {
     credentials: "same-origin",
     cache: "no-store",
-    headers: { Accept: acceptedContentTypes.join(", ") },
+    headers: { Accept: "application/javascript, text/javascript" },
   });
   const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
 
-  if (!response.ok || contentType.includes("text/html")) return null;
-  if (!acceptedContentTypes.some((type) => contentType.includes(type))) return null;
-  return response;
+  if (!response.ok || contentType.includes("text/html")) return false;
+  return contentType.includes("javascript");
 };
 
 export const configurePwaMetadata = () => {
   if (typeof document === "undefined") return;
 
   const baseUrl = getBaseUrl();
-  const manifestUrl = `${baseUrl}manifest.webmanifest`;
-
-  // Do not leave a manifest link pointing at the SPA fallback. Add it only
-  // after the deployed file has been confirmed as JSON/manifest content.
-  removeLink("manifest");
-  fetchStaticAsset(manifestUrl, ["application/manifest+json", "application/json"])
-    .then((response) => {
-      if (response) ensureLink("manifest", manifestUrl);
-    })
-    .catch(() => {});
-
+  ensureLink("manifest", `${baseUrl}manifest.webmanifest`);
   ensureLink("apple-touch-icon", `${baseUrl}icons/apple-touch-icon.png`, {
     sizes: "180x180",
   });
@@ -102,26 +69,14 @@ export const registerPwa = () => {
   }
 
   const baseUrl = getBaseUrl();
-  const staticServiceWorkerUrl = `${baseUrl}service-worker.js`;
-  const apiServiceWorkerUrl = getSameOriginApiAssetUrl("pwa/service-worker.js");
+  const serviceWorkerUrl = `${baseUrl}service-worker.js`;
 
   window.addEventListener(
     "load",
     async () => {
       try {
-        const acceptedTypes = ["application/javascript", "text/javascript"];
-        const candidates = [staticServiceWorkerUrl, apiServiceWorkerUrl].filter(Boolean);
-        let serviceWorkerUrl = "";
-
-        for (const candidate of candidates) {
-          const response = await fetchStaticAsset(candidate, acceptedTypes).catch(() => null);
-          if (response) {
-            serviceWorkerUrl = candidate;
-            break;
-          }
-        }
-
-        if (!serviceWorkerUrl) {
+        const isJavaScript = await fetchJavaScriptAsset(serviceWorkerUrl);
+        if (!isJavaScript) {
           const staleRegistration = await navigator.serviceWorker.getRegistration(baseUrl);
           if (staleRegistration) await staleRegistration.unregister();
           return;
@@ -132,10 +87,9 @@ export const registerPwa = () => {
           updateViaCache: "none",
         });
 
-        registration.update().catch(() => {});
+        await registration.update().catch(() => {});
       } catch {
-        // PWA support is optional. A deployment without a service-worker route
-        // must not surface a false application error or affect accounting flows.
+        // PWA registration must never interrupt the accounting application.
       }
     },
     { once: true }
