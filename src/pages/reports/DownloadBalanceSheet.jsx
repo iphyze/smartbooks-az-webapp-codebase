@@ -120,10 +120,10 @@ const CategoryBlock = ({ title, group, isLess }) => {
   );
 };
 
-/* Current Year Earnings row */
-const CurrentYearEarnings = ({ value }) => (
+/* Equity bridge row */
+const EquityBridgeRow = ({ label, value }) => (
   <View style={S.cyeRow} wrap={false}>
-    <Text style={S.cyeLabel}>Current Year Earnings</Text>
+    <Text style={S.cyeLabel}>{label}</Text>
     <Text style={[S.cyeVal, Number(value) < 0 && { color: NEG }]}>{fmt(value)}</Text>
   </View>
 );
@@ -151,6 +151,7 @@ const DownloadBalanceSheet = ({ data = {}, summary = null, meta = {} }) => (
       <SummaryRow    label="Service Customers (Net)"                       value={summary && summary.net_service_customers} />
       <CategoryBlock title="Strategic Partners"                            group={data.StrategicPartners} />
       <CategoryBlock title="Agents"                                        group={data.Agents} />
+      <CategoryBlock title="Prepayments"                                   group={data.Prepayments} />
       <View style={S.treasuryHeading} wrap={false}>
         <Text style={S.treasuryText}>Treasury Accounts</Text>
       </View>
@@ -167,7 +168,13 @@ const DownloadBalanceSheet = ({ data = {}, summary = null, meta = {} }) => (
       <SectionHeading label="EQUITY" />
       <CategoryBlock title="Capital"           group={data.Capital} />
       <CategoryBlock title="Retained Earnings" group={data.RetainedEarnings} />
-      <CurrentYearEarnings value={summary && summary.current_year_earnings} />
+      <EquityBridgeRow label="Current Year Earnings" value={summary && summary.current_year_earnings} />
+      {Math.abs(Number(summary && summary.currency_translation_adjustment || 0)) >= 0.005 && (
+        <EquityBridgeRow
+          label="Currency Translation Adjustment"
+          value={summary && summary.currency_translation_adjustment}
+        />
+      )}
       <SummaryRow label="Total Equity" value={summary && summary.total_equity} isGrand />
 
       <Divider />

@@ -331,8 +331,8 @@ const EditInvoiceForm = ({ invoiceNumber, invoice, onSaveSuccess }) => {
     return rates
       .filter((r) => r[`${curr}_rate`] != null)
       .map((r) => ({
-        value: r.created_at,
-        label: `${r.created_at} | ${invoiceDetails.currency} @ ${r[`${curr}_rate`]}`,
+        value: r.effective_date || r.created_at,
+        label: `${r.effective_date || r.created_at} | ${invoiceDetails.currency} @ ${r[`${curr}_rate`]}`,
         rate: r,
       }));
   }, [rates, invoiceDetails.currency]);

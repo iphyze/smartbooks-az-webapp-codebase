@@ -158,43 +158,38 @@ export const fmtDatetime = (d) => {
  * @param {Array}  rates    — full rates array from useRateSearchStore
  * @param {string} currency — e.g. "USD"
  * @param {Date}   date     — the invoice date selected by the user
- * @returns {string|null}   — the created_at value to set as rate_date
+ * @returns {string|null}   — the effective date to set as rate_date
  */
 export const findEffectiveRate = (rates, currency, date) => {
   if (!rates?.length || !currency || !date) return null;
 
   const colKey = `${currency.toLowerCase()}_rate`;
-  const eligible = rates.filter((r) => r[colKey] != null && r.created_at);
-  if (!eligible.length) return null;
+  const targetDate = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(targetDate.getTime())) return null;
+  const targetKey = [
+    targetDate.getFullYear(),
+    String(targetDate.getMonth() + 1).padStart(2, "0"),
+    String(targetDate.getDate()).padStart(2, "0"),
+  ].join("-");
 
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
+  const eligible = rates
+    .map((rate) => ({
+      rate,
+      effectiveDate: String(rate.effective_date || rate.created_at || "").slice(0, 10),
+    }))
+    .filter(({ rate, effectiveDate }) => rate[colKey] != null && effectiveDate && effectiveDate <= targetKey)
+    .sort((a, b) => {
+      const dateOrder = b.effectiveDate.localeCompare(a.effectiveDate);
+      return dateOrder !== 0 ? dateOrder : Number(b.rate.id || 0) - Number(a.rate.id || 0);
+    });
 
-  const sorted = [...eligible].sort(
-    (a, b) => new Date(b.created_at) - new Date(a.created_at)
-  );
-
-  const exact = sorted.find((r) => {
-    const d = new Date(r.created_at);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() === target.getTime();
-  });
-  if (exact) return exact.created_at;
-
-  const before = sorted.find((r) => {
-    const d = new Date(r.created_at);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() < target.getTime();
-  });
-  if (before) return before.created_at;
-
-  return sorted[sorted.length - 1].created_at;
+  return eligible.length ? eligible[0].effectiveDate : null;
 };
 
 
 /**
  * Same logic as findEffectiveRate but returns the rate record's `id`
- * (as a string) instead of `created_at`.
+ * (as a string) instead of the effective date.
  * Used by the journal form where jrate stores the rate id.
  *
  * @param {Array}  rates    — full rates array from useRateSearchStore
@@ -206,29 +201,24 @@ export const findEffectiveRateId = (rates, currency, date) => {
   if (!rates?.length || !currency || !date) return null;
 
   const colKey = `${currency.toLowerCase()}_rate`;
-  const eligible = rates.filter((r) => r[colKey] != null && r.created_at);
-  if (!eligible.length) return null;
+  const targetDate = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(targetDate.getTime())) return null;
+  const targetKey = [
+    targetDate.getFullYear(),
+    String(targetDate.getMonth() + 1).padStart(2, "0"),
+    String(targetDate.getDate()).padStart(2, "0"),
+  ].join("-");
 
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
+  const eligible = rates
+    .map((rate) => ({
+      rate,
+      effectiveDate: String(rate.effective_date || rate.created_at || "").slice(0, 10),
+    }))
+    .filter(({ rate, effectiveDate }) => rate[colKey] != null && effectiveDate && effectiveDate <= targetKey)
+    .sort((a, b) => {
+      const dateOrder = b.effectiveDate.localeCompare(a.effectiveDate);
+      return dateOrder !== 0 ? dateOrder : Number(b.rate.id || 0) - Number(a.rate.id || 0);
+    });
 
-  const sorted = [...eligible].sort(
-    (a, b) => new Date(b.created_at) - new Date(a.created_at)
-  );
-
-  const exact = sorted.find((r) => {
-    const d = new Date(r.created_at);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() === target.getTime();
-  });
-  if (exact) return String(exact.id);
-
-  const before = sorted.find((r) => {
-    const d = new Date(r.created_at);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() < target.getTime();
-  });
-  if (before) return String(before.id);
-
-  return String(sorted[sorted.length - 1].id);
+  return eligible.length ? String(eligible[0].rate.id) : null;
 };

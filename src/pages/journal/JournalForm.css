@@ -1573,3 +1573,286 @@
     grid-column: 1;
   }
 }
+
+/* Invoice-payment registration from the journal workspace */
+.journal-payment-registration {
+  border-color: rgba(12, 174, 181, 0.22);
+  background: linear-gradient(180deg, rgba(12, 174, 181, 0.035), transparent 44%), var(--jf-surface);
+}
+
+.journal-payment-registration.is-enabled {
+  border-color: rgba(12, 174, 181, 0.42);
+  box-shadow: 0 16px 40px rgba(12, 174, 181, 0.08);
+}
+
+.journal-payment-registration__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--jf-text);
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.journal-payment-registration__toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.journal-payment-registration__toggle > span {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.18);
+  transition: 0.2s ease;
+}
+
+.journal-payment-registration__toggle > span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.2);
+  transition: 0.2s ease;
+}
+
+.journal-payment-registration__toggle input:checked + span {
+  border-color: #0caeb5;
+  background: #0caeb5;
+}
+
+.journal-payment-registration__toggle input:checked + span::after {
+  transform: translateX(17px);
+}
+
+.journal-payment-registration__toggle strong {
+  color: var(--jf-text);
+}
+
+.journal-payment-registration__body {
+  display: grid;
+  gap: 18px;
+}
+
+.journal-payment-registration__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1px solid rgba(12, 174, 181, 0.2);
+  border-radius: 12px;
+  color: var(--jf-text);
+  background: rgba(12, 174, 181, 0.07);
+}
+
+.journal-payment-registration__notice > i {
+  margin-top: 2px;
+  color: #0caeb5;
+}
+
+.journal-payment-registration__notice strong,
+.journal-payment-registration__notice span {
+  display: block;
+}
+
+.journal-payment-registration__notice strong {
+  margin-bottom: 3px;
+  font-size: 11px;
+}
+
+.journal-payment-registration__notice span {
+  color: var(--jf-muted);
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.journal-payment-registration__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.journal-payment-registration__preview-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 11px;
+}
+
+.journal-payment-registration__preview-action button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #0caeb5;
+  border-radius: 10px;
+  color: #ffffff;
+  background: #0caeb5;
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.journal-payment-registration__preview-action button i {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.journal-payment-registration__preview-action button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.journal-payment-registration__preview-action span {
+  color: var(--jf-muted);
+  font-size: 10px;
+}
+
+.journal-payment-preview {
+  overflow: hidden;
+  border: 1px solid rgba(22, 163, 74, 0.24);
+  border-radius: 13px;
+  background: rgba(22, 163, 74, 0.045);
+}
+
+.journal-payment-preview__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(22, 163, 74, 0.18);
+  color: #15803d;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.journal-payment-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.journal-payment-preview__grid > div {
+  min-width: 0;
+  padding: 13px 15px;
+  border-right: 1px solid rgba(22, 163, 74, 0.14);
+  border-bottom: 1px solid rgba(22, 163, 74, 0.14);
+}
+
+.journal-payment-preview__grid > div:nth-child(3n) {
+  border-right: none;
+}
+
+.journal-payment-preview__grid > div:nth-last-child(-n + 3) {
+  border-bottom: none;
+}
+
+.journal-payment-preview__grid span,
+.journal-payment-preview__grid strong {
+  display: block;
+}
+
+.journal-payment-preview__grid span {
+  margin-bottom: 4px;
+  color: var(--jf-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.journal-payment-preview__grid strong {
+  color: var(--jf-text);
+  font-size: 10.8px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .journal-payment-registration__grid,
+  .journal-payment-preview__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-payment-preview__grid > div,
+  .journal-payment-preview__grid > div:nth-child(3n),
+  .journal-payment-preview__grid > div:nth-last-child(-n + 3) {
+    border-right: none;
+    border-bottom: 1px solid rgba(22, 163, 74, 0.14);
+  }
+
+  .journal-payment-preview__grid > div:last-child {
+    border-bottom: none;
+  }
+}
+
+
+.journal-payment-registration .journal-form-section__header,
+.journal-payment-registration__body {
+  color: var(--jf-text);
+}
+
+.journal-payment-registration .journal-form-section__heading h3 {
+  color: var(--jf-text);
+}
+
+.journal-payment-registration .journal-form-section__heading p {
+  color: var(--jf-muted);
+}
+
+.journal-payment-registration .input-form-label {
+  color: var(--f-label);
+}
+
+.journal-builder.theme-dark .journal-payment-registration {
+  border-color: rgba(24, 195, 199, 0.28);
+  background: linear-gradient(180deg, rgba(24, 195, 199, 0.065), transparent 48%), var(--jf-surface);
+}
+
+.journal-builder.theme-dark .journal-payment-registration.is-enabled {
+  border-color: rgba(24, 195, 199, 0.48);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.journal-builder.theme-dark .journal-payment-registration__notice {
+  border-color: rgba(24, 195, 199, 0.25);
+  background: rgba(24, 195, 199, 0.09);
+}
+
+.journal-builder.theme-dark .journal-payment-preview__header {
+  color: #4ade80;
+}
+
+.journal-payment-invoice-select {
+  width: 100%;
+}
+
+.journal-payment-registration__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px solid rgba(18, 183, 190, 0.28);
+  border-radius: 999px;
+  background: rgba(18, 183, 190, 0.1);
+  color: var(--jf-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.journal-payment-registration__status-badge i {
+  font-size: 10px;
+}

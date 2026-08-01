@@ -62,6 +62,7 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
   const paymentSummary = invoice.payment_summary || {};
   const total = toNumber(paymentSummary.invoice_total ?? invoice.invoice_amount);
   const paid = toNumber(paymentSummary.amount_paid ?? invoice.paid);
+  const amountReceived = toNumber(paymentSummary.amount_received ?? paid);
   const balance = toNumber(paymentSummary.balance_due ?? Math.max(total - paid, 0));
   const progress = toNumber(paymentSummary.payment_progress ?? (total > 0 ? (paid / total) * 100 : 0));
   const totalAmount = items.reduce((sum, item) => sum + toNumber(item.amount), 0);
@@ -152,7 +153,7 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
 
         <div className="invoice-view-financial-strip">
           <article><span>Invoice total</span><strong>{formatCurrencyDecimals(total, invoice.currency)}</strong></article>
-          <article className="is-paid"><span>Amount received</span><strong>{formatCurrencyDecimals(paid, invoice.currency)}</strong></article>
+          <article className="is-paid"><span>Amount received</span><strong>{formatCurrencyDecimals(amountReceived, invoice.currency)}</strong></article>
           <article className={balance > 0.009 ? "is-balance" : "is-settled"}><span>Balance due</span><strong>{formatCurrencyDecimals(balance, invoice.currency)}</strong></article>
           <article><span>Collection progress</span><strong>{Math.min(100, Math.max(0, Math.round(progress)))}%</strong><div className="invoice-view-progress"><i style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} /></div></article>
         </div>

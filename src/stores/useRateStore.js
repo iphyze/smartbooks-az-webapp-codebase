@@ -25,7 +25,7 @@ const useRateStore = create(
       currentPage: 1,
       itemsPerPage: 10,
       searchQuery: '',
-      sortBy: 'created_at',
+      sortBy: 'effective_date',
       sortOrder: 'DESC',
 
       /* ═════════════════════════════════════════════════════════════════════
@@ -119,7 +119,9 @@ const useRateStore = create(
               gbp_rate: rateData.gbp_rate,
               eur_cur: rateData.eur_cur,
               eur_rate: rateData.eur_rate,
-              created_at: rateData.created_at,
+              effective_date: rateData.effective_date,
+              rate_source: rateData.rate_source,
+              source_reference: rateData.source_reference,
             },
             {
               headers: { Authorization: `Bearer ${token}` },
@@ -154,7 +156,9 @@ const useRateStore = create(
               gbp_rate: rateData.gbp_rate,
               eur_cur: rateData.eur_cur,
               eur_rate: rateData.eur_rate,
-              created_at: rateData.created_at,
+              effective_date: rateData.effective_date,
+              rate_source: rateData.rate_source,
+              source_reference: rateData.source_reference,
             },
             {
               headers: { Authorization: `Bearer ${token}` },
@@ -254,12 +258,15 @@ const useRateStore = create(
         try {
           const data = get().data;
           const exportData = data.map((rate) => ({
-            'Date': formatDate(rate.created_at),
+            'Effective Date': formatDate(rate.effective_date || rate.created_at),
+            'Recorded At': formatDateTime(rate.recorded_at),
+            'Rate Source': rate.rate_source || 'Manual entry',
+            'Source Reference': rate.source_reference || '',
             'NGN Rate': formatRate(rate.ngn_rate),
             'USD Rate': formatRate(rate.usd_rate),
             'GBP Rate': formatRate(rate.gbp_rate),
             'EUR Rate': formatRate(rate.eur_rate),
-            'Created By': rate.created_by,
+            'Recorded By': rate.recorded_by || rate.created_by,
             'Updated At': formatDateTime(rate.updated_at),
             'Updated By': rate.updated_by,
           }));

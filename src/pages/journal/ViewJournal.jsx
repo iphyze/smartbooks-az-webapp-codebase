@@ -90,7 +90,7 @@ const ViewJournal = () => {
               <EditLoaderComponent text={'Loading Journal...'} />
             ) : (
               // Pass the fetched data directly to the child
-              <ViewJournalContent journal={journalData} />
+              <ViewJournalContent journal={journalData} onPaymentRegistered={validateAndFetchJournal} />
             )}
 
           </div>

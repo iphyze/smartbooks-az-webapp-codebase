@@ -77,19 +77,19 @@ const RateOverview = () => {
   );
 
   const columns = [
-    { key: "date", label: "Effective date", sortKey: "created_at", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-mono">{formatOverviewDate(rate.created_at)}</span> },
-    { key: "ngn", label: "NGN rate", sortKey: "ngn_rate", onSort: handleSort, sortIcon, render: (rate) => <OverviewBadge tone="teal">{formatCurrencyDecimals(rate.ngn_rate, rate.ngn_cur)}</OverviewBadge> },
+    { key: "date", label: "Effective date", sortKey: "effective_date", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-mono">{formatOverviewDate(rate.effective_date || rate.created_at)}</span> },
+    { key: "source", label: "Source", sortKey: "rate_source", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-muted">{rate.rate_source || "Manual entry"}</span> },
     { key: "usd", label: "USD rate", sortKey: "usd_rate", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-mono">{formatCurrencyDecimals(rate.usd_rate, rate.usd_cur)}</span> },
     { key: "gbp", label: "GBP rate", sortKey: "gbp_rate", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-mono">{formatCurrencyDecimals(rate.gbp_rate, rate.gbp_cur)}</span> },
     { key: "eur", label: "EUR rate", sortKey: "eur_rate", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-mono">{formatCurrencyDecimals(rate.eur_rate, rate.eur_cur)}</span> },
-    { key: "createdBy", label: "Created by", sortKey: "created_by", onSort: handleSort, sortIcon, render: (rate) => <span className="entity-overview-muted">{rate.created_by || "—"}</span> },
+    { key: "recorded", label: "Recorded", sortKey: "recorded_at", onSort: handleSort, sortIcon, render: (rate) => <div className="entity-overview-primary"><strong>{rate.recorded_at ? formatOverviewDate(rate.recorded_at) : "Legacy record"}</strong><small>{rate.recorded_by || rate.created_by || "—"}</small></div> },
     { key: "actions", label: "Actions", render: (rate) => rowActions(rate) },
   ];
 
   const cards = [
     { key: "total", label: "Rate records", value: formatOverviewNumber(total), note: "Full exchange-rate history", icon: "fa-arrow-right-arrow-left", tone: "teal" },
     { key: "currencies", label: "Currencies tracked", value: "4", note: "NGN, USD, GBP and EUR", icon: "fa-coins", tone: "blue" },
-    { key: "dates", label: "Rate dates shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => String(item.created_at || "").slice(0, 10))), note: "Distinct on this page", icon: "fa-calendar-day", tone: "violet" },
+    { key: "dates", label: "Rate dates shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => String(item.effective_date || item.created_at || "").slice(0, 10))), note: "Distinct on this page", icon: "fa-calendar-day", tone: "violet" },
     { key: "selected", label: "Selected records", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
   ];
 
@@ -106,7 +106,7 @@ const RateOverview = () => {
             icon: "fa-arrow-right-arrow-left",
             eyebrow: "Currency controls",
             title: "Maintain exchange-rate history with greater clarity",
-            description: "Review effective dates and all supported currency rates in a compact register built for fast accounting checks.",
+            description: "Review each rate's effective date separately from when it was recorded, including historical closing rates entered in a later year.",
             createLink: "/rate/create",
             createLabel: "Add exchange rate",
             onExport: exportToExcel,
@@ -124,7 +124,7 @@ const RateOverview = () => {
           onSearchChange={(event) => { setSearchQuery(event.target.value); if (!event.target.value) fetchData(); }}
           onSearchSubmit={fetchData}
           onClearSearch={() => { setSearchQuery(""); fetchData(); }}
-          searchPlaceholder="Search date, currency rate or creator"
+          searchPlaceholder="Search effective date, source, rate or recorder"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
           selectedCount={selectedItems.length}
@@ -139,14 +139,15 @@ const RateOverview = () => {
           allSelected={allSelected}
           onToggleSelectAll={handleSelectAll}
           mobile={{
-            title: (rate) => formatOverviewDate(rate.created_at),
-            subtitle: (rate) => `Created by ${rate.created_by || "—"}`,
+            title: (rate) => formatOverviewDate(rate.effective_date || rate.created_at),
+            subtitle: (rate) => `${rate.rate_source || "Manual entry"} · Recorded by ${rate.recorded_by || rate.created_by || "—"}`,
             badge: () => <OverviewBadge tone="teal">Rate set</OverviewBadge>,
             fields: [
               { key: "usd", label: "USD", render: (rate) => formatCurrencyDecimals(rate.usd_rate, rate.usd_cur) },
               { key: "gbp", label: "GBP", render: (rate) => formatCurrencyDecimals(rate.gbp_rate, rate.gbp_cur) },
               { key: "eur", label: "EUR", render: (rate) => formatCurrencyDecimals(rate.eur_rate, rate.eur_cur) },
               { key: "ngn", label: "NGN", render: (rate) => formatCurrencyDecimals(rate.ngn_rate, rate.ngn_cur) },
+              { key: "recorded", label: "Recorded", render: (rate) => rate.recorded_at ? formatOverviewDate(rate.recorded_at) : "Legacy record" },
             ],
             actions: (rate) => rowActions(rate, true),
           }}

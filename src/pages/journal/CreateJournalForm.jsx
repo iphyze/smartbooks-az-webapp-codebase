@@ -114,7 +114,7 @@ function applyRateRecord(item, rateRecord, rateId, currency = item.jcurrency) {
     ...item,
     jrate: String(rateId),
     currencyRate: parseFloat(rateRecord[`${currencyKey}_rate`]) || 0,
-    rate_date: rateRecord.created_at || "",
+    rate_date: rateRecord.effective_date || rateRecord.created_at || "",
     ngn_rate: rateRecord.ngn_rate ?? "",
     usd_rate: rateRecord.usd_rate ?? "",
     eur_rate: rateRecord.eur_rate ?? "",
@@ -274,6 +274,18 @@ const CreateJournalForm = () => {
     cost_center: "Overhead",
   });
 
+  const [invoicePaymentRegistration, setInvoicePaymentRegistration] = useState({
+    enabled: false,
+    invoice_number: "",
+    invoice_option: null,
+    payment_method: "",
+    transaction_reference: "",
+    notes: "",
+    preview_token: "",
+    preview: null,
+  });
+  const [isPreviewingInvoicePayment, setIsPreviewingInvoicePayment] = useState(false);
+
   /* ── Master rate id — drives all rows ── */
   const [masterRateId, setMasterRateId] = useState("");
 
@@ -285,7 +297,7 @@ const CreateJournalForm = () => {
     if (found) {
       item.jrate = effectiveId;
       item.currencyRate = parseFloat(found[`${item.jcurrency.toLowerCase()}_rate`]) || 0;
-      item.rate_date = found.created_at;
+      item.rate_date = found.effective_date || found.created_at;
       item.ngn_rate = found.ngn_rate;
       item.usd_rate = found.usd_rate;
       item.eur_rate = found.eur_rate;
@@ -452,7 +464,7 @@ const CreateJournalForm = () => {
   const masterRateOptions = useMemo(() =>
     rates.map((r) => ({
       value: String(r.id),
-      label: r.created_at?.slice(0, 10) || "",
+      label: (r.effective_date || r.created_at)?.slice(0, 10) || "",
       rate: r,
     })),
     [rates]);
@@ -502,6 +514,40 @@ const CreateJournalForm = () => {
   /* ── Totals ── */
   const totals = useMemo(() => calculateTotals(journalItems), [journalItems]);
   const isBalanced = Math.abs(totals.grand_total) < EPSILON;
+
+  const invoicePaymentPreviewFingerprint = useMemo(
+    () => JSON.stringify({
+      invoice_number: invoicePaymentRegistration.invoice_number.trim(),
+      journal_date: formatDateForApi(journalDetails.journal_date),
+      journal_type: journalDetails.journal_type,
+      journal_currency: journalDetails.journal_currency,
+      transaction_type: journalDetails.transaction_type,
+      main_journal_description: journalDetails.main_journal_description,
+      cost_center: journalDetails.cost_center,
+      lines: journalItems.map((item) => ({
+        ledger_number: item.ledger_number,
+        journal_date: formatDateForApi(item.journal_date || journalDetails.journal_date),
+        sides: item.sides,
+        jcurrency: item.jcurrency,
+        amount: item.amount,
+        currencyRate: item.currencyRate,
+        rate_date: item.rate_date,
+      })),
+    }),
+    [invoicePaymentRegistration.invoice_number, journalDetails, journalItems]
+  );
+  const previousInvoicePaymentFingerprint = useRef(invoicePaymentPreviewFingerprint);
+
+  useEffect(() => {
+    if (previousInvoicePaymentFingerprint.current !== invoicePaymentPreviewFingerprint) {
+      setInvoicePaymentRegistration((current) => (
+        current.preview || current.preview_token
+          ? { ...current, preview: null, preview_token: "" }
+          : current
+      ));
+      previousInvoicePaymentFingerprint.current = invoicePaymentPreviewFingerprint;
+    }
+  }, [invoicePaymentPreviewFingerprint]);
 
   /* ─────────────────────────────────────────────
      Validation
@@ -677,7 +723,7 @@ const CreateJournalForm = () => {
         const curr = newItem.jcurrency.toLowerCase();
         newItem.jrate = masterRateId;
         newItem.currencyRate = parseFloat(found[`${curr}_rate`]) || 0;
-        newItem.rate_date = found.created_at;
+        newItem.rate_date = found.effective_date || found.created_at;
         newItem.ngn_rate = found.ngn_rate;
         newItem.usd_rate = found.usd_rate;
         newItem.eur_rate = found.eur_rate;
@@ -708,7 +754,7 @@ const CreateJournalForm = () => {
         const currency = item.jcurrency.toLowerCase();
         item.jrate = masterRateId;
         item.currencyRate = parseFloat(found[`${currency}_rate`]) || 0;
-        item.rate_date = found.created_at;
+        item.rate_date = found.effective_date || found.created_at;
         item.ngn_rate = found.ngn_rate;
         item.usd_rate = found.usd_rate;
         item.eur_rate = found.eur_rate;
@@ -761,7 +807,7 @@ const CreateJournalForm = () => {
     if (found) {
       item.jrate = masterRateId;
       item.currencyRate = rate;
-      item.rate_date = found.created_at;
+      item.rate_date = found.effective_date || found.created_at;
       item.ngn_rate = found.ngn_rate;
       item.usd_rate = found.usd_rate;
       item.eur_rate = found.eur_rate;
@@ -840,6 +886,86 @@ const CreateJournalForm = () => {
 
   const handleRateCreated = () => { setShowCreateRateModal(false); searchRates(""); };
 
+  const buildJournalPayload = () => ({
+    ...journalDetails,
+    journal_date: formatDateForApi(journalDetails.journal_date),
+    journal_line_date: journalItems.map((item) => formatDateForApi(item.journal_date || journalDetails.journal_date)),
+    total_debit_ngn: totals.total_debit_ngn,
+    total_credit_ngn: totals.total_credit_ngn,
+    total_debit_usd: totals.total_debit_usd,
+    total_credit_usd: totals.total_credit_usd,
+    grand_total_ngn: totals.grand_total_ngn,
+    grand_total_usd: totals.grand_total_usd,
+    grand_total: totals.grand_total,
+    ledger_name: journalItems.map((item) => item.ledger_name),
+    ledger_number: journalItems.map((item) => item.ledger_number),
+    ledger_class: journalItems.map((item) => item.ledger_class),
+    ledger_class_code: journalItems.map((item) => item.ledger_class_code),
+    ledger_sub_class: journalItems.map((item) => item.ledger_sub_class),
+    ledger_type: journalItems.map((item) => item.ledger_type),
+    amount: journalItems.map((item) => item.amount),
+    sides: journalItems.map((item) => item.sides),
+    jrate: journalItems.map((item) => item.jrate),
+    jcurrency: journalItems.map((item) => item.jcurrency),
+    currency_rate: journalItems.map((item) => item.currencyRate),
+    journal_description: journalItems.map((item) => item.journal_description),
+    rate_date: journalItems.map((item) => item.rate_date),
+    ngn_rate: journalItems.map((item) => item.ngn_rate),
+    usd_rate: journalItems.map((item) => item.usd_rate),
+    eur_rate: journalItems.map((item) => item.eur_rate),
+    gbp_rate: journalItems.map((item) => item.gbp_rate),
+  });
+
+  const previewInvoicePaymentRegistration = async () => {
+    setSubmitted(true);
+    const headerValidation = validateHeader();
+    const itemValidation = validateItems();
+    if (Object.keys(headerValidation).length || itemValidation.some((row) => Object.keys(row).length)) {
+      showToast("Complete the journal before previewing the invoice payment.", "error");
+      return;
+    }
+    if (!isBalanced) {
+      showToast("The journal must be balanced before it can be registered as an invoice payment.", "error");
+      return;
+    }
+    if (!invoicePaymentRegistration.invoice_number.trim()) {
+      showToast("Enter the invoice number to settle.", "error");
+      return;
+    }
+
+    setIsPreviewingInvoicePayment(true);
+    try {
+      const token = useAuthStore.getState().token;
+      const response = await api.post(
+        "/journal/preview-invoice-payment-registration",
+        {
+          invoice_number: invoicePaymentRegistration.invoice_number.trim(),
+          journal: buildJournalPayload(),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const preview = response?.data?.data;
+      if (!preview?.preview_token) {
+        throw new Error("The payment preview did not return a validation token.");
+      }
+      previousInvoicePaymentFingerprint.current = invoicePaymentPreviewFingerprint;
+      setInvoicePaymentRegistration((current) => ({
+        ...current,
+        preview,
+        preview_token: preview.preview_token,
+      }));
+      showToast(response?.data?.message || "Invoice payment journal validated.", "success");
+    } catch (error) {
+      setInvoicePaymentRegistration((current) => ({ ...current, preview: null, preview_token: "" }));
+      showToast(
+        error?.response?.data?.message || error?.message || "The invoice payment journal could not be validated.",
+        "error"
+      );
+    } finally {
+      setIsPreviewingInvoicePayment(false);
+    }
+  };
+
   /* ─────────────────────────────────────────────
      Submit
   ───────────────────────────────────────────── */
@@ -857,39 +983,31 @@ const CreateJournalForm = () => {
       showToast("Grand total must be equal to zero. Please ensure that your total debit equals your total credit!", "error");
       return;
     }
+    if (invoicePaymentRegistration.enabled) {
+      if (!invoicePaymentRegistration.invoice_number.trim()) {
+        showToast("Enter the invoice number to settle.", "error");
+        return;
+      }
+      if (!invoicePaymentRegistration.preview_token || !invoicePaymentRegistration.preview) {
+        showToast("Preview and validate the invoice payment before submitting the journal.", "error");
+        return;
+      }
+    }
 
     setIsLoading(true);
     const token = useAuthStore.getState().token;
 
-    const payload = {
-      ...journalDetails,
-      journal_date: formatDateForApi(journalDetails.journal_date),
-      journal_line_date: journalItems.map((i) => formatDateForApi(i.journal_date || journalDetails.journal_date)),
-      total_debit_ngn: totals.total_debit_ngn,
-      total_credit_ngn: totals.total_credit_ngn,
-      total_debit_usd: totals.total_debit_usd,
-      total_credit_usd: totals.total_credit_usd,
-      grand_total_ngn: totals.grand_total_ngn,
-      grand_total_usd: totals.grand_total_usd,
-      grand_total: totals.grand_total,
-      ledger_name: journalItems.map((i) => i.ledger_name),
-      ledger_number: journalItems.map((i) => i.ledger_number),
-      ledger_class: journalItems.map((i) => i.ledger_class),
-      ledger_class_code: journalItems.map((i) => i.ledger_class_code),
-      ledger_sub_class: journalItems.map((i) => i.ledger_sub_class),
-      ledger_type: journalItems.map((i) => i.ledger_type),
-      amount: journalItems.map((i) => i.amount),
-      sides: journalItems.map((i) => i.sides),
-      jrate: journalItems.map((i) => i.jrate),
-      jcurrency: journalItems.map((i) => i.jcurrency),
-      currency_rate: journalItems.map((i) => i.currencyRate),
-      journal_description: journalItems.map((i) => i.journal_description),
-      rate_date: journalItems.map((i) => i.rate_date),
-      ngn_rate: journalItems.map((i) => i.ngn_rate),
-      usd_rate: journalItems.map((i) => i.usd_rate),
-      eur_rate: journalItems.map((i) => i.eur_rate),
-      gbp_rate: journalItems.map((i) => i.gbp_rate),
-    };
+    const payload = buildJournalPayload();
+    if (invoicePaymentRegistration.enabled) {
+      payload.invoice_payment_registration = {
+        enabled: true,
+        invoice_number: invoicePaymentRegistration.invoice_number.trim(),
+        preview_token: invoicePaymentRegistration.preview_token,
+        payment_method: invoicePaymentRegistration.payment_method.trim(),
+        transaction_reference: invoicePaymentRegistration.transaction_reference.trim(),
+        notes: invoicePaymentRegistration.notes.trim(),
+      };
+    }
 
     try {
       const response = await api.post("/journal/create-journal", payload, {
@@ -905,6 +1023,16 @@ const CreateJournalForm = () => {
           transaction_type: "", main_journal_description: "", cost_center: "Overhead",
         });
         setMasterRateId("");
+        setInvoicePaymentRegistration({
+          enabled: false,
+          invoice_number: "",
+          invoice_option: null,
+          payment_method: "",
+          transaction_reference: "",
+          notes: "",
+          preview_token: "",
+          preview: null,
+        });
 
         const resetItem = createEmptyItem("", new Date());
         const effectiveId = findEffectiveRateId(rates, resetItem.jcurrency, new Date());
@@ -912,7 +1040,7 @@ const CreateJournalForm = () => {
         if (found) {
           resetItem.jrate = effectiveId;
           resetItem.currencyRate = parseFloat(found[`${resetItem.jcurrency.toLowerCase()}_rate`]) || 0;
-          resetItem.rate_date = found.created_at;
+          resetItem.rate_date = found.effective_date || found.created_at;
           resetItem.ngn_rate = found.ngn_rate;
           resetItem.usd_rate = found.usd_rate;
           resetItem.eur_rate = found.eur_rate;
@@ -1017,6 +1145,10 @@ const CreateJournalForm = () => {
             totals={totals}
             isBalanced={isBalanced}
             isLoading={isLoading}
+            invoicePaymentRegistration={invoicePaymentRegistration}
+            setInvoicePaymentRegistration={setInvoicePaymentRegistration}
+            onPreviewInvoicePayment={previewInvoicePaymentRegistration}
+            isPreviewingInvoicePayment={isPreviewingInvoicePayment}
             onCancel={() => navigate("/journal/home")}
           />
         </form>

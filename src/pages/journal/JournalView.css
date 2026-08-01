@@ -884,3 +884,22 @@
   background: rgba(139, 92, 246, 0.16);
   border-color: currentColor;
 }
+
+.journal-view-action--payment {
+  color: #0f766e;
+  background: rgba(13, 148, 136, 0.1);
+  border-color: rgba(13, 148, 136, 0.2);
+}
+
+.journal-view-action--payment:hover:not(:disabled) {
+  color: #0d9488;
+  background: rgba(13, 148, 136, 0.16);
+  border-color: currentColor;
+}
+
+.journal-view-action--payment-linked {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.2);
+  cursor: default;
+}

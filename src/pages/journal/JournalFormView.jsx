@@ -2,6 +2,7 @@ import React from "react";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import InvoicePaymentRegistrationSelect from "../../components/journal/InvoicePaymentRegistrationSelect";
 
 const JOURNAL_TYPE_OPTIONS = [
   { value: "Payment", label: "Payment" },
@@ -120,10 +121,24 @@ export default function JournalFormView({
   totals,
   isBalanced,
   isLoading,
+  linkedPayment,
+  invoicePaymentRegistration,
+  setInvoicePaymentRegistration,
+  onPreviewInvoicePayment,
+  isPreviewingInvoicePayment,
   onCancel,
 }) {
   const isEdit = mode === "edit";
   const isDuplicate = !isEdit && Boolean(duplicateInfo?.source_journal_id);
+  const paymentPreview = invoicePaymentRegistration?.preview || null;
+  const settlementPreview = paymentPreview?.settlement || null;
+  const updateInvoicePaymentRegistration = (field, value) => {
+    setInvoicePaymentRegistration?.((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "invoice_number" ? { preview: null, preview_token: "" } : {}),
+    }));
+  };
 
   return (
     <div className="journal-form-layout">
@@ -341,6 +356,193 @@ export default function JournalFormView({
           </div>
         </div>
       </section>
+
+      {invoicePaymentRegistration ? (
+        <section className={`journal-form-section journal-payment-registration ${invoicePaymentRegistration?.enabled ? "is-enabled" : ""}`}>
+          <SectionHeader
+            icon={linkedPayment ? "fa-link" : "fa-file-invoice-dollar"}
+            eyebrow={linkedPayment
+              ? "Controlled payment correction"
+              : isEdit ? "Optional payment harmonisation" : "Optional payment registration"}
+            title={linkedPayment
+              ? `Correct journal and payment ${linkedPayment.payment_code || ""}`
+              : "Register this journal as an invoice payment"}
+            description={linkedPayment
+              ? "Correct any journal field and revalidate the invoice payment in the same atomic save."
+              : isEdit
+                ? "Update this unlinked journal and register its validated invoice payment in the same save."
+                : "Post the journal once and update the invoice payment register from the same validated entry."}
+            action={linkedPayment ? (
+              <span className="journal-payment-registration__status-badge">
+                <i className="fas fa-rotate" aria-hidden="true" />
+                Revalidation required
+              </span>
+            ) : (
+              <label className="journal-payment-registration__toggle">
+                <input
+                  type="checkbox"
+                  checked={Boolean(invoicePaymentRegistration?.enabled)}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setInvoicePaymentRegistration?.((current) => ({
+                      ...current,
+                      enabled,
+                      preview: enabled ? current.preview : null,
+                      preview_token: enabled ? current.preview_token : "",
+                    }));
+                  }}
+                />
+                <span aria-hidden="true" />
+                <strong>{invoicePaymentRegistration?.enabled ? "Enabled" : "Not enabled"}</strong>
+              </label>
+            )}
+          />
+
+          {invoicePaymentRegistration?.enabled ? (
+            <div className="journal-payment-registration__body">
+              <div className="journal-payment-registration__notice">
+                <i className="fas fa-shield-check" aria-hidden="true" />
+                <div>
+                  <strong>{linkedPayment ? "The journal and payment link will be corrected together." : "No duplicate journal will be created."}</strong>
+                  <span>
+                    {linkedPayment
+                      ? "Dates, journal type, ledgers, sides, amounts, currencies, and rates may be corrected. Saving is blocked until the revised journal passes a fresh invoice-payment preview."
+                      : isEdit
+                        ? "The updated receivable, bank or cash, and realized FX lines will be validated before the journal is linked."
+                        : "The receivable, bank or cash, and realized FX lines below will be validated against the invoice before posting."}
+                  </span>
+                </div>
+              </div>
+
+              <div className="journal-payment-registration__grid">
+                <div className="journal-form-field">
+                  <label className="input-form-label" htmlFor="invoice_payment_invoice_number">Invoice Number</label>
+                  <div className="input-form-group">
+                    <div className="form-wrapper">
+                      <InvoicePaymentRegistrationSelect
+                        inputId="invoice_payment_invoice_number"
+                        invoiceNumber={invoicePaymentRegistration.invoice_number}
+                        value={invoicePaymentRegistration.invoice_option || null}
+                        onChange={(option) => {
+                          setInvoicePaymentRegistration?.((current) => ({
+                            ...current,
+                            invoice_number: option?.value || "",
+                            invoice_option: option || null,
+                            preview: null,
+                            preview_token: "",
+                          }));
+                        }}
+                        excludeJournalId={Number(invoicePaymentRegistration?.journal_id || 0)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="journal-form-field">
+                  <label className="input-form-label" htmlFor="invoice_payment_method">Payment Method</label>
+                  <div className="input-form-group">
+                    <div className="form-wrapper">
+                      <input
+                        id="invoice_payment_method"
+                        type="text"
+                        className="form-input journal-form-control"
+                        value={invoicePaymentRegistration.payment_method}
+                        onChange={(event) => updateInvoicePaymentRegistration("payment_method", event.target.value)}
+                        placeholder="Optional — derived from transaction type"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="journal-form-field">
+                  <label className="input-form-label" htmlFor="invoice_payment_reference">Transaction Reference</label>
+                  <div className="input-form-group">
+                    <div className="form-wrapper">
+                      <input
+                        id="invoice_payment_reference"
+                        type="text"
+                        className="form-input journal-form-control"
+                        value={invoicePaymentRegistration.transaction_reference}
+                        onChange={(event) => updateInvoicePaymentRegistration("transaction_reference", event.target.value)}
+                        placeholder="Bank reference, receipt number, etc."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="journal-form-field">
+                  <label className="input-form-label" htmlFor="invoice_payment_notes">Payment Notes</label>
+                  <div className="input-form-group">
+                    <div className="form-wrapper">
+                      <input
+                        id="invoice_payment_notes"
+                        type="text"
+                        className="form-input journal-form-control"
+                        value={invoicePaymentRegistration.notes}
+                        onChange={(event) => updateInvoicePaymentRegistration("notes", event.target.value)}
+                        placeholder="Optional reconciliation note"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="journal-payment-registration__preview-action">
+                <button
+                  type="button"
+                  onClick={onPreviewInvoicePayment}
+                  disabled={isPreviewingInvoicePayment || isLoading}
+                >
+                  <i className={`fas ${isPreviewingInvoicePayment ? "fa-spinner fa-spin" : "fa-eye"}`} aria-hidden="true" />
+                  {isPreviewingInvoicePayment ? "Validating…" : paymentPreview ? "Refresh payment preview" : "Preview and validate payment"}
+                </button>
+                <span>A fresh preview is required whenever the invoice number or journal lines change.</span>
+              </div>
+
+              {paymentPreview && settlementPreview ? (
+                <div className="journal-payment-preview">
+                  <div className="journal-payment-preview__header">
+                    <span><i className="fas fa-circle-check" aria-hidden="true" /> Validated payment preview</span>
+                    <strong>{paymentPreview.invoice?.invoice_number}</strong>
+                  </div>
+                  <div className="journal-payment-preview__grid">
+                    <div>
+                      <span>Invoice settlement</span>
+                      <strong>{settlementPreview.invoice_currency} {formatNumber(settlementPreview.invoice_amount_settled)}</strong>
+                    </div>
+                    <div>
+                      <span>Amount received</span>
+                      <strong>{settlementPreview.payment_currency} {formatNumber(settlementPreview.payment_amount_received)}</strong>
+                    </div>
+                    <div>
+                      <span>Settlement value</span>
+                      <strong>NGN {formatNumber(settlementPreview.settlement_value_ngn)}</strong>
+                    </div>
+                    <div>
+                      <span>Realized FX</span>
+                      <strong>
+                        {Number(settlementPreview.realized_fx_gain_ngn || 0) > 0
+                          ? `Gain NGN ${formatNumber(settlementPreview.realized_fx_gain_ngn)}`
+                          : Number(settlementPreview.realized_fx_loss_ngn || 0) > 0
+                            ? `Loss NGN ${formatNumber(settlementPreview.realized_fx_loss_ngn)}`
+                            : "No gain or loss"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Receiving ledger</span>
+                      <strong>{settlementPreview.bank_ledger_name}</strong>
+                    </div>
+                    <div>
+                      <span>Receivable ledger</span>
+                      <strong>{settlementPreview.customer_ledger_name}</strong>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="journal-form-section journal-form-section--lines">
         <SectionHeader

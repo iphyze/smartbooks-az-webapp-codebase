@@ -1,82 +1,67 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import useThemeStore from "../../stores/useThemeStore";
-import { fadeInUp } from "../../utils/animation";
+import { motion } from "framer-motion";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import useThemeStore from "../../stores/useThemeStore";
 import useToastStore from "../../stores/useToastStore";
 import useRateStore from "../../stores/useRateStore";
+import { fadeInUp } from "../../utils/animation";
 import "../inputs-styles/Inputs.css";
 
-/* ─────────────────────────────────────────────
-   Main Component
-───────────────────────────────────────────── */
+const toISODate = (value) => {
+  if (!value) return "";
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  return String(value).slice(0, 10);
+};
+
 const CreateRateForm = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { createRate } = useRateStore();
   const navigate = useNavigate();
-
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  /* ── Form State ── */
   const [rateDetails, setRateDetails] = useState({
-    created_at: new Date(),
-    ngn_rate: "1", // Usually 1, but left editable if needed
+    effective_date: new Date(),
+    rate_source: "Manual entry",
+    source_reference: "",
+    ngn_rate: "1",
     usd_rate: "",
     gbp_rate: "",
     eur_rate: "",
   });
 
-  /* ─────────────────────────────────────────────
-     Validation
-  ───────────────────────────────────────────── */
   const validateForm = useCallback(() => {
-    const e = {};
-    if (!rateDetails.created_at) e.created_at = "Date is required";
-    if (!rateDetails.ngn_rate || isNaN(parseFloat(rateDetails.ngn_rate)) || parseFloat(rateDetails.ngn_rate) < 0) 
-      e.ngn_rate = "Valid NGN rate is required";
-    if (!rateDetails.usd_rate || isNaN(parseFloat(rateDetails.usd_rate)) || parseFloat(rateDetails.usd_rate) < 0) 
-      e.usd_rate = "Valid USD rate is required";
-    if (!rateDetails.gbp_rate || isNaN(parseFloat(rateDetails.gbp_rate)) || parseFloat(rateDetails.gbp_rate) < 0) 
-      e.gbp_rate = "Valid GBP rate is required";
-    if (!rateDetails.eur_rate || isNaN(parseFloat(rateDetails.eur_rate)) || parseFloat(rateDetails.eur_rate) < 0) 
-      e.eur_rate = "Valid EUR rate is required";
-    return e;
+    const next = {};
+    if (!rateDetails.effective_date) next.effective_date = "Effective date is required";
+    if (!rateDetails.rate_source.trim()) next.rate_source = "Rate source is required";
+    ["ngn_rate", "usd_rate", "gbp_rate", "eur_rate"].forEach((field) => {
+      const amount = Number(rateDetails[field]);
+      if (!Number.isFinite(amount) || amount <= 0) next[field] = `Valid ${field.slice(0, 3).toUpperCase()} rate is required`;
+    });
+    return next;
   }, [rateDetails]);
 
   const errors = useMemo(() => (submitted ? validateForm() : {}), [submitted, validateForm]);
+  const update = (field, value) => setRateDetails((current) => ({ ...current, [field]: value }));
 
-  /* ─────────────────────────────────────────────
-     Handlers
-  ───────────────────────────────────────────── */
-  const handleDetailChange = (field, value) => {
-    setRateDetails((prev) => ({ ...prev, [field]: value }));
-  };
-
-  /* ─────────────────────────────────────────────
-     Submit
-  ───────────────────────────────────────────── */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setSubmitted(true);
-
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
+    const nextErrors = validateForm();
+    if (Object.keys(nextErrors).length) {
       showToast("Please fill in all required fields correctly", "error");
       return;
     }
 
     setIsLoading(true);
-
-    // Format date to YYYY-MM-DD
-    const formattedDate = rateDetails.created_at instanceof Date
-      ? rateDetails.created_at.toISOString().split("T")[0]
-      : rateDetails.created_at;
-
-    const payload = {
+    const success = await createRate({
       ngn_cur: "NGN",
       ngn_rate: rateDetails.ngn_rate,
       usd_cur: "USD",
@@ -85,207 +70,134 @@ const CreateRateForm = () => {
       gbp_rate: rateDetails.gbp_rate,
       eur_cur: "EUR",
       eur_rate: rateDetails.eur_rate,
-      created_at: formattedDate,
-    };
-
-    const success = await createRate(payload);
-
+      effective_date: toISODate(rateDetails.effective_date),
+      rate_source: rateDetails.rate_source.trim(),
+      source_reference: rateDetails.source_reference.trim(),
+    });
     setIsLoading(false);
 
     if (success) {
       setSubmitted(false);
-      setRateDetails({
-        created_at: new Date(),
-        ngn_rate: "1",
-        usd_rate: "",
-        gbp_rate: "",
-        eur_rate: "",
-      });
       navigate("/rate/home");
     }
   };
 
-  /* ─────────────────────────────────────────────
-     Render
-  ───────────────────────────────────────────── */
+  const rateField = (currency) => {
+    const key = `${currency.toLowerCase()}_rate`;
+    return (
+      <div className="invoice-form invoice-form-three" key={currency}>
+        <div className="input-form-wrapper">
+          <div className={`input-form-group ${errors[key] ? "input-form-error" : ""}`}>
+            <label className={`input-form-label ${errors[key] ? "input-label-message" : ""}`} htmlFor={key}>{currency} Rate</label>
+            <div className="form-wrapper">
+              <input
+                type="number"
+                id={key}
+                className={`form-input form-input-no-padding ${errors[key] ? "input-error" : ""}`}
+                value={rateDetails[key]}
+                onChange={(event) => update(key, event.target.value)}
+                onWheel={(event) => event.currentTarget.blur()}
+                step="0.00000001"
+                min="0.00000001"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          {errors[key] && <div className="input-error-message">{errors[key]}</div>}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <>
-      <motion.div
-        variants={fadeInUp}
-        initial="hidden"
-        animate="show"
-        transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }}
-        className={`invoice-form-box theme-${theme}`}
-      >
-        <form
-          className="invoice-form-f-container"
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          {/* ── HEADER DETAILS ── */}
-          <div className="invoice-form-header">
-            <div className="invoice-form-htxt">Create New Rate</div>
-            <div className="invoice-form-sub-htxt">
-              Fill the form below to add a new exchange rate entry
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="show"
+      transition={{ duration: 0.01, delay: 0.02, ease: "easeInOut" }}
+      className={`invoice-form-box theme-${theme}`}
+    >
+      <form className="invoice-form-f-container" onSubmit={handleSubmit} noValidate>
+        <div className="invoice-form-header">
+          <div className="invoice-form-htxt">Create New Rate</div>
+          <div className="invoice-form-sub-htxt">
+            The effective date controls which accounting date can use the rate. The system records today&apos;s entry timestamp separately for audit.
+          </div>
+        </div>
+
+        <div className="invoice-form-flex-box">
+          <div className="invoice-form invoice-form-three">
+            <div className="input-form-wrapper">
+              <div className={`input-form-group ${errors.effective_date ? "input-form-error" : ""}`}>
+                <label className={`input-form-label ${errors.effective_date ? "input-label-message" : ""}`} htmlFor="effective_date">Rate Effective Date</label>
+                <div className="form-wrapper">
+                  <DatePicker
+                    selected={rateDetails.effective_date}
+                    onChange={(date) => update("effective_date", date)}
+                    className={`form-input ${errors.effective_date ? "input-error" : ""}`}
+                    dateFormat="yyyy-MM-dd"
+                    wrapperClassName="input-date-picker"
+                    id="effective_date"
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                  />
+                  <span className={`chevron-input-icon fas fa-calendar ${errors.effective_date ? "input-icon-error" : ""}`} />
+                </div>
+              </div>
+              {errors.effective_date && <div className="input-error-message">{errors.effective_date}</div>}
             </div>
           </div>
 
-          <div className="invoice-form-flex-box">
-            
-            {/* Date Picker */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${errors.created_at ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${errors.created_at ? "input-label-message" : ""}`} htmlFor="created_at">
-                    Effective Date
-                  </label>
-                  <div className="form-wrapper">
-                    <DatePicker
-                      selected={rateDetails.created_at}
-                      onChange={(date) => handleDetailChange("created_at", date)}
-                      className={`form-input ${errors.created_at ? "input-error" : ""}`}
-                      dateFormat="yyyy-MM-dd"
-                      wrapperClassName="input-date-picker"
-                      id="created_at"
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"
-                    />
-                    <span className={`chevron-input-icon fas fa-calendar ${errors.created_at ? "input-icon-error" : ""}`} />
-                  </div>
+          <div className="invoice-form invoice-form-three">
+            <div className="input-form-wrapper">
+              <div className={`input-form-group ${errors.rate_source ? "input-form-error" : ""}`}>
+                <label className={`input-form-label ${errors.rate_source ? "input-label-message" : ""}`} htmlFor="rate_source">Rate Source</label>
+                <div className="form-wrapper">
+                  <input
+                    id="rate_source"
+                    className={`form-input form-input-no-padding ${errors.rate_source ? "input-error" : ""}`}
+                    value={rateDetails.rate_source}
+                    onChange={(event) => update("rate_source", event.target.value)}
+                    maxLength={255}
+                    placeholder="e.g. CBN closing rate"
+                  />
                 </div>
-                {errors.created_at && (
-                  <div className="input-error-message">{errors.created_at}</div>
-                )}
               </div>
-            </div>
-
-            {/* NGN Rate */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${errors.ngn_rate ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${errors.ngn_rate ? "input-label-message" : ""}`} htmlFor="ngn_rate">
-                    NGN Rate
-                  </label>
-                  <div className="form-wrapper">
-                    <input
-                      type="number"
-                      id="ngn_rate"
-                      className={`form-input form-input-no-padding ${errors.ngn_rate ? "input-error" : ""}`}
-                      value={rateDetails.ngn_rate}
-                      onChange={(e) => handleDetailChange("ngn_rate", e.target.value)}
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-                {errors.ngn_rate && (
-                  <div className="input-error-message">{errors.ngn_rate}</div>
-                )}
-              </div>
-            </div>
-
-            {/* USD Rate */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group  ${errors.usd_rate ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${errors.usd_rate ? "input-label-message" : ""}`} htmlFor="usd_rate">
-                    USD Rate
-                  </label>
-                  <div className="form-wrapper">
-                    <input
-                      type="number"
-                      id="usd_rate"
-                      className={`form-input form-input-no-padding ${errors.usd_rate ? "input-error" : ""}`}
-                      value={rateDetails.usd_rate}
-                      onChange={(e) => handleDetailChange("usd_rate", e.target.value)}
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-                {errors.usd_rate && (
-                  <div className="input-error-message">{errors.usd_rate}</div>
-                )}
-              </div>
-            </div>
-
-            {/* GBP Rate */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${errors.gbp_rate ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${errors.gbp_rate ? "input-label-message" : ""}`} htmlFor="gbp_rate">
-                    GBP Rate
-                  </label>
-                  <div className="form-wrapper">
-                    <input
-                      type="number"
-                      id="gbp_rate"
-                      className={`form-input form-input-no-padding ${errors.gbp_rate ? "input-error" : ""}`}
-                      value={rateDetails.gbp_rate}
-                      onChange={(e) => handleDetailChange("gbp_rate", e.target.value)}
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-                {errors.gbp_rate && (
-                  <div className="input-error-message">{errors.gbp_rate}</div>
-                )}
-              </div>
-            </div>
-
-            {/* EUR Rate */}
-            <div className="invoice-form invoice-form-three">
-              <div className="input-form-wrapper">
-                <div className={`input-form-group ${errors.eur_rate ? "input-form-error" : ""}`}>
-                  <label className={`input-form-label ${errors.eur_rate ? "input-label-message" : ""}`} htmlFor="eur_rate">
-                    EUR Rate
-                  </label>
-                  <div className="form-wrapper">
-                    <input
-                      type="number"
-                      id="eur_rate"
-                      className={`form-input form-input-no-padding ${errors.eur_rate ? "input-error" : ""}`}
-                      value={rateDetails.eur_rate}
-                      onChange={(e) => handleDetailChange("eur_rate", e.target.value)}
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-                {errors.eur_rate && (
-                  <div className="input-error-message">{errors.eur_rate}</div>
-                )}
-              </div>
-            </div>
-
-          </div>
-
-          {/* ── SUBMIT ── */}
-          <div className="invoice-action-btn">
-            <div className="invoice-action-btn-wrapper">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="invoice-submit-btn"
-              >
-                {isLoading ? (
-                  <div className="invoice-loader" />
-                ) : (
-                  <span className="invoice-submit-btn-text">Create Rate</span>
-                )}
-              </button>
+              {errors.rate_source && <div className="input-error-message">{errors.rate_source}</div>}
             </div>
           </div>
 
-        </form>
-      </motion.div>
-    </>
+          <div className="invoice-form invoice-form-three">
+            <div className="input-form-wrapper">
+              <div className="input-form-group">
+                <label className="input-form-label" htmlFor="source_reference">Source Reference <span> (Optional)</span></label>
+                <div className="form-wrapper">
+                  <input
+                    id="source_reference"
+                    className="form-input form-input-no-padding"
+                    value={rateDetails.source_reference}
+                    onChange={(event) => update("source_reference", event.target.value)}
+                    maxLength={500}
+                    placeholder="Bulletin, URL, quote or reference"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {["NGN", "USD", "GBP", "EUR"].map(rateField)}
+        </div>
+
+        <div className="invoice-action-btn">
+          <div className="invoice-action-btn-wrapper">
+            <button type="submit" disabled={isLoading} className="invoice-submit-btn">
+              {isLoading ? <div className="invoice-loader" /> : <span className="invoice-submit-btn-text">Create Rate</span>}
+            </button>
+          </div>
+        </div>
+      </form>
+    </motion.div>
   );
 };
 

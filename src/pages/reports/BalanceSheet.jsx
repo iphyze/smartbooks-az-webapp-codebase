@@ -278,6 +278,7 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
           <SummaryRow    label="Service Customers (Net)"              value={summary?.net_service_customers} />
           <CategoryTable title="Strategic Partners"                   group={data.StrategicPartners} />
           <CategoryTable title="Agents"                               group={data.Agents} />
+          <CategoryTable title="Prepayments"                          group={data.Prepayments} />
           <div className="bs-treasury-heading">Treasury Accounts</div>
           <CategoryTable title="Short Term Investments"               group={data.ShortTermInvestments} />
           <CategoryTable title="Bank Accounts"                        group={data.BankAccounts} />
@@ -302,6 +303,14 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
               {fmt(summary?.current_year_earnings)}
             </span>
           </div>
+          {Math.abs(Number(summary?.currency_translation_adjustment || 0)) >= 0.005 && (
+            <div className="bs-current-earnings">
+              <span className="bs-current-earnings-label">Currency Translation Adjustment</span>
+              <span className={`bs-current-earnings-val ${Number(summary?.currency_translation_adjustment) < 0 ? "bs-neg" : ""}`}>
+                {fmt(summary?.currency_translation_adjustment)}
+              </span>
+            </div>
+          )}
           <SummaryRow label="Total Equity" value={summary?.total_equity} isGrand />
 
           <div className="bs-section-divider" />

@@ -13,6 +13,7 @@ import {
 } from "../../utils/helper";
 import printPdfDocument from "../../utils/printPdfDocument";
 import DownloadJournal from "./DownloadJournal";
+import RegisterJournalInvoicePaymentModal from "../../components/modals/RegisterJournalInvoicePaymentModal";
 import "./JournalView.css";
 
 const PAGE_SIZE = 10;
@@ -68,12 +69,13 @@ const AuditItem = ({ icon, label, value }) => (
   </div>
 );
 
-const ViewJournalContent = ({ journal }) => {
+const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const navigate = useNavigate();
   const [isPrinting, setIsPrinting] = useState(false);
   const [visibleLineCount, setVisibleLineCount] = useState(PAGE_SIZE);
+  const [showPaymentRegistration, setShowPaymentRegistration] = useState(false);
 
   const items = useMemo(
     () => (Array.isArray(journal?.items) ? journal.items : []),
@@ -118,6 +120,7 @@ const ViewJournalContent = ({ journal }) => {
   };
 
   return (
+    <>
     <motion.section
       variants={fadeInUp}
       initial="hidden"
@@ -177,16 +180,18 @@ const ViewJournalContent = ({ journal }) => {
             <span>Back to journals</span>
           </button>
 
-          <button
-            type="button"
-            className="journal-view-action journal-view-action--primary"
-            onClick={() =>
-              navigate(`/journal/edit/${journal.journal_id}`, { state: { journal } })
-            }
-          >
-            <i className="fas fa-pen-to-square" aria-hidden="true" />
-            <span>Edit journal</span>
-          </button>
+          {!journal.is_protected ? (
+            <button
+              type="button"
+              className="journal-view-action journal-view-action--primary"
+              onClick={() =>
+                navigate(`/journal/edit/${journal.journal_id}`, { state: { journal } })
+              }
+            >
+              <i className="fas fa-pen-to-square" aria-hidden="true" />
+              <span>Edit journal</span>
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -196,6 +201,34 @@ const ViewJournalContent = ({ journal }) => {
             <i className="fas fa-copy" aria-hidden="true" />
             <span>Duplicate journal</span>
           </button>
+
+          {journal.payment_link ? (
+            journal.payment_link.can_manage ? (
+              <button
+                type="button"
+                className="journal-view-action journal-view-action--payment"
+                onClick={() => setShowPaymentRegistration(true)}
+                title={`Manage ${journal.payment_link.payment_code}`}
+              >
+                <i className="fas fa-link" aria-hidden="true" />
+                <span>Manage payment · {journal.payment_link.invoice_number}</span>
+              </button>
+            ) : (
+              <span className="journal-view-action journal-view-action--payment-linked" title={`Linked to ${journal.payment_link.payment_code}`}>
+                <i className="fas fa-circle-check" aria-hidden="true" />
+                <span>Payment · {journal.payment_link.invoice_number}</span>
+              </span>
+            )
+          ) : isBalanced ? (
+            <button
+              type="button"
+              className="journal-view-action journal-view-action--payment"
+              onClick={() => setShowPaymentRegistration(true)}
+            >
+              <i className="fas fa-file-invoice-dollar" aria-hidden="true" />
+              <span>Register invoice payment</span>
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -469,6 +502,17 @@ const ViewJournalContent = ({ journal }) => {
         </section>
       </div>
     </motion.section>
+
+    <RegisterJournalInvoicePaymentModal
+      isOpen={showPaymentRegistration}
+      journal={journal}
+      onClose={() => setShowPaymentRegistration(false)}
+      onRegistered={(payment) => {
+        setShowPaymentRegistration(false);
+        onPaymentRegistered?.(payment);
+      }}
+    />
+    </>
   );
 };
 
