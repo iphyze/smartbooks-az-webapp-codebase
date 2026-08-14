@@ -311,6 +311,17 @@ export default function RegisterJournalInvoicePaymentModal({
                     <span><i className="fas fa-circle-check" /> Journal matches invoice {preview.invoice?.invoice_number}</span>
                     <strong>{preview.invoice?.clients_name}</strong>
                   </header>
+                  {Array.isArray(preview.validation_warnings) && preview.validation_warnings.length ? (
+                    <div className="journal-payment-modal__warnings" role="status">
+                      <i className="fas fa-triangle-exclamation" aria-hidden="true" />
+                      <span>
+                        <strong>Review before registration</strong>
+                        {preview.validation_warnings.map((warning) => (
+                          <small key={warning.code || warning.message}>{warning.message}</small>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null}
                   <div>
                     <article>
                       <span>Invoice amount settled</span>

@@ -505,6 +505,17 @@ export default function JournalFormView({
                     <span><i className="fas fa-circle-check" aria-hidden="true" /> Validated payment preview</span>
                     <strong>{paymentPreview.invoice?.invoice_number}</strong>
                   </div>
+                  {Array.isArray(paymentPreview.validation_warnings) && paymentPreview.validation_warnings.length ? (
+                    <div className="journal-payment-preview__warnings" role="status">
+                      <i className="fas fa-triangle-exclamation" aria-hidden="true" />
+                      <span>
+                        <strong>Review before posting</strong>
+                        {paymentPreview.validation_warnings.map((warning) => (
+                          <small key={warning.code || warning.message}>{warning.message}</small>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="journal-payment-preview__grid">
                     <div>
                       <span>Invoice settlement</span>

@@ -339,6 +339,13 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
   const isForeignCurrency = invoiceCurrency !== "NGN" || form.payment_currency !== "NGN";
 
   const journalPreview = journalContext?.journal_preview || null;
+  const journalPreviewError =
+    journalContext?.journal_preview_error || journalContextError || "";
+  const journalWarnings = Array.isArray(journalContext?.journal_warnings)
+    ? journalContext.journal_warnings.filter((warning) => warning?.message)
+    : Array.isArray(journalPreview?.validation_warnings)
+      ? journalPreview.validation_warnings.filter((warning) => warning?.message)
+      : [];
   const journalLines = Array.isArray(journalPreview?.lines) ? journalPreview.lines : [];
   const realizedGain = Number(journalPreview?.realized_fx_gain_ngn || 0);
   const realizedLoss = Number(journalPreview?.realized_fx_loss_ngn || 0);
@@ -560,7 +567,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
       if (isForeignCurrency && journalContext?.fx_schema_ready === false) {
         next.form = "The FX database migration must be applied before posting this receipt journal.";
       } else if (!previewReady) {
-        next.form = journalContextError || "Wait for the exact journal preview before posting.";
+        next.form = journalPreviewError || "Wait for the exact journal preview before posting.";
       }
     }
 
@@ -960,9 +967,25 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                 </div>
               ) : (
                 <div className="invoice-payment-modal__journal-body">
-                  {journalContextError ? (
+                  {journalPreviewError ? (
                     <div className="invoice-payment-modal__journal-warning">
-                      <i className="fas fa-triangle-exclamation" />{journalContextError}
+                      <i className="fas fa-triangle-exclamation" />
+                      <span>
+                        {journalPreviewError}
+                        <small> You can still change either ledger below and the preview will refresh automatically.</small>
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {journalWarnings.length ? (
+                    <div className="invoice-payment-modal__journal-warning" role="status">
+                      <i className="fas fa-triangle-exclamation" aria-hidden="true" />
+                      <span>
+                        <strong>Review before posting</strong>
+                        {journalWarnings.map((warning) => (
+                          <small key={warning.code || warning.message}>{warning.message}</small>
+                        ))}
+                      </span>
                     </div>
                   ) : null}
 
@@ -993,7 +1016,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                     </label>
 
                     <label className="invoice-payment-modal__field">
-                      <span>Ledger to credit <small>Customer ledger suggested</small></span>
+                      <span>Ledger to credit <small>Invoice ledger suggested</small></span>
                       <Select
                         options={creditLedgerOptions}
                         value={creditLedgerOption}
@@ -1010,7 +1033,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                         noOptionsMessage={() => "No ledgers found"}
                       />
                       <small className="invoice-payment-modal__field-hint">
-                        The customer or Accounts Receivable ledger is selected automatically.
+                        Use the suggested invoice ledger or intentionally choose another ledger. Differences are warnings, not posting blocks.
                       </small>
                       {errors.credit_ledger_number ? (
                         <small className="invoice-payment-modal__field-error">{errors.credit_ledger_number}</small>
@@ -1129,7 +1152,7 @@ const RecordInvoicePaymentModal = ({ invoice, isOpen, onClose, onRecorded }) => 
                         <p>{journalPreview.narration || narration}</p>
                       </div>
                     </>
-                  ) : !journalContextLoading && !journalContextError ? (
+                  ) : !journalContextLoading && !journalPreviewError ? (
                     <div className="invoice-payment-modal__journal-warning">
                       <i className="fas fa-circle-info" /> Select both ledgers and complete the payment amounts to generate the exact journal preview.
                     </div>

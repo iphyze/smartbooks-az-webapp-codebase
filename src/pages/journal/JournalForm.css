@@ -1856,3 +1856,35 @@
 .journal-payment-registration__status-badge i {
   font-size: 10px;
 }
+
+.journal-payment-preview__warnings {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(234, 179, 8, 0.2);
+  color: #d6a514;
+  background: rgba(234, 179, 8, 0.07);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.journal-payment-preview__warnings > i {
+  margin-top: 2px;
+}
+
+.journal-payment-preview__warnings > span,
+.journal-payment-preview__warnings strong,
+.journal-payment-preview__warnings small {
+  display: block;
+}
+
+.journal-payment-preview__warnings strong {
+  margin-bottom: 2px;
+  color: inherit;
+}
+
+.journal-payment-preview__warnings small {
+  color: var(--jf-muted);
+  font-size: 9px;
+}

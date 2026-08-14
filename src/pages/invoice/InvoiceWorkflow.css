@@ -3564,3 +3564,14 @@
   .invoice-payment-modal__rate-input > span,
   .invoice-payment-modal__rate-input > small { padding: 0 .55rem; }
 }
+
+.invoice-payment-modal__journal-warning > span {
+  display: grid;
+  gap: .18rem;
+}
+
+.invoice-payment-modal__journal-warning strong,
+.invoice-payment-modal__journal-warning small {
+  display: block;
+  color: inherit;
+}
