@@ -6,6 +6,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import useThemeStore from "../../stores/useThemeStore";
 import useToastStore from "../../stores/useToastStore";
 import useRateStore from "../../stores/useRateStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { fadeInUp } from "../../utils/animation";
 import "../inputs-styles/Inputs.css";
 
@@ -25,6 +27,8 @@ const CreateRateForm = () => {
   const { showToast } = useToastStore();
   const { createRate } = useRateStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "exchange_rate.view");
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [rateDetails, setRateDetails] = useState({
@@ -78,7 +82,7 @@ const CreateRateForm = () => {
 
     if (success) {
       setSubmitted(false);
-      navigate("/rate/home");
+      if (canView) navigate("/rate/home");
     }
   };
 

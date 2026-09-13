@@ -8,6 +8,8 @@ import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import useLedgerSearchStore from "../../stores/useLedgerSearchStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
@@ -321,7 +323,7 @@ const ReportMeta = ({ meta, title }) => (
 /* ─────────────────────────────────────────────
    SINGLE LEDGER BLOCK
 ───────────────────────────────────────────── */
-const LedgerBlock = ({ ledger, index }) => {
+const LedgerBlock = ({ ledger, index, canViewJournals }) => {
   const { summary, transactions, ledger_number, ledger_name, ledger_currency } = ledger;
 
   return (
@@ -409,15 +411,19 @@ const LedgerBlock = ({ ledger, index }) => {
                     </span>
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className="ls-ref-link"
-                      onClick={() => openReportDetail(`/journal/view/${t.ref}`)}
-                      aria-label={`Open journal ${t.ref} in a new tab`}
-                      title="Open journal in a new tab"
-                    >
-                      {t.ref}
-                    </button>
+                    {canViewJournals ? (
+                      <button
+                        type="button"
+                        className="ls-ref-link"
+                        onClick={() => openReportDetail(`/journal/view/${t.ref}`)}
+                        aria-label={`Open journal ${t.ref} in a new tab`}
+                        title="Open journal in a new tab"
+                      >
+                        {t.ref}
+                      </button>
+                    ) : (
+                      <span className="ls-mono">{t.ref}</span>
+                    )}
                   </td>
                   <td className="ls-desc-cell">{t.description}</td>
                   <td className={`ls-num-cell ${Number(t.debit) < 0 ? "ls-neg" : ""}`}>
@@ -495,7 +501,7 @@ const EmptyPrompt = () => (
 /* ─────────────────────────────────────────────
    RESULTS SECTION
 ───────────────────────────────────────────── */
-const ResultsSection = ({ data, title, meta, onExcel, excelLoading }) => {
+const ResultsSection = ({ data, title, meta, onExcel, excelLoading, canExport, canViewJournals }) => {
 
   // ADD this memoized doc inside the component, before the return
   const pdfDocument = useMemo(() => (
@@ -510,24 +516,28 @@ const ResultsSection = ({ data, title, meta, onExcel, excelLoading }) => {
           <i className="fas fa-layer-group" />
           {data.length} ledger{data.length !== 1 ? "s" : ""}
         </div>
-        <button className="ls-excel-btn" onClick={onExcel} disabled={excelLoading}>
-          {excelLoading
-            ? <><div className="ls-btn-loader ls-btn-loader--sm" /> Downloading...</>
-            : <><i className="fas fa-file-excel" /> Export Excel</>}
-        </button>
-
-        <PDFDownloadLink
-          document={pdfDocument}
-          fileName={`Ledger_Statement_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
-        >
-          {({ loading: pdfLoading }) => (
-            <button className="ls-pdf-btn" disabled={pdfLoading}>
-              {pdfLoading
-                ? <><div className="ls-btn-loader ls-btn-loader--sm" /> Building PDF...</>
-                : <><i className="fas fa-file-pdf" /> Export PDF</>}
+        {canExport && (
+          <>
+            <button className="ls-excel-btn" onClick={onExcel} disabled={excelLoading}>
+              {excelLoading
+                ? <><div className="ls-btn-loader ls-btn-loader--sm" /> Downloading...</>
+                : <><i className="fas fa-file-excel" /> Export Excel</>}
             </button>
-          )}
-        </PDFDownloadLink>
+
+            <PDFDownloadLink
+              document={pdfDocument}
+              fileName={`Ledger_Statement_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
+            >
+              {({ loading: pdfLoading }) => (
+                <button className="ls-pdf-btn" disabled={pdfLoading}>
+                  {pdfLoading
+                    ? <><div className="ls-btn-loader ls-btn-loader--sm" /> Building PDF...</>
+                    : <><i className="fas fa-file-pdf" /> Export PDF</>}
+                </button>
+              )}
+            </PDFDownloadLink>
+          </>
+        )}
       </div>
 
       {/* Report paper */}
@@ -547,6 +557,7 @@ const ResultsSection = ({ data, title, meta, onExcel, excelLoading }) => {
                 key={`${ledger.ledger_number}-${ledger.ledger_currency}-${i}`}
                 ledger={ledger}
                 index={i}
+                canViewJournals={canViewJournals}
               />
             ))}
           </div>
@@ -574,6 +585,10 @@ const LedgerStatement = () => {
   const [functionalCurrency, setFunctionalCurrency] = useState(null);
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canExport = hasPermission(user, "ledger_statement.export");
+  const canViewJournals = hasPermission(user, "journal.view");
+  const canViewReportHub = hasPermission(user, "report.view");
   const { ledgerStatement, fetchLedgerStatement, downloadLedgerStatementExcel } = useLedgerReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -625,8 +640,8 @@ const LedgerStatement = () => {
   );
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: "Reports & Analytics", to: "/reports/ledger", active: true }] : []),
     { label: "Ledger Statement", to: "/reports/ledger/ledger-statement", active: false },
   ];
 
@@ -710,6 +725,8 @@ const LedgerStatement = () => {
                     meta={ledgerStatement.meta}
                     onExcel={handleExcel}
                     excelLoading={excelLoading}
+                    canExport={canExport}
+                    canViewJournals={canViewJournals}
                   />
                 </motion.div>
               )}

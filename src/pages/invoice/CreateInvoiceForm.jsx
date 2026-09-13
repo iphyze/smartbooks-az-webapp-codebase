@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
+import { hasPermission } from "../../utils/permissions";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -28,6 +29,7 @@ import InvoiceDraftBar from "../../components/InvoiceDraftBar";
 import InvoiceLineEditor from "../../components/invoice/InvoiceLineEditor";
 import CreateInvoiceServiceModal from "../../components/modals/CreateInvoiceServiceModal";
 import useInvoiceServiceStore from "../../stores/useInvoiceServiceStore";
+import useCostCenterOptions from "../../hooks/useCostCenterOptions";
 
 
 /* ─────────────────────────────────────────────
@@ -78,6 +80,7 @@ const createInitialInvoiceDetails = () => ({
   clients_name: "",
   clients_id: "",
   project: "",
+  cost_center: "",
   currency: "NGN",
   tin_number: "No",
   bank_id: null,
@@ -86,7 +89,7 @@ const createInitialInvoiceDetails = () => ({
   account_number: "",
   account_currency: "",
   rate_date: "",
-  post_jv: "",
+  post_jv: "Yes",
 });
 
 function calculateTotals(items) {
@@ -113,12 +116,19 @@ function computeRowSubtotal(item) {
 ───────────────────────────────────────────── */
 const CreateInvoiceForm = () => {
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canCreateRate = hasPermission(user, "exchange_rate.create");
+  const canCreateClient = hasPermission(user, "client.create");
+  const canCreateProject = hasPermission(user, "project.create");
+  const canCreateBank = hasPermission(user, "bank.create");
+  const canManageServiceCatalogue = hasPermission(user, "invoice.catalogue_manage");
   const { showToast } = useToastStore();
   const { rates, searchRates, isLoading: ratesLoading } = useRateSearchStore();
   const { clients, searchClients, isLoading: clientsLoading } = useClientSearchStore();
   const { projects, searchProjects, isLoading: projectsLoading } = useProjectSearchStore();
   const { banks, searchBanks, isLoading: banksLoading } = useBankSearchStore();
   const { services, fetchServices, isLoading: servicesLoading } = useInvoiceServiceStore();
+  const { options: costCenterOptions, accessMode: costCenterAccessMode, loading: costCentersLoading, error: costCentersError } = useCostCenterOptions();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialDraftUuid = searchParams.get("draft") || "";
 
@@ -146,6 +156,11 @@ const CreateInvoiceForm = () => {
 
   useEffect(() => { searchRates(""); searchClients(""); searchProjects(""); searchBanks(""); fetchServices({ currency: "NGN" }); }, []);
   useEffect(() => { prevInvoiceItemsRef.current = invoiceItems; }, [invoiceItems]);
+
+  useEffect(() => {
+    if (invoiceDetails.cost_center || costCenterAccessMode !== "restricted" || costCenterOptions.length !== 1) return;
+    setInvoiceDetails((current) => ({ ...current, cost_center: costCenterOptions[0].value }));
+  }, [invoiceDetails.cost_center, costCenterAccessMode, costCenterOptions]);
 
   useEffect(() => {
     if (!invoiceDetails.currency) return;
@@ -205,6 +220,7 @@ const CreateInvoiceForm = () => {
       ...savedDetails,
       invoice_date: savedDetails.invoice_date ? new Date(savedDetails.invoice_date) : current.invoice_date,
       due_date: savedDetails.due_date ? new Date(savedDetails.due_date) : current.due_date,
+      post_jv: savedDetails.post_jv || current.post_jv || "Yes",
     }));
 
     if (savedItems.length > 0) {
@@ -270,6 +286,7 @@ const CreateInvoiceForm = () => {
     if (!invoiceDetails.invoice_date) e.invoice_date = "Invoice date is required";
     if (!invoiceDetails.due_date) e.due_date = "Due date is required";
     if (!invoiceDetails.clients_name) e.clients_name = "Client is required";
+    if (!invoiceDetails.cost_center) e.cost_center = "Cost centre is required";
     if (!invoiceDetails.currency) e.currency = "Currency is required";
     if (!invoiceDetails.rate_date) e.rate_date = "Rate date is required";
     if (!invoiceDetails.post_jv) e.post_jv = "Post Journal Entry is required";
@@ -348,7 +365,7 @@ const CreateInvoiceForm = () => {
       due_date: termsDays === null ? current.due_date : addDays(current.invoice_date, termsDays),
       project: preferences.default_project || "",
       tin_number: preferences.display_tin || "No",
-      post_jv: preferences.post_journal_entry || "No",
+      post_jv: preferences.post_journal_entry || "Yes",
       bank_id: preferences.default_bank_id || null,
       bank_name: preferences.bank_name || "",
       account_name: preferences.account_name || "",
@@ -524,6 +541,7 @@ const CreateInvoiceForm = () => {
       payment_terms_days: invoiceDetails.payment_terms_days,
       payment_terms_label: invoiceDetails.payment_terms_label,
       clients_name: invoiceDetails.clients_name, clients_id: invoiceDetails.clients_id, project: invoiceDetails.project || undefined,
+      cost_center: invoiceDetails.cost_center,
       currency: invoiceDetails.currency, tin_number: invoiceDetails.tin_number, bank_id: invoiceDetails.bank_id,
       bank_name: invoiceDetails.bank_name, account_name: invoiceDetails.account_name, account_number: invoiceDetails.account_number,
       account_currency: invoiceDetails.account_currency, rate_date: invoiceDetails.rate_date, post_jv: invoiceDetails.post_jv,
@@ -733,9 +751,11 @@ const CreateInvoiceForm = () => {
                     </div>
                     {headerErrors.rate_date && <div className="input-error-message">{headerErrors.rate_date}</div>}
                   </div>
-                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateRateModal(true)} title="Add a new exchange rate" aria-label="Add a new exchange rate">
-                    <span className="fas fa-plus" aria-hidden="true" />
-                  </button>
+                  {canCreateRate && (
+                    <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateRateModal(true)} title="Add a new exchange rate" aria-label="Add a new exchange rate">
+                      <span className="fas fa-plus" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -779,9 +799,11 @@ const CreateInvoiceForm = () => {
                     </div>
                     {headerErrors.clients_name && <div className="input-error-message">{headerErrors.clients_name}</div>}
                   </div>
-                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateClientModal(true)} title="Add a new client" aria-label="Add a new client">
-                    <span className="fas fa-plus" aria-hidden="true" />
-                  </button>
+                  {canCreateClient && (
+                    <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateClientModal(true)} title="Add a new client" aria-label="Add a new client">
+                      <span className="fas fa-plus" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -794,6 +816,34 @@ const CreateInvoiceForm = () => {
                       <span className="chevron-input-icon fas fa-lock" aria-hidden="true" />
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="invoice-builder__field">
+                <div className="input-form-wrapper">
+                  <div className={`input-form-group ${headerErrors.cost_center ? "input-form-error" : ""}`}>
+                    <label className={`input-form-label ${headerErrors.cost_center ? "input-label-message" : ""}`} htmlFor="cost_center">Cost Centre</label>
+                    <div className="form-wrapper">
+                      <Select
+                        options={costCenterOptions}
+                        onMenuOpen={() => setOpenMenuId("cost_center")}
+                        onMenuClose={() => setOpenMenuId(null)}
+                        onChange={(option) => handleDetailChange("cost_center", option ? option.value : "")}
+                        value={costCenterOptions.find((option) => option.value === invoiceDetails.cost_center) || (invoiceDetails.cost_center ? { value: invoiceDetails.cost_center, label: invoiceDetails.cost_center } : null)}
+                        placeholder={costCentersLoading ? "Loading cost centres..." : "Select cost centre..."}
+                        className={`form-input-select ${headerErrors.cost_center ? "input-error" : ""}`}
+                        classNamePrefix="form-input-select"
+                        isClearable
+                        inputId="cost_center"
+                        isLoading={costCentersLoading}
+                        isDisabled={costCentersLoading || Boolean(costCentersError)}
+                        noOptionsMessage={() => costCentersError || "No cost centres available"}
+                      />
+                      <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "cost_center" ? "chevron-rotate" : "", headerErrors.cost_center ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
+                    </div>
+                  </div>
+                  {headerErrors.cost_center && <div className="input-error-message">{headerErrors.cost_center}</div>}
+                  {!headerErrors.cost_center && costCentersError && <div className="input-error-message">{costCentersError}</div>}
                 </div>
               </div>
 
@@ -821,9 +871,11 @@ const CreateInvoiceForm = () => {
                       </div>
                     </div>
                   </div>
-                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateProjectModal(true)} title="Add a new project" aria-label="Add a new project">
-                    <span className="fas fa-plus" aria-hidden="true" />
-                  </button>
+                  {canCreateProject && (
+                    <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateProjectModal(true)} title="Add a new project" aria-label="Add a new project">
+                      <span className="fas fa-plus" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -866,9 +918,11 @@ const CreateInvoiceForm = () => {
                     </div>
                     {headerErrors.bank_name && <div className="input-error-message">{headerErrors.bank_name}</div>}
                   </div>
-                  <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateBankModal(true)} title="Add a new bank account" aria-label="Add a new bank account">
-                    <span className="fas fa-plus" aria-hidden="true" />
-                  </button>
+                  {canCreateBank && (
+                    <button type="button" className="inv-form-flex-btn invoice-builder__quick-add" onClick={() => setShowCreateBankModal(true)} title="Add a new bank account" aria-label="Add a new bank account">
+                      <span className="fas fa-plus" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -981,7 +1035,7 @@ const CreateInvoiceForm = () => {
               servicesLoading={servicesLoading}
               onSearchServices={handleServiceSearch}
               onApplyService={handleApplyService}
-              onSaveAsService={(line) => setServiceModal({ open: true, line })}
+              onSaveAsService={canManageServiceCatalogue ? (line) => setServiceModal({ open: true, line }) : undefined}
               onChange={handleItemChange}
               onRemove={(item) => requestRemoveItem(item.id)}
             />
@@ -1126,19 +1180,19 @@ const CreateInvoiceForm = () => {
             isNew={true}
           />
         )}
-        {showCreateRateModal && (
+        {canCreateRate && showCreateRateModal && (
           <CreateRateModal isOpen={showCreateRateModal} onClose={() => setShowCreateRateModal(false)} onRateCreated={handleRateCreated} />
         )}
-        {showCreateClientModal && (
+        {canCreateClient && showCreateClientModal && (
           <CreateClientsModal isOpen={showCreateClientModal} onClose={() => setShowCreateClientModal(false)} onClientCreated={handleClientCreated} />
         )}
-        {showCreateProjectModal && (
+        {canCreateProject && showCreateProjectModal && (
           <CreateProjectModal isOpen={showCreateProjectModal} onClose={() => setShowCreateProjectModal(false)} onProjectCreated={handleProjectCreated} />
         )}
-        {showCreateBankModal && (
+        {canCreateBank && showCreateBankModal && (
           <CreateBankModal isOpen={showCreateBankModal} onClose={() => setShowCreateBankModal(false)} onBankCreated={handleBankCreated} />
         )}
-        {serviceModal.open && (
+        {canManageServiceCatalogue && serviceModal.open && (
           <CreateInvoiceServiceModal
             isOpen={serviceModal.open}
             currency={invoiceDetails.currency}

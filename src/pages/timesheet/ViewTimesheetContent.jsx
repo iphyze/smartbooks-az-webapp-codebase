@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { fadeInUp } from "../../utils/animation";
 import { formatDateLong } from "../../utils/helper";
 import DownloadTimesheet from "./DownloadTimesheet";
@@ -49,6 +51,11 @@ const formatDateTime = (value) => {
 const ViewTimesheetContent = ({ timesheet }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canViewClients = hasPermission(user, "client.view");
+  const canEditTimesheets = hasPermission(user, "timesheet.edit");
+  const canExportTimesheets = hasPermission(user, "timesheet.export");
+  const canViewStaff = hasPermission(user, "staff.view");
 
   if (!timesheet) return null;
 
@@ -77,9 +84,9 @@ const ViewTimesheetContent = ({ timesheet }) => {
           <EntityViewActions
             onBack={() => navigate("/timesheet/home")}
             backLabel="Back to timesheets"
-            onEdit={() => navigate(`/timesheet/edit/${timesheet.id}`)}
+            onEdit={canEditTimesheets ? () => navigate(`/timesheet/edit/${timesheet.id}`) : undefined}
             editLabel="Edit entry"
-            pdfDocument={timesheetDocument}
+            pdfDocument={canExportTimesheets ? timesheetDocument : null}
             fileName={`Timesheet-${timesheet.id || "entry"}.pdf`}
             printTitle={`Preparing timesheet #${timesheet.id || ""}`}
           />
@@ -101,13 +108,13 @@ const ViewTimesheetContent = ({ timesheet }) => {
             icon="fa-user-clock"
             label="Staff member"
             value={timesheet.staff_name}
-            onClick={timesheet.staff_id ? () => navigate(`/staff/view/${timesheet.staff_id}`) : undefined}
+            onClick={canViewStaff && timesheet.staff_id ? () => navigate(`/staff/view/${timesheet.staff_id}`) : undefined}
           />
           <EntityViewDetail
             icon="fa-address-book"
             label="Client"
             value={timesheet.clients_name}
-            onClick={timesheet.clients_id ? () => navigate(`/client/view/${timesheet.clients_id}`) : undefined}
+            onClick={canViewClients && timesheet.clients_id ? () => navigate(`/client/view/${timesheet.clients_id}`) : undefined}
           />
           <EntityViewDetail icon="fa-diagram-project" label="Project" value={timesheet.project} />
           <EntityViewDetail icon="fa-list-check" label="Task" value={timesheet.task} />

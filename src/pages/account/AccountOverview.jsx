@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useAccountStore from "../../stores/useAccountStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import {
   formatOverviewNumber,
   getOverviewInitials,
@@ -23,6 +25,11 @@ const AccountOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, "account.create");
+  const canEdit = hasPermission(user, "account.edit");
+  const canDelete = hasPermission(user, "account.delete");
+  const canExport = hasPermission(user, "account.export");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -74,8 +81,8 @@ const AccountOverview = () => {
   const rowActions = (account, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/account/view/${account.id}`, { state: { account } }) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/account/edit/${account.id}`, { state: { account } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(account.id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/account/edit/${account.id}`, { state: { account } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(account.id) },
     ]} />
   );
 
@@ -102,7 +109,7 @@ const AccountOverview = () => {
     { key: "total", label: "Account types", value: formatOverviewNumber(total), note: "Full chart register", icon: "fa-wallet", tone: "teal" },
     { key: "categories", label: "Categories shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => item.category)), note: "Distinct on this page", icon: "fa-layer-group", tone: "blue" },
     { key: "subcategories", label: "Sub-categories shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => item.sub_category)), note: "Distinct on this page", icon: "fa-sitemap", tone: "violet" },
-    { key: "selected", label: "Selected records", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected records", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },] : []),
   ];
 
   return (
@@ -119,9 +126,9 @@ const AccountOverview = () => {
             eyebrow: "Chart foundation",
             title: "Keep the chart of accounts clearly structured",
             description: "Manage account types, reporting categories and sub-categories from one consistent accounting workspace.",
-            createLink: "/account/create",
+            createLink: canCreate ? "/account/create" : undefined,
             createLabel: "Create account type",
-            onExport: exportToExcel,
+            onExport: canExport ? exportToExcel : undefined,
             exportDisabled: loading || data.length === 0,
           }}
           cards={cards}
@@ -142,7 +149,8 @@ const AccountOverview = () => {
           searchPlaceholder="Search type, category or sub-category"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
@@ -165,11 +173,11 @@ const AccountOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-wallet", message: "No account types found matching your criteria", link: "/account/create" }}
+          empty={{ icon: "fas fa-wallet", message: "No account types found matching your criteria", link: canCreate ? "/account/create" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}

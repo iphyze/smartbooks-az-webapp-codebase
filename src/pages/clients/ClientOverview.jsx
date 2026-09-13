@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useClientStore from "../../stores/useClientStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import {
   formatOverviewNumber,
   getOverviewInitials,
@@ -22,6 +24,11 @@ const ClientOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, "client.create");
+  const canEdit = hasPermission(user, "client.edit");
+  const canDelete = hasPermission(user, "client.delete");
+  const canExport = hasPermission(user, "client.export");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -70,8 +77,8 @@ const ClientOverview = () => {
   const rowActions = (client, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/client/view/${client.clients_id}`, { state: { client } }) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/client/edit/${client.clients_id}`, { state: { client } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(client.id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/client/edit/${client.clients_id}`, { state: { client } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(client.id) },
     ]} />
   );
 
@@ -99,7 +106,7 @@ const ClientOverview = () => {
     { key: "total", label: "Clients", value: formatOverviewNumber(total), note: "Full client register", icon: "fa-address-book", tone: "teal" },
     { key: "email", label: "With email shown", value: formatOverviewNumber(data.filter((item) => item.clients_email).length), note: "Records on this page", icon: "fa-envelope", tone: "blue" },
     { key: "phone", label: "With phone shown", value: formatOverviewNumber(data.filter((item) => item.clients_number).length), note: "Records on this page", icon: "fa-phone", tone: "green" },
-    { key: "selected", label: "Selected clients", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected clients", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" }] : []),
   ];
 
   return (
@@ -116,9 +123,9 @@ const ClientOverview = () => {
             eyebrow: "Client workspace",
             title: "Keep every client relationship easy to find",
             description: "Review client identities and contact details in a modern register designed for faster invoicing and project workflows.",
-            createLink: "/client/create",
+            createLink: canCreate ? "/client/create" : undefined,
             createLabel: "Add client",
-            onExport: exportToExcel,
+            onExport: canExport ? exportToExcel : undefined,
             exportDisabled: loading || data.length === 0,
           }}
           cards={cards}
@@ -136,7 +143,8 @@ const ClientOverview = () => {
           searchPlaceholder="Search client ID, name, email or phone"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
@@ -160,11 +168,11 @@ const ClientOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-address-book", message: "No clients found matching your criteria", link: "/client/create" }}
+          empty={{ icon: "fas fa-address-book", message: "No clients found matching your criteria", link: canCreate ? "/client/create" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}

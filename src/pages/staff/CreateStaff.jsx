@@ -7,14 +7,19 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import CreateStaffForm from "./CreateStaffForm";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 
 const CreateStaff = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewDashboard = hasPermission(user, "dashboard.view");
+  const canViewStaff = hasPermission(user, "staff.view");
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Staff", to: "/staff/home", active: true },
+    ...(canViewDashboard ? [{ label: "Home", to: "/", active: true }] : []),
+    ...(canViewStaff ? [{ label: "Staff", to: "/staff/home", active: true }] : []),
     { label: "Add Staff", to: "/staff/create-staff", active: false }
   ];
 

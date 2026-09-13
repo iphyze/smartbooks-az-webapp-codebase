@@ -1,18 +1,7 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { formatCurrencyDecimals, formatDateLong, formatWithDecimals } from "../../utils/helper";
-import MontserratRegular from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
-import MontserratBold from '../../assets/fonts/Montserrat/Montserrat-Bold.ttf';
-import MontserratSemiBold from '../../assets/fonts/Montserrat/Montserrat-SemiBold.ttf';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-
-Font.register({ family: 'Montserrat-Regular', src: MontserratRegular });
-Font.register({ family: 'Montserrat-Light', src: MontserratLight });
-Font.register({ family: 'Montserrat-Medium', src: MontserratMedium });
-Font.register({ family: 'Montserrat-Bold', src: MontserratBold });
-Font.register({ family: 'Montserrat-SemiBold', src: MontserratSemiBold });
 
 const DownloadInvoice = ({ invoice }) => {
     // Destructure invoice properties
@@ -214,7 +203,7 @@ export default DownloadInvoice;
 // Styles
 const styles = StyleSheet.create({
     page: {
-        fontFamily: 'Montserrat-Regular',
+        fontFamily: 'Helvetica',
         fontSize: 9,
         paddingTop: 30,
         paddingBottom: 40,
@@ -251,7 +240,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     metaLabel: {
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         width: 100,
         color: '#000000',
@@ -262,7 +251,7 @@ const styles = StyleSheet.create({
     },
     metaValue: {
         width: '70%',
-        fontFamily: 'Montserrat-Light',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         flex: 1,
         color: '#000000',
@@ -276,7 +265,7 @@ const styles = StyleSheet.create({
     },
     invoiceTypeText: {
         position: 'relative',
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#000000',
         textTransform: 'capitalize',
@@ -285,7 +274,7 @@ const styles = StyleSheet.create({
     },
     invoiceId: {
         position: 'relative',
-        fontFamily: 'Montserrat-Bold',
+        fontFamily: 'Helvetica-Bold',
         fontSize: 14.4,
         color: '#00b196',
         letterSpacing: 0.5,
@@ -301,7 +290,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         fontSize: 7.2,
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         alignSelf: 'flex-end',
         alignItems: 'center',
         textAlign: 'center'
@@ -311,7 +300,7 @@ const styles = StyleSheet.create({
         fontSize: 7.2,
         letterSpacing: 0.5,
         color: '#bcc7d1',
-        fontFamily: 'Montserrat-SemiBold',
+        fontFamily: 'Helvetica-Bold',
         alignSelf: 'flex-end'
     },
     table: {
@@ -340,7 +329,7 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         paddingHorizontal: 5,
         fontSize: 7.2,
-        fontFamily: 'Montserrat-Light',
+        fontFamily: 'Helvetica',
         color: '#00000',
         borderRightWidth: 0.5,
         borderRightColor: '#d3d7dd',
@@ -351,7 +340,7 @@ const styles = StyleSheet.create({
     },
     colColor: {
         color: 'white',
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         lineHeight: 1.4,
     },
     colSn: { flex: 0.1, textAlign: 'left' },
@@ -359,9 +348,9 @@ const styles = StyleSheet.create({
     colDisc: { flex: 0.5, textAlign: 'left' },
     colVat: { flex: 0.5, textAlign: 'left' },
     colCur: { flex: 0.5, textAlign: 'left' },
-    colAmt: { flex: 0.5, textAlign: 'right', borderRightWidth: 0, fontFamily: 'Montserrat-SemiBold', },
+    colAmt: { flex: 0.5, textAlign: 'right', borderRightWidth: 0, fontFamily: 'Helvetica-Bold', },
     boldText: {
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
     },
 
     // Footer
@@ -386,13 +375,13 @@ const styles = StyleSheet.create({
     },
     signatureLabel: {
         width: '15%',
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#000000',
     },
     signatureValue: {
         width: '85%',
-        fontFamily: 'Montserrat-Light',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#000000',
     },
@@ -414,7 +403,7 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: '#00b196',
         color: 'white',
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         paddingVertical: 2,
         paddingHorizontal: 4,
@@ -432,17 +421,17 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     totalsLabel: {
-        fontFamily: 'Montserrat-Regular',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#627976',
     },
     totalsValue: {
-        fontFamily: 'Montserrat-Regular',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#627976',
     },
     totalsMain: {
-        fontFamily: 'Montserrat-SemiBold',
+        fontFamily: 'Helvetica-Bold',
         fontSize: 7.2,
         color: '#627976',
     },
@@ -457,7 +446,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 'auto',
         lineHeight: 1.5,
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#a4acb4',
         marginBottom: 8
@@ -476,7 +465,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         width: 70,
         lineHeight: 1.5,
-        fontFamily: 'Montserrat-Regular',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#373c40',
     },
@@ -484,7 +473,7 @@ const styles = StyleSheet.create({
         position: 'relative',
         width: '50%',
         lineHeight: 1.5,
-        fontFamily: 'Montserrat-Light',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         color: '#373c40',
     },
@@ -519,13 +508,13 @@ const styles = StyleSheet.create({
     vcSigText: {
         position: 'relative',
         color: '#373c40',
-        fontFamily: 'Montserrat-Medium',
+        fontFamily: 'Helvetica',
         fontSize: 7.2
     },
     vcThanksText: {
         position: 'relative',
         color: '#373c40',
-        fontFamily: 'Montserrat-Light',
+        fontFamily: 'Helvetica',
         fontSize: 7.2,
         marginTop: 12,
         marginBottom: 0

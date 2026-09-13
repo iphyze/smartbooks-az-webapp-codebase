@@ -19,6 +19,8 @@ import PageNav from '../../components/PageNav';
 import { DateInput, parseISO, toISO, today, yearStart } from '../../components/DashboardControls';
 import useThemeStore from '../../stores/useThemeStore';
 import useDashboardStore from '../../stores/useDashboardStore';
+import useAuthStore from '../../stores/useAuthStore';
+import { hasPermission } from '../../utils/permissions';
 import '../../components/DashboardControls.css';
 import './Dashboard.css';
 
@@ -223,8 +225,8 @@ const KpiCard = ({ icon, label, value, sub, style, loading }) => (
   </article>
 );
 
-const PerformanceChart = ({ rows, currency, loading }) => (
-  <Card title="Profitability trend" icon="fa-chart-area" className="analytics-span-2" action={<Link to="/reports/ledger/profit-and-loss">P&amp;L report <i className="fas fa-arrow-right" /></Link>}>
+const PerformanceChart = ({ rows, currency, loading, canViewReport }) => (
+  <Card title="Profitability trend" icon="fa-chart-area" className="analytics-span-2" action={canViewReport ? <Link to="/reports/ledger/profit-and-loss">P&amp;L report <i className="fas fa-arrow-right" /></Link> : null}>
     {loading ? <Skeleton className="analytics-skel--chart" /> : rows.length ? (
       <ResponsiveContainer width="100%" height={290}>
         <AreaChart data={rows} margin={{ top: 12, right: 12, left: 4, bottom: 0 }}>
@@ -254,8 +256,8 @@ const PerformanceChart = ({ rows, currency, loading }) => (
   </Card>
 );
 
-const BillingTrend = ({ rows, currency, loading }) => (
-  <Card title="Billing and collections" icon="fa-file-invoice-dollar" action={<Link to="/reports/invoice-aging">Ageing report <i className="fas fa-arrow-right" /></Link>}>
+const BillingTrend = ({ rows, currency, loading, canViewReport }) => (
+  <Card title="Billing and collections" icon="fa-file-invoice-dollar" action={canViewReport ? <Link to="/reports/invoice-aging">Ageing report <i className="fas fa-arrow-right" /></Link> : null}>
     {loading ? <Skeleton className="analytics-skel--chart" /> : rows.length ? (
       <ResponsiveContainer width="100%" height={290}>
         <BarChart data={rows} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
@@ -280,10 +282,10 @@ const BillingTrend = ({ rows, currency, loading }) => (
   </Card>
 );
 
-const AgeingPanel = ({ rows, currency, loading, total }) => {
+const AgeingPanel = ({ rows, currency, loading, total, canViewReport }) => {
   const mapped = AGEING_ORDER.map((bucket) => rows.find((item) => item.bucket === bucket) || { bucket, amount: 0, invoice_count: 0 });
   return (
-    <Card title="Receivable ageing" icon="fa-hourglass-half" action={<Link to="/reports/invoice-aging">View detail <i className="fas fa-arrow-right" /></Link>}>
+    <Card title="Receivable ageing" icon="fa-hourglass-half" action={canViewReport ? <Link to="/reports/invoice-aging">View detail <i className="fas fa-arrow-right" /></Link> : null}>
       {loading ? <Skeleton className="analytics-skel--list" /> : (
         <div className="analytics-aging">
           {mapped.map((entry, index) => {
@@ -303,10 +305,10 @@ const AgeingPanel = ({ rows, currency, loading, total }) => {
   );
 };
 
-const PositionPanel = ({ rows, currency, loading }) => {
+const PositionPanel = ({ rows, currency, loading, canViewReport }) => {
   const max = Math.max(...rows.map((row) => Math.abs(number(row.balance))), 1);
   return (
-    <Card title="Ledger position at closing date" icon="fa-scale-balanced" action={<Link to="/reports/ledger/balance-sheet">Balance sheet <i className="fas fa-arrow-right" /></Link>}>
+    <Card title="Ledger position at closing date" icon="fa-scale-balanced" action={canViewReport ? <Link to="/reports/ledger/balance-sheet">Balance sheet <i className="fas fa-arrow-right" /></Link> : null}>
       {loading ? <Skeleton className="analytics-skel--list" /> : rows.length ? (
         <div className="analytics-position">
           {rows.map((row) => (
@@ -322,8 +324,8 @@ const PositionPanel = ({ rows, currency, loading }) => {
   );
 };
 
-const CashPanel = ({ accounts, currency, loading }) => (
-  <Card title="Cash and bank position" icon="fa-building-columns" action={<Link to="/banks/home">Bank accounts <i className="fas fa-arrow-right" /></Link>}>
+const CashPanel = ({ accounts, currency, loading, canViewBanks }) => (
+  <Card title="Cash and bank position" icon="fa-building-columns" action={canViewBanks ? <Link to="/banks/home">Bank accounts <i className="fas fa-arrow-right" /></Link> : null}>
     {loading ? <Skeleton className="analytics-skel--list" /> : accounts.length ? (
       <div className="analytics-cash">
         {accounts.map((account, index) => (
@@ -338,8 +340,8 @@ const CashPanel = ({ accounts, currency, loading }) => (
   </Card>
 );
 
-const ClientExposure = ({ clients, currency, loading }) => (
-  <Card title="Largest client exposure" icon="fa-users" className="analytics-span-2" action={<Link to="/client/home">Clients <i className="fas fa-arrow-right" /></Link>}>
+const ClientExposure = ({ clients, currency, loading, canViewClients }) => (
+  <Card title="Largest client exposure" icon="fa-users" className="analytics-span-2" action={canViewClients ? <Link to="/client/home">Clients <i className="fas fa-arrow-right" /></Link> : null}>
     {loading ? <Skeleton className="analytics-skel--table" /> : clients.length ? (
       <div className="analytics-table-wrap">
         <table className="analytics-table">
@@ -388,8 +390,12 @@ const MixPanel = ({ title, icon, rows, loading, currency, type }) => {
   );
 };
 
-const RecentInvoices = ({ rows, currency, loading }) => (
-  <Card title="Recent billing activity" icon="fa-clock-rotate-left" action={<Link to="/invoice/home">Invoices <i className="fas fa-arrow-right" /></Link>}>
+const RecentInvoices = ({ rows, currency, loading, canViewInvoices = false }) => (
+  <Card
+    title="Recent billing activity"
+    icon="fa-clock-rotate-left"
+    action={canViewInvoices ? <Link to="/invoice/home">Invoices <i className="fas fa-arrow-right" /></Link> : null}
+  >
     {loading ? <Skeleton className="analytics-skel--list" /> : rows.length ? (
       <div className="analytics-recent">
         {rows.map((invoice) => (
@@ -427,6 +433,13 @@ const RateStrip = ({ rates, controls, loading }) => (
 const Dashboard = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewInvoices = hasPermission(user, 'invoice.view');
+  const canViewClients = hasPermission(user, 'client.view');
+  const canViewBanks = hasPermission(user, 'bank.view');
+  const canViewProfitLoss = hasPermission(user, 'profit_loss.view');
+  const canViewInvoiceAging = hasPermission(user, 'invoice_aging.view');
+  const canViewBalanceSheet = hasPermission(user, 'balance_sheet.view');
   const { data, loading, error, filters, fetchDashboardData, applyFilters, resetFilters } = useDashboardStore();
   const [draft, setDraft] = useState({
     dateFrom: dateValue(filters.dateFrom),
@@ -528,15 +541,15 @@ const Dashboard = () => {
               <KpiCard icon="fa-building-columns" style="brand" label="Cash position" value={compactMoney(executive.cash_balance, currency)} sub={`As at ${shortDate(meta.date_to)}`} loading={loading} />
             </div>
             <div className="analytics-grid">
-              <PerformanceChart rows={pAndL} currency={currency} loading={loading} />
-              <BillingTrend rows={billing} currency={currency} loading={loading} />
-              <AgeingPanel rows={response.receivable_aging || []} total={number(executive.outstanding)} currency={currency} loading={loading} />
-              <PositionPanel rows={response.financial_position || []} currency={currency} loading={loading} />
-              <CashPanel accounts={response.cash_accounts || []} currency={currency} loading={loading} />
-              <ClientExposure clients={response.client_exposure || []} currency={currency} loading={loading} />
+              <PerformanceChart rows={pAndL} currency={currency} loading={loading} canViewReport={canViewProfitLoss} />
+              <BillingTrend rows={billing} currency={currency} loading={loading} canViewReport={canViewInvoiceAging} />
+              <AgeingPanel rows={response.receivable_aging || []} total={number(executive.outstanding)} currency={currency} loading={loading} canViewReport={canViewInvoiceAging} />
+              <PositionPanel rows={response.financial_position || []} currency={currency} loading={loading} canViewReport={canViewBalanceSheet} />
+              <CashPanel accounts={response.cash_accounts || []} currency={currency} loading={loading} canViewBanks={canViewBanks} />
+              <ClientExposure clients={response.client_exposure || []} currency={currency} loading={loading} canViewClients={canViewClients} />
               <MixPanel title="Transaction activity" icon="fa-shuffle" rows={response.transaction_mix || []} currency={currency} loading={loading} type="transaction" />
               <MixPanel title="Currency exposure" icon="fa-money-bill-transfer" rows={response.currency_mix || []} currency="NGN" loading={loading} type="currency" />
-              <RecentInvoices rows={response.recent_invoices || []} currency={currency} loading={loading} />
+              <RecentInvoices rows={response.recent_invoices || []} currency={currency} loading={loading} canViewInvoices={canViewInvoices} />
             </div>
             <RateStrip rates={response.latest_rates} controls={response.period_controls} loading={loading} />
           </motion.div>

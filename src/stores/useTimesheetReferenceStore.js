@@ -7,8 +7,8 @@ const useTimesheetReferenceStore = create((set) => ({
   projects: [],
   loading: false,
 
-  searchStaff: async (search = '') => {
-    const response = await api.get('/timesheet/reference-data', { params: { type: 'staff', search } });
+  searchStaff: async (search = '', context = 'timesheet') => {
+    const response = await api.get('/timesheet/reference-data', { params: { type: 'staff', search, context } });
     set({ staff: response.data.data || [] });
   },
 

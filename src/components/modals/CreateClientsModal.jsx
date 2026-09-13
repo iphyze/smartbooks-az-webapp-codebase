@@ -4,6 +4,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import useToastStore from "../../stores/useToastStore";
 import useClientStore from "../../stores/useClientStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import Select from "react-select";
 
 /* ─────────────────────────────────────────────
@@ -19,6 +21,9 @@ const LEDGER_OPTIONS = [
 ───────────────────────────────────────────── */
 const CreateClientsModal = ({ isOpen, onClose, onClientCreated }) => {
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canCreateLedger = hasPermission(user, "ledger.create");
+  const ledgerOptions = useMemo(() => canCreateLedger ? LEDGER_OPTIONS : LEDGER_OPTIONS.filter((option) => option.value === "No"), [canCreateLedger]);
   const modalRef = useRef(null);
   const { createClient, fetchNextClientId, nextClientId, fetchingNextId } = useClientStore();
   const { showToast } = useToastStore();
@@ -32,7 +37,7 @@ const CreateClientsModal = ({ isOpen, onClose, onClientCreated }) => {
     clients_email: "",
     clients_number: "",
     clients_address: "",
-    create_ledger: "Yes",
+    create_ledger: canCreateLedger ? "Yes" : "No",
   });
 
   useEffect(() => {
@@ -62,13 +67,13 @@ const CreateClientsModal = ({ isOpen, onClose, onClientCreated }) => {
         clients_email: "",
         clients_number: "",
         clients_address: "",
-        create_ledger: "Yes",
+        create_ledger: canCreateLedger ? "Yes" : "No",
       });
       setSubmitted(false);
       setIsCreating(false);
       fetchNextClientId();
     }
-  }, [isOpen, fetchNextClientId]);
+  }, [isOpen, fetchNextClientId, canCreateLedger]);
 
   const validateForm = () => {
     const e = {};
@@ -240,7 +245,7 @@ const CreateClientsModal = ({ isOpen, onClose, onClientCreated }) => {
                 <div className={`input-form-group ${errors.create_ledger ? "input-form-error" : ""}`}>
                   <label className={`input-form-label ${errors.create_ledger ? "input-label-message" : ""}`}>Create Ledger?</label>
                   <div className="form-wrapper">
-                    <Select options={LEDGER_OPTIONS} onChange={(opt) => handleDetailChange("create_ledger", opt?.value || "")} value={LEDGER_OPTIONS.find((o) => o.value === clientDetails.create_ledger) || null} placeholder="Select" className={`form-input-select ${errors.create_ledger ? "input-error" : ""}`} classNamePrefix="form-input-select" onMenuOpen={() => setOpenMenuId("create_ledger")} onMenuClose={() => setOpenMenuId(null)} isDisabled={isCreating}/>
+                    <Select options={ledgerOptions} onChange={(opt) => handleDetailChange("create_ledger", opt?.value || "")} value={ledgerOptions.find((o) => o.value === clientDetails.create_ledger) || null} placeholder="Select" className={`form-input-select ${errors.create_ledger ? "input-error" : ""}`} classNamePrefix="form-input-select" onMenuOpen={() => setOpenMenuId("create_ledger")} onMenuClose={() => setOpenMenuId(null)} isDisabled={isCreating}/>
                     <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "create_ledger" ? "chevron-rotate" : "", errors.create_ledger ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>

@@ -7,14 +7,18 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import CreateLedgerForm from "./CreateLedgerForm";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 
 const CreateLedger = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "ledger.view");
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Ledgers", to: "/ledger/home", active: true },
+    ...(canView ? [{ label: "Ledgers", to: "/ledger/home", active: true }] : []),
     { label: "Create Ledger", to: "/ledger/create", active: false }
   ];
 

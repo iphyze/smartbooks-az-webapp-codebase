@@ -57,7 +57,7 @@ const useAccountingPeriodStore = create((set, get) => ({
     }
   },
 
-  createPeriod: async (payload) => {
+  createPeriod: async (payload, options = {}) => {
     set({ saving: true });
     try {
       const response = await api.post('/accounting-period/create-period', {
@@ -67,7 +67,7 @@ const useAccountingPeriodStore = create((set, get) => ({
         is_active: Boolean(payload.is_active),
       });
       useToastStore.getState().showToast(response.data.message || 'Accounting period created successfully.', 'success');
-      await get().fetchPeriods();
+      if (options.refreshPeriods !== false) await get().fetchPeriods();
       set({ saving: false });
       return true;
     } catch (error) {
@@ -115,7 +115,7 @@ const useAccountingPeriodStore = create((set, get) => ({
     }
   },
 
-  lockPeriod: async ({ period, previewToken, lockReason }) => {
+  lockPeriod: async ({ period, previewToken, lockReason, refreshClosures = true }) => {
     set({ locking: true });
     try {
       const response = await api.put('/accounting-period/update-lock-period', {
@@ -128,7 +128,10 @@ const useAccountingPeriodStore = create((set, get) => ({
         preview_token: previewToken,
       });
       useToastStore.getState().showToast(response.data.message || 'Accounting period locked successfully.', 'success');
-      await Promise.all([get().fetchPeriods(), get().fetchClosures()]);
+      await Promise.all([
+        get().fetchPeriods(),
+        ...(refreshClosures ? [get().fetchClosures()] : []),
+      ]);
       set({ locking: false, lockPreview: null });
       return true;
     } catch (error) {
@@ -139,7 +142,7 @@ const useAccountingPeriodStore = create((set, get) => ({
     }
   },
 
-  unlockPeriod: async ({ period, reason }) => {
+  unlockPeriod: async ({ period, reason, refreshClosures = true }) => {
     set({ unlocking: true });
     try {
       const response = await api.put('/accounting-period/update-lock-period', {
@@ -152,7 +155,10 @@ const useAccountingPeriodStore = create((set, get) => ({
         unlock_reason: reason,
       });
       useToastStore.getState().showToast(response.data.message || 'Accounting period unlocked successfully.', 'success');
-      await Promise.all([get().fetchPeriods(), get().fetchClosures()]);
+      await Promise.all([
+        get().fetchPeriods(),
+        ...(refreshClosures ? [get().fetchClosures()] : []),
+      ]);
       set({ unlocking: false });
       return true;
     } catch (error) {
@@ -209,7 +215,7 @@ const useAccountingPeriodStore = create((set, get) => ({
     }
   },
 
-  reverseFiscalYearClose: async ({ closureId, previewToken, reason }) => {
+  reverseFiscalYearClose: async ({ closureId, previewToken, reason, refreshPeriods = true }) => {
     set({ reversing: true });
     try {
       const response = await api.post('/accounting-period/reverse-fiscal-year-close', {
@@ -218,7 +224,10 @@ const useAccountingPeriodStore = create((set, get) => ({
         reason,
       });
       useToastStore.getState().showToast(response.data.message || 'Fiscal-year closure reversed successfully.', 'success');
-      await Promise.all([get().fetchPeriods(), get().fetchClosures()]);
+      await Promise.all([
+        ...(refreshPeriods ? [get().fetchPeriods()] : []),
+        get().fetchClosures(),
+      ]);
       set({ reversing: false, reversalPreview: null });
       return response.data.data || true;
     } catch (error) {

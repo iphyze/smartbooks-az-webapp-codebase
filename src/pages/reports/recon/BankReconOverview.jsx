@@ -12,6 +12,8 @@ import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import DeleteConfirmationModal from '../../../components/modals/DeleteConfirmationModal';
 import RefreshErrorModal from '../../../components/modals/RefreshErrorModal';
 import useBankReconStore from '../../../stores/useBankReconStore';
+import useAuthStore from '../../../stores/useAuthStore';
+import { defaultRouteForRole, hasPermission } from '../../../utils/permissions';
 import useReportPagePersistence from '../../../hooks/useReportPagePersistence';
 
 const fmtDate = (s) => s ? new Date(`${s}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -21,6 +23,11 @@ const BankReconOverview = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, 'bank_reconciliation.create');
+  const canEdit = hasPermission(user, 'bank_reconciliation.edit');
+  const canDelete = hasPermission(user, 'bank_reconciliation.delete');
+  const canViewReportHub = hasPermission(user, 'report.view');
   const [urlParams, setUrlParams] = useSearchParams();
   const requestedSearch = urlParams.get('search') || '';
 
@@ -52,13 +59,15 @@ const BankReconOverview = () => {
   );
 
   const links = [
-    { label: 'Home', to: '/', active: true },
-    { label: 'Reports & Analytics', to: '/reports/ledger', active: true },
+    { label: 'Home', to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: 'Reports & Analytics', to: '/reports/ledger', active: true }] : []),
     { label: 'Bank Reconciliations', to: '/reports/bank-recon', active: false },
   ];
 
   const pageLimitOptions = [10, 25, 50, 100].map((n) => ({ id: n, label: String(n) }));
-  const actionOptions    = [{ id: '', label: 'Select Action' }, { id: 'delete', label: 'Delete Selected' }];
+  const actionOptions = canDelete
+    ? [{ id: '', label: 'Select Action' }, { id: 'delete', label: 'Delete Selected' }]
+    : [{ id: '', label: 'Select Action' }];
 
   useEffect(() => { document.title = 'Smartbooks | Bank Reconciliations'; }, []);
   useEffect(() => {
@@ -157,12 +166,14 @@ const BankReconOverview = () => {
               className={`invoice-section theme-${theme}`}
             >
               {/* ── Create button ── */}
-              <div className="top-action-wrapper">
-                <button className="create-new-invoice-btn" onClick={() => navigate('/reports/bank-recon/create')}>
-                  <span className="fas fa-circle-plus" />
-                  <span>New Reconciliation</span>
-                </button>
-              </div>
+              {canCreate && (
+                <div className="top-action-wrapper">
+                  <button className="create-new-invoice-btn" onClick={() => navigate('/reports/bank-recon/create')}>
+                    <span className="fas fa-circle-plus" />
+                    <span>New Reconciliation</span>
+                  </button>
+                </div>
+              )}
 
               <div className="main-table-box">
                 {list.loading ? <TableLoaderComponent /> : (
@@ -198,7 +209,7 @@ const BankReconOverview = () => {
                             {isClearingFilters ? 'Clearing…' : 'Clear filters'}
                           </button>
                         )}
-                        {selectedItems.length > 0 && (
+                        {canDelete && selectedItems.length > 0 && (
                           <div className="filter-wrapper bulk-actions">
                             <label className="filter-wrapper-label">Select Action</label>
                             <ChartSearchableSelect options={actionOptions} value={selectedAction} onChange={handleActionChange} className="box-filter-action" />
@@ -214,20 +225,22 @@ const BankReconOverview = () => {
                           <thead>
                             <tr>
                               <th className="checkbox-cell">
-                                <input
-                                  type="checkbox"
-                                  className={`table-checkbox fas fa-check ${data.length > 0 && selectedItems.length === data.length ? 'selected-checkbox' : ''}`}
-                                  checked={data.length > 0 && selectedItems.length === data.length}
-                                  onChange={() => {
-                                    const ids = data.map((r) => r.id);
-                                    const allSel = ids.every((id) => selectedItems.includes(id));
-                                    useBankReconStore.setState({
-                                      selectedItems: allSel
-                                        ? selectedItems.filter((id) => !ids.includes(id))
-                                        : [...new Set([...selectedItems, ...ids])],
-                                    });
-                                  }}
-                                />
+                                {canDelete && (
+                                  <input
+                                    type="checkbox"
+                                    className={`table-checkbox fas fa-check ${data.length > 0 && selectedItems.length === data.length ? 'selected-checkbox' : ''}`}
+                                    checked={data.length > 0 && selectedItems.length === data.length}
+                                    onChange={() => {
+                                      const ids = data.map((r) => r.id);
+                                      const allSel = ids.every((id) => selectedItems.includes(id));
+                                      useBankReconStore.setState({
+                                        selectedItems: allSel
+                                          ? selectedItems.filter((id) => !ids.includes(id))
+                                          : [...new Set([...selectedItems, ...ids])],
+                                      });
+                                    }}
+                                  />
+                                )}
                               </th>
                               <th>Ref #</th>
                               <th>Company</th>
@@ -247,12 +260,14 @@ const BankReconOverview = () => {
                               return (
                                 <tr key={r.id} className={selectedItems.includes(r.id) ? 'selected' : ''}>
                                   <td className="checkbox-cell">
-                                    <input
-                                      type="checkbox"
-                                      className={`table-checkbox fas fa-check ${selectedItems.includes(r.id) ? 'selected-checkbox' : ''}`}
-                                      checked={selectedItems.includes(r.id)}
-                                      onChange={() => toggleItemSelection(r.id)}
-                                    />
+                                    {canDelete && (
+                                      <input
+                                        type="checkbox"
+                                        className={`table-checkbox fas fa-check ${selectedItems.includes(r.id) ? 'selected-checkbox' : ''}`}
+                                        checked={selectedItems.includes(r.id)}
+                                        onChange={() => toggleItemSelection(r.id)}
+                                      />
+                                    )}
                                   </td>
                                   <td>
                                     <span className="table-customer-text" style={{ color: 'var(--color-green)', fontWeight: 700, fontSize: 12 }}>
@@ -281,12 +296,16 @@ const BankReconOverview = () => {
                                       <button className="btn-view" title="Open Workspace" onClick={() => navigate(`/reports/bank-recon/workspace/${r.id}`)}>
                                         <span className="fas fa-arrows-left-right" />
                                       </button>
-                                      <button className="btn-edit" title="Edit" onClick={() => navigate(`/reports/bank-recon/edit/${r.id}`)}>
-                                        <span className="fas fa-pen" />
-                                      </button>
-                                      <button className="btns-delete" title="Delete" onClick={() => handleDeleteSingle(r.id)}>
-                                        <span className="fas fa-trash" />
-                                      </button>
+                                      {canEdit && (
+                                        <button className="btn-edit" title="Edit" onClick={() => navigate(`/reports/bank-recon/edit/${r.id}`)}>
+                                          <span className="fas fa-pen" />
+                                        </button>
+                                      )}
+                                      {canDelete && (
+                                        <button className="btns-delete" title="Delete" onClick={() => handleDeleteSingle(r.id)}>
+                                          <span className="fas fa-trash" />
+                                        </button>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -298,8 +317,8 @@ const BankReconOverview = () => {
                                 icon="fas fa-scale-balanced"
                                 message="No reconciliations found"
                                 description="Adjust your search or create a reconciliation to begin matching bank and ledger entries."
-                                link="/reports/bank-recon/create"
-                                actionLabel="Create New Reconciliation"
+                                link={canCreate ? "/reports/bank-recon/create" : undefined}
+                                actionLabel={canCreate ? "Create New Reconciliation" : undefined}
                               />
                             )}
                           </tbody>

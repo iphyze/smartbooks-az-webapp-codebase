@@ -5,6 +5,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useStaffStore from "../../stores/useStaffStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -37,6 +39,9 @@ const CreateStaffForm = () => {
     fetchingStaffId 
   } = useStaffStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "staff.view");
+  const canCreateLedger = hasPermission(user, "ledger.create");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -171,7 +176,7 @@ const CreateStaffForm = () => {
         payee_id: "",
         generate_staff: "No",
       });
-      navigate("/staff/home");
+      if (canView) navigate("/staff/home");
     }
   };
 
@@ -479,7 +484,7 @@ const CreateStaffForm = () => {
                   </label>
                   <div className="form-wrapper">
                     <Select
-                      options={GENERATE_OPTIONS}
+                      options={canCreateLedger ? GENERATE_OPTIONS : GENERATE_OPTIONS.filter((option) => option.value === "No")}
                       onChange={(opt) => handleDetailChange("generate_staff", opt?.value || "")}
                       value={GENERATE_OPTIONS.find((o) => o.value === staffDetails.generate_staff) || null}
                       placeholder="Select"

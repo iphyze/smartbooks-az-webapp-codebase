@@ -8,6 +8,8 @@ import EditLedgerForm from "./EditLedgerForm";
 import useToastStore from "../../stores/useToastStore";
 import useLedgerStore from "../../stores/useLedgerStore";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 
 const EditLedger = () => {
   const { id } = useParams(); // 'id' here represents the ledger_number from the route
@@ -15,6 +17,8 @@ const EditLedger = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "ledger.view");
 
   // Consume states from useLedgerStore
   const {
@@ -26,7 +30,7 @@ const EditLedger = () => {
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Ledgers", to: "/ledger/home", active: true },
+    ...(canView ? [{ label: "Ledgers", to: "/ledger/home", active: true }] : []),
     { label: "Edit Ledger", to: `/ledger/edit/${id}`, active: false },
   ];
 
@@ -37,20 +41,20 @@ const EditLedger = () => {
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
       showToast("Invalid ledger number. Redirecting…", "error");
-      navigate("/ledger/home");
+      navigate(canView ? "/ledger/home" : "/users/my-profile");
       return;
     }
 
     // 2. Fetch data using the store action (expects ledger_number)
     fetchSingleLedger(parsedId);
-  }, [id]);
+  }, [id, navigate, showToast, fetchSingleLedger, canView]);
 
   // 3. Handle fetch error by redirecting (toast is already shown by the store)
   useEffect(() => {
     if (fetchError) {
-      navigate("/ledger/home");
+      navigate(canView ? "/ledger/home" : "/users/my-profile");
     }
-  }, [fetchError]);
+  }, [fetchError, navigate, canView]);
 
   const handleSaveSuccess = () => {
     // Optional: Redirect or show success message after save

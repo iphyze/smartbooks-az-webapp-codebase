@@ -8,6 +8,8 @@ import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useInvoiceAgingReportStore from "../../stores/useInvoiceAgingReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import "./InvoiceAging.css";
@@ -204,7 +206,7 @@ const SummaryStrip = ({ totals }) => {
 /* ─────────────────────────────────────────────
    RESULTS VIEW
 ───────────────────────────────────────────── */
-const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
+const ResultsView = ({ data, totals, meta, onExcel, excelLoading, canExport }) => {
   const pdfDocument = useMemo(() => (
     <DownloadInvoiceAging data={data} totals={totals} meta={meta || {}} />
   ), [data, totals, meta]);
@@ -226,23 +228,27 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading }) => {
         </div>
       </div>
       <div className="ia-action-right">
-        <button className="ia-excel-btn" onClick={onExcel} disabled={excelLoading}>
-          {excelLoading
-            ? <><div className="ia-btn-loader ia-btn-loader--sm" /> Downloading...</>
-            : <><i className="fas fa-file-excel" /> Export Excel</>}
-        </button>
-        <PDFDownloadLink
-          document={pdfDocument}
-          fileName={`Invoice_Aging_Report_${meta?.currency}.pdf`}
-        >
-          {({ loading: pdfLoading }) => (
-            <button className="ia-pdf-btn" disabled={pdfLoading}>
-              {pdfLoading
-                ? <><div className="ia-btn-loader ia-btn-loader--sm" /> Building PDF...</>
-                : <><i className="fas fa-file-pdf" /> Export PDF</>}
+        {canExport && (
+          <>
+            <button className="ia-excel-btn" onClick={onExcel} disabled={excelLoading}>
+              {excelLoading
+                ? <><div className="ia-btn-loader ia-btn-loader--sm" /> Downloading...</>
+                : <><i className="fas fa-file-excel" /> Export Excel</>}
             </button>
-          )}
-        </PDFDownloadLink>
+            <PDFDownloadLink
+              document={pdfDocument}
+              fileName={`Invoice_Aging_Report_${meta?.currency}.pdf`}
+            >
+              {({ loading: pdfLoading }) => (
+                <button className="ia-pdf-btn" disabled={pdfLoading}>
+                  {pdfLoading
+                    ? <><div className="ia-btn-loader ia-btn-loader--sm" /> Building PDF...</>
+                    : <><i className="fas fa-file-pdf" /> Export PDF</>}
+                </button>
+              )}
+            </PDFDownloadLink>
+          </>
+        )}
       </div>
     </div>
 
@@ -348,6 +354,9 @@ const InvoiceAging = () => {
   const [currency,     setCurrency]     = useState(null);
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canExport = hasPermission(user, "invoice_aging.export");
+  const canViewReportHub = hasPermission(user, "report.view");
   const { agingReport, fetchAgingReport, downloadAgingExcel } = useInvoiceAgingReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -370,9 +379,9 @@ const InvoiceAging = () => {
   useEffect(() => { document.title = "Smartbooks | Invoice Aging Report"; }, []);
 
   const links = [
-    { label: "Home",            to: "/",                    active: true  },
-    { label: "Reports & Analytics", to: "/reports/ledger",      active: true  },
-    { label: "Invoice Aging",   to: "/reports/invoice-aging", active: false },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: "Reports & Analytics", to: "/reports/ledger", active: true }] : []),
+    { label: "Invoice Aging", to: "/reports/invoice-aging", active: false },
   ];
 
   const validate = () => {
@@ -426,6 +435,7 @@ const InvoiceAging = () => {
                     meta={agingReport.meta}
                     onExcel={handleExcel}
                     excelLoading={excelLoading}
+                    canExport={canExport}
                   />
                 </motion.div>
               )}

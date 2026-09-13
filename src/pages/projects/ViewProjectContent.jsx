@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import useProjectStore from "../../stores/useProjectStore";
 import { fadeInUp } from "../../utils/animation";
 import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
@@ -23,13 +25,17 @@ import {
 const ViewProjectContent = ({ project }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, "project.edit");
+  const canExport = hasPermission(user, "project.export");
+  const canViewInvoices = hasPermission(user, "invoice.view");
   const invoices = useProjectStore((state) => state.singleProjectInvoices) || [];
   const summary = useProjectStore((state) => state.singleProjectSummary) || {};
 
   if (!project) return null;
 
   const currencies = Object.keys(summary || {});
-  const projectDocument = <DownloadProject project={project} invoices={invoices} summary={summary} />;
+  const projectDocument = canExport ? <DownloadProject project={project} invoices={invoices} summary={summary} /> : null;
 
   return (
     <motion.div
@@ -52,7 +58,7 @@ const ViewProjectContent = ({ project }) => {
           <EntityViewActions
             onBack={() => navigate("/project/home")}
             backLabel="Back to projects"
-            onEdit={() => navigate(`/project/edit/${project.project_code}`, { state: { project } })}
+            onEdit={canEdit ? () => navigate(`/project/edit/${project.project_code}`, { state: { project } }) : undefined}
             editLabel="Edit project"
             pdfDocument={projectDocument}
             fileName={`Project Profile - ${project.project_name || "Project"}.pdf`}
@@ -141,10 +147,12 @@ const ViewProjectContent = ({ project }) => {
                   <td className="is-right is-strong">{formatCurrencyDecimals(invoice.invoice_amount || 0, invoice.currency || "NGN")}</td>
                   <td className="is-center"><EntityStatusBadge status={invoice.status} /></td>
                   <td className="is-right">
-                    <EntityTableAction
-                      label="View invoice"
-                      onClick={() => navigate(`/invoice/view/${invoice.invoice_number}`)}
-                    />
+                    {canViewInvoices && (
+                      <EntityTableAction
+                        label="View invoice"
+                        onClick={() => navigate(`/invoice/view/${invoice.invoice_number}`)}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}

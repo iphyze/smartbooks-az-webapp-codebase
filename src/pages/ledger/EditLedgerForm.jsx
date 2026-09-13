@@ -4,6 +4,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useLedgerStore from "../../stores/useLedgerStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import useAccountSearchStore from "../../stores/useAccountSearchStore";
 import Select, { components } from "react-select";
 import CreateAccountModal from "../../components/modals/CreateAccountModal";
@@ -26,6 +28,8 @@ const EditLedgerForm = ({ ledgerNumber, ledger, onSaveSuccess }) => {
   const { showToast } = useToastStore();
   const { editLedger } = useLedgerStore();
   const { accounts, searchAccounts, isLoading: accountsLoading } = useAccountSearchStore();
+  const user = useAuthStore((state) => state.user);
+  const canCreateAccount = hasPermission(user, "account.create");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -238,9 +242,11 @@ const EditLedgerForm = ({ ledgerNumber, ledger, onSaveSuccess }) => {
                   )}
                 </div>
                 {/* Button to trigger Create Account Modal */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateAccountModal(true)} title="Add New Account Type">
-                  <span className="fas fa-plus"></span>
-                </button>
+                {canCreateAccount && (
+                  <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateAccountModal(true)} title="Add New Account Type">
+                    <span className="fas fa-plus"></span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -268,7 +274,7 @@ const EditLedgerForm = ({ ledgerNumber, ledger, onSaveSuccess }) => {
 
       {/* Create Account Modal */}
       <AnimatePresence>
-        {showCreateAccountModal && (
+        {canCreateAccount && showCreateAccountModal && (
           <CreateAccountModal 
             isOpen={showCreateAccountModal} 
             onClose={() => setShowCreateAccountModal(false)} 

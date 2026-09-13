@@ -1,14 +1,7 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { formatDateLong, formatWithDecimals } from "../../utils/helper";
-import MontserratRegular from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-
-Font.register({ family: 'Montserrat-Regular', src: MontserratRegular });
-Font.register({ family: 'Montserrat-Light', src: MontserratLight });
-Font.register({ family: 'Montserrat-Medium', src: MontserratMedium });
 
 const DownloadJournal = ({ journal }) => {
   // Destructure journal properties
@@ -171,7 +164,7 @@ export default DownloadJournal;
 // Styles
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Helvetica',
     fontSize: 9,
     paddingTop: 30,
     paddingBottom: 40,
@@ -204,7 +197,7 @@ const styles = StyleSheet.create({
       marginBottom: 4,
   },
   metaLabel: {
-      fontFamily: 'Montserrat-Medium',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       width: 100,
       color: '#000000',
@@ -212,7 +205,7 @@ const styles = StyleSheet.create({
   },
   metaValue: {
       width: '70%',
-      fontFamily: 'Montserrat-Light',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       flex: 1,
       color: '#000000',
@@ -223,13 +216,13 @@ const styles = StyleSheet.create({
       alignItems: 'flex-end',
   },
   voucherTypeText: {
-      fontFamily: 'Montserrat-Medium',
+      fontFamily: 'Helvetica',
       fontSize: 9.9,
       color: '#000000',
       textTransform: 'capitalize',
   },
   voucherId: {
-      fontFamily: 'Montserrat-Medium',
+      fontFamily: 'Helvetica',
       fontSize: 8.1,
       color: '#00b196',
   },
@@ -260,7 +253,7 @@ const styles = StyleSheet.create({
       paddingVertical: 5,
       paddingHorizontal: 5,
       fontSize: 7.2,
-      fontFamily: 'Montserrat-Light',
+      fontFamily: 'Helvetica',
       color: '#00000',
       borderRightWidth: 0.5,
       borderRightColor: '#d3d7dd',
@@ -271,7 +264,7 @@ const styles = StyleSheet.create({
   },
   colColor: {
     color: 'white',
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     lineHeight: 1.4,
   },
   colNum: { width: '12%', textAlign: 'left' },
@@ -281,7 +274,7 @@ const styles = StyleSheet.create({
   colCur: { width: '10%', textAlign: 'left' },
   colAmt: { width: '16%', textAlign: 'right', borderRightWidth: 0 },
   boldText: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
   },
 
   // Footer
@@ -302,13 +295,13 @@ const styles = StyleSheet.create({
   },
   signatureLabel: {
       width: '15%',
-      fontFamily: 'Montserrat-Medium',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       color: '#000000',
   },
   signatureValue: {
       width: '85%',
-      fontFamily: 'Montserrat-Light',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       color: '#000000',
   },
@@ -328,7 +321,7 @@ const styles = StyleSheet.create({
       width: '100%',
       backgroundColor: '#00b196',
       color: 'white',
-      fontFamily: 'Montserrat-Medium',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       paddingVertical: 2,
       paddingHorizontal: 4,
@@ -346,12 +339,12 @@ const styles = StyleSheet.create({
       paddingHorizontal: 4,
   },
   totalsLabel: {
-      fontFamily: 'Montserrat-Regular',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       color: '#000000',
   },
   totalsValue: {
-      fontFamily: 'Montserrat-Medium',
+      fontFamily: 'Helvetica',
       fontSize: 7.2,
       color: '#000000',
   },

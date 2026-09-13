@@ -7,6 +7,7 @@ import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useAuthStore from "../../stores/useAuthStore";
 import useUsersStore from "../../stores/useUsersStore";
+import { canManagePermissionTarget, hasPermission, isSuperAdmin } from "../../utils/permissions";
 import PageNav from "../../components/PageNav";
 import TableLoaderComponent from "../../components/TableLoaderComponent";
 import ChartSearchableSelect from "../../components/ChartSearchableSelect";
@@ -16,8 +17,10 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import "./UsersOverview.css";
 
 const ROLE_BADGE = {
+  "Super Admin": { color: "#b45309", bg: "rgba(180,83,9,0.12)" },
   Admin: { color: "#7c3aed", bg: "rgba(124,58,237,0.12)" },
   Controller: { color: "#0891b2", bg: "rgba(8,145,178,0.12)" },
+  User: { color: "#475569", bg: "rgba(71,85,105,0.12)" },
   Timesheet: { color: "#059669", bg: "rgba(5,150,105,0.12)" },
 };
 
@@ -39,7 +42,17 @@ const UsersOverview = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState("");
 
-  const isAdmin = currentUser?.integrity === "Admin";
+  const canCreateUsers = hasPermission(currentUser, "user.create");
+  const canEditUsers = hasPermission(currentUser, "user.edit");
+  const canDeleteUsers = hasPermission(currentUser, "user.delete");
+  const currentUserIsSuperAdmin = isSuperAdmin(currentUser);
+  const canManageTarget = (target) => canManagePermissionTarget(currentUser, target);
+  const canDeleteTarget = (target) => (
+    canDeleteUsers
+    && canManageTarget(target)
+    && !isSuperAdmin(target)
+    && String(target?.id) !== String(currentUser?.id)
+  );
 
   const links = [
     { label: "Home", to: "/", active: true },
@@ -96,7 +109,8 @@ const UsersOverview = () => {
 
   /* ── Select all — mirrors InvoiceOverview exactly ── */
   const handleSelectAll = () => {
-    const currentPageIds = data.map(u => u.id);
+    const currentPageIds = data.filter(canDeleteTarget).map((u) => u.id);
+    if (currentPageIds.length === 0) return;
     const allSelected = currentPageIds.every(id => selectedItems.includes(id));
 
     if (allSelected) {
@@ -182,8 +196,10 @@ const UsersOverview = () => {
     const style = ROLE_BADGE[role] || { color: "#6b7280", bg: "rgba(107,114,128,0.12)" };
     return (
       <span style={{
-        display: "inline-block", padding: "2px 10px", borderRadius: 20,
-        fontSize: 11, fontFamily: "Montserrat-SemiBold",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        minWidth: role === "Super Admin" ? 110 : undefined,
+        padding: "4px 11px", borderRadius: 20, whiteSpace: "nowrap",
+        fontSize: 11, lineHeight: 1.2, fontFamily: "Montserrat-SemiBold",
         color: style.color, background: style.bg,
       }}>
         {role || "User"}
@@ -205,7 +221,7 @@ const UsersOverview = () => {
               transition={{ duration: 0.3, delay: 0.2, ease: "easeInOut" }}
               className={`invoice-section theme-${theme}`}
             >
-              {isAdmin && (
+              {canCreateUsers && (
                 <div className="top-action-wrapper">
                   <Link to="/users/create-user" className="create-new-invoice-btn">
                     <span className="fas fa-circle-plus" />
@@ -247,7 +263,7 @@ const UsersOverview = () => {
                           />
                         </div>
 
-                        {isAdmin && selectedItems.length > 0 && (
+                        {canDeleteUsers && selectedItems.length > 0 && (
                           <div className="filter-wrapper bulk-actions">
                             <label className="filter-wrapper-label">Select Action</label>
                             <ChartSearchableSelect
@@ -266,13 +282,13 @@ const UsersOverview = () => {
                         <table className="data-table invoice-table">
                           <thead>
                             <tr>
-                              {isAdmin && (
+                              {canDeleteUsers && (
                                 <th className="checkbox-cell">
                                   <input
                                     type="checkbox"
-                                    checked={data.length > 0 && data.every(u => selectedItems.includes(u.id))}
+                                    checked={data.some(canDeleteTarget) && data.filter(canDeleteTarget).every((u) => selectedItems.includes(u.id))}
                                     onChange={handleSelectAll}
-                                    className={`table-checkbox fas fa-check ${data.length > 0 && data.every(u => selectedItems.includes(u.id)) ? "selected-checkbox" : ""}`}
+                                    className={`table-checkbox fas fa-check ${data.some(canDeleteTarget) && data.filter(canDeleteTarget).every((u) => selectedItems.includes(u.id)) ? "selected-checkbox" : ""}`}
                                   />
                                 </th>
                               )}
@@ -288,6 +304,7 @@ const UsersOverview = () => {
                               <th onClick={() => handleSort("integrity")} className="sortable">
                                 Role {getSortIcon("integrity")}
                               </th>
+                              <th>Data Access</th>
                               <th onClick={() => handleSort("last_login_at")} className="sortable">
                                 Last Login {getSortIcon("last_login_at")}
                               </th>
@@ -300,14 +317,16 @@ const UsersOverview = () => {
                           <tbody>
                             {data.map((u, index) => (
                               <tr key={u.id} className={selectedItems.includes(u.id) ? "selected" : ""}>
-                                {isAdmin && (
+                                {canDeleteUsers && (
                                   <td className="checkbox-cell">
-                                    <input
-                                      type="checkbox"
-                                      className={`table-checkbox fas fa-check ${selectedItems.includes(u.id) ? "selected-checkbox" : ""}`}
-                                      checked={selectedItems.includes(u.id)}
-                                      onChange={() => toggleItemSelection(u.id)}
-                                    />
+                                    {canDeleteTarget(u) && (
+                                      <input
+                                        type="checkbox"
+                                        className={`table-checkbox fas fa-check ${selectedItems.includes(u.id) ? "selected-checkbox" : ""}`}
+                                        checked={selectedItems.includes(u.id)}
+                                        onChange={() => toggleItemSelection(u.id)}
+                                      />
+                                    )}
                                   </td>
                                 )}
                                 <td className="number-tab">{index + 1}</td>
@@ -319,7 +338,15 @@ const UsersOverview = () => {
                                   </div>
                                 </td>
                                 <td>{u.email}</td>
-                                <td>{getRoleBadge(u.integrity)}</td>
+                                <td>{getRoleBadge(u.rbac_role_name || u.integrity)}</td>
+                                <td>
+                                  <span className={`user-access-scope ${String(u.cost_center_access_mode || "all").toLowerCase() === "restricted" ? "user-access-scope--restricted" : "user-access-scope--all"}`}>
+                                    <i className={`fas ${String(u.cost_center_access_mode || "all").toLowerCase() === "restricted" ? "fa-layer-group" : "fa-infinity"}`} />
+                                    {String(u.cost_center_access_mode || "all").toLowerCase() === "restricted"
+                                      ? `${Array.isArray(u.cost_centers) ? u.cost_centers.length : 0} Cost Centre${Array.isArray(u.cost_centers) && u.cost_centers.length === 1 ? "" : "s"}`
+                                      : "All Cost Centres"}
+                                  </span>
+                                </td>
                                 <td>
                                   {(() => {
                                     const lastLogin = formatLastLogin(u.last_login_at);
@@ -346,23 +373,23 @@ const UsersOverview = () => {
                                     >
                                       <span className="fas fa-file" />
                                     </button>
-                                    {isAdmin && (
-                                      <>
-                                        <button
-                                          className="btn-edit"
-                                          title="Edit"
-                                          onClick={() => navigate(`/users/edit/${u.id}`, { state: { user: u } })}
-                                        >
-                                          <span className="fas fa-pen" />
-                                        </button>
-                                        <button
-                                          className="btns-delete"
-                                          title="Delete"
-                                          onClick={() => handleDeleteUser(u.id)}
-                                        >
-                                          <span className="fas fa-trash" />
-                                        </button>
-                                      </>
+                                    {canEditUsers && canManageTarget(u) && (!isSuperAdmin(u) || currentUserIsSuperAdmin) && (
+                                      <button
+                                        className="btn-edit"
+                                        title="Edit"
+                                        onClick={() => navigate(`/users/edit/${u.id}`, { state: { user: u } })}
+                                      >
+                                        <span className="fas fa-pen" />
+                                      </button>
+                                    )}
+                                    {canDeleteTarget(u) && (
+                                      <button
+                                        className="btns-delete"
+                                        title="Delete"
+                                        onClick={() => handleDeleteUser(u.id)}
+                                      >
+                                        <span className="fas fa-trash" />
+                                      </button>
                                     )}
                                   </div>
                                 </td>
@@ -407,7 +434,7 @@ const UsersOverview = () => {
                       <EmptyTable
                         icon="fas fa-users-gear"
                         message="No user records found matching your criteria"
-                        link={isAdmin ? "/users/create-user" : undefined}
+                        link={canCreateUsers ? "/users/create-user" : undefined}
                       />
                     )}
                   </>

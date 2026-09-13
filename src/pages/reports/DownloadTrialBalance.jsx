@@ -1,17 +1,6 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import MontserratRegular from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
-import MontserratBold from '../../assets/fonts/Montserrat/Montserrat-Bold.ttf';
-import MontserratSemiBold from '../../assets/fonts/Montserrat/Montserrat-SemiBold.ttf';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-
-Font.register({ family: 'Montserrat-Regular', src: MontserratRegular });
-Font.register({ family: 'Montserrat-Light', src: MontserratLight });
-Font.register({ family: 'Montserrat-Medium', src: MontserratMedium });
-Font.register({ family: 'Montserrat-Bold', src: MontserratBold });
-Font.register({ family: 'Montserrat-SemiBold', src: MontserratSemiBold });
 
 const BRAND = '#00b196';
 const BORDER = '#deeee9';
@@ -329,7 +318,7 @@ export default DownloadTrialBalance;
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Helvetica',
     fontSize: 5.7,
     paddingTop: 60,
     paddingBottom: 34,
@@ -351,8 +340,8 @@ const styles = StyleSheet.create({
   },
   pageHeaderRight: { alignItems: 'flex-end' },
   logo: { width: 94, height: 'auto', objectFit: 'contain' },
-  reportTitle: { fontFamily: 'Montserrat-Bold', fontSize: 10, color: TEXT1, letterSpacing: 0.25 },
-  reportMeta: { fontFamily: 'Montserrat-Light', fontSize: 5.4, color: TEXT3, marginTop: 2 },
+  reportTitle: { fontFamily: 'Helvetica-Bold', fontSize: 10, color: TEXT1, letterSpacing: 0.25 },
+  reportMeta: { fontFamily: 'Helvetica', fontSize: 5.4, color: TEXT3, marginTop: 2 },
   headerDivider: {
     position: 'absolute',
     top: 51,
@@ -375,12 +364,12 @@ const styles = StyleSheet.create({
     borderTopColor: BORDER,
     backgroundColor: '#ffffff',
   },
-  footerLeft: { fontFamily: 'Montserrat-Light', fontSize: 5.2, color: TEXT3 },
-  footerRight: { fontFamily: 'Montserrat-Medium', fontSize: 5.2, color: TEXT2 },
+  footerLeft: { fontFamily: 'Helvetica', fontSize: 5.2, color: TEXT3 },
+  footerRight: { fontFamily: 'Helvetica', fontSize: 5.2, color: TEXT2 },
   section: { marginBottom: 8 },
   sectionDivider: { height: 0.7, backgroundColor: BORDER, marginBottom: 9 },
   sectionLabel: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 5.8,
     color: TEXT3,
     textTransform: 'uppercase',
@@ -397,7 +386,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   summaryLabel: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5.5,
     textTransform: 'uppercase',
     letterSpacing: 0.42,
@@ -407,8 +396,8 @@ const styles = StyleSheet.create({
   summarySide: { flex: 1 },
   summarySideRight: { alignItems: 'flex-end' },
   summarySideDivider: { width: 0.5, backgroundColor: BORDER, marginHorizontal: 6 },
-  summarySideLabel: { fontFamily: 'Montserrat-Medium', fontSize: 4.8, color: TEXT3, marginBottom: 2 },
-  summarySideValue: { fontFamily: 'Montserrat-Bold', fontSize: 7.2 },
+  summarySideLabel: { fontFamily: 'Helvetica', fontSize: 4.8, color: TEXT3, marginBottom: 2 },
+  summarySideValue: { fontFamily: 'Helvetica-Bold', fontSize: 7.2 },
   balanceCard: {
     width: 132,
     borderRadius: 4,
@@ -418,13 +407,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   balanceLabel: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5.3,
     textTransform: 'uppercase',
     letterSpacing: 0.38,
   },
-  balanceValue: { fontFamily: 'Montserrat-Bold', fontSize: 10.2, marginTop: 4 },
-  balanceCurrency: { fontFamily: 'Montserrat-Medium', fontSize: 5.1, marginTop: 1 },
+  balanceValue: { fontFamily: 'Helvetica-Bold', fontSize: 10.2, marginTop: 4 },
+  balanceCurrency: { fontFamily: 'Helvetica', fontSize: 5.1, marginTop: 1 },
   classSection: { borderWidth: 0.5, borderColor: BORDER, borderRadius: 4, overflow: 'hidden' },
   classChunk: { marginBottom: 8 },
   classHeader: {
@@ -439,21 +428,21 @@ const styles = StyleSheet.create({
   },
   classHeaderLeft: { flexDirection: 'row', alignItems: 'center' },
   classAccent: { width: 3, height: 18, borderRadius: 2, marginRight: 7 },
-  className: { fontFamily: 'Montserrat-Bold', fontSize: 7.1 },
-  classCount: { fontFamily: 'Montserrat-Light', fontSize: 5.3, color: TEXT3, marginTop: 1 },
+  className: { fontFamily: 'Helvetica-Bold', fontSize: 7.1 },
+  classCount: { fontFamily: 'Helvetica', fontSize: 5.3, color: TEXT3, marginTop: 1 },
   classClosingSummary: { flexDirection: 'row', alignItems: 'center' },
   classClosingTitle: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5,
     color: TEXT3,
     textTransform: 'uppercase',
     letterSpacing: 0.35,
     marginRight: 8,
   },
-  classClosingValue: { fontFamily: 'Montserrat-Bold', fontSize: 6.2, marginLeft: 8 },
+  classClosingValue: { fontFamily: 'Helvetica-Bold', fontSize: 6.2, marginLeft: 8 },
   tableGroupHeader: { flexDirection: 'row', backgroundColor: '#132238' },
   thGroupStatic: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5.2,
     color: '#ffffff',
     paddingVertical: 6,
@@ -465,7 +454,7 @@ const styles = StyleSheet.create({
   },
   thGroup: {
     width: 178,
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5.2,
     textAlign: 'center',
     paddingVertical: 6,
@@ -480,7 +469,7 @@ const styles = StyleSheet.create({
   tableSubHeader: { flexDirection: 'row', backgroundColor: '#f5f8fb' },
   thSubSpacer: { borderRightWidth: 0.5, borderRightColor: BORDER, paddingVertical: 4 },
   thSub: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 4.9,
     color: TEXT2,
     paddingVertical: 4,
@@ -498,7 +487,7 @@ const styles = StyleSheet.create({
   rowOdd: { backgroundColor: GRAY },
   rowZero: { opacity: 0.45 },
   td: {
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 5.4,
     color: TEXT2,
     paddingVertical: 4,
@@ -506,13 +495,13 @@ const styles = StyleSheet.create({
     borderRightWidth: 0.5,
     borderRightColor: BORDER,
   },
-  ledgerNumber: { color: BRAND, fontFamily: 'Montserrat-SemiBold' },
+  ledgerNumber: { color: BRAND, fontFamily: 'Helvetica-Bold' },
   openingCell: { backgroundColor: '#fbfcff', textAlign: 'right' },
   movementCell: { backgroundColor: '#fbfefd', textAlign: 'right' },
-  closingCell: { backgroundColor: '#fdfcff', textAlign: 'right', fontFamily: 'Montserrat-Medium', color: TEXT1 },
+  closingCell: { backgroundColor: '#fdfcff', textAlign: 'right', fontFamily: 'Helvetica', color: TEXT1 },
   subtotalRow: { flexDirection: 'row', backgroundColor: GRAY, borderTopWidth: 1.2 },
   subTd: {
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5.5,
     color: TEXT1,
     paddingVertical: 5,
@@ -529,7 +518,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   grandTd: {
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 5.8,
     color: TEXT1,
     paddingVertical: 6,

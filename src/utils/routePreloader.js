@@ -63,6 +63,7 @@ const routeLoaders = {
   MyProfile: () => import('../pages/users/MyProfile'),
   NotificationsPage: () => import('../pages/notifications/NotificationsPage'),
   ActivityLogsPage: () => import('../pages/activity-logs/ActivityLogsPage'),
+  CostCentresOverview: () => import('../pages/cost-centres/CostCentresOverview'),
 };
 
 const routeMatchers = [
@@ -129,6 +130,7 @@ const routeMatchers = [
   [/^\/users\/my-profile\/?$/, 'MyProfile'],
   [/^\/notifications\/?$/, 'NotificationsPage'],
   [/^\/activity-logs\/?$/, 'ActivityLogsPage'],
+  [/^\/cost-centres\/home\/?$/, 'CostCentresOverview'],
 ];
 
 const loadedRoutes = new Set();

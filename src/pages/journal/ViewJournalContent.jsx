@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import useThemeStore from "../../stores/useThemeStore";
 import useToastStore from "../../stores/useToastStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { fadeInUp } from "../../utils/animation";
 import {
   formatCurrencyDecimals,
@@ -72,7 +74,14 @@ const AuditItem = ({ icon, label, value }) => (
 const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
+  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
+  const canEditJournal = hasPermission(user, "journal.edit");
+  const canCreateJournal = hasPermission(user, "journal.create");
+  const canDuplicateJournal = hasPermission(user, "journal.duplicate") && canCreateJournal;
+  const canLinkPayment = hasPermission(user, "journal.payment_link");
+  const canExportJournal = hasPermission(user, "journal.export");
+  const canViewLedger = hasPermission(user, "ledger.view");
   const [isPrinting, setIsPrinting] = useState(false);
   const [visibleLineCount, setVisibleLineCount] = useState(PAGE_SIZE);
   const [showPaymentRegistration, setShowPaymentRegistration] = useState(false);
@@ -180,7 +189,7 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
             <span>Back to journals</span>
           </button>
 
-          {!journal.is_protected ? (
+          {canEditJournal && !journal.is_protected ? (
             <button
               type="button"
               className="journal-view-action journal-view-action--primary"
@@ -193,17 +202,19 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
             </button>
           ) : null}
 
-          <button
-            type="button"
-            className="journal-view-action journal-view-action--duplicate"
-            onClick={() => navigate(`/journal/create?duplicate=${encodeURIComponent(journal.journal_id)}`)}
-          >
-            <i className="fas fa-copy" aria-hidden="true" />
-            <span>Duplicate journal</span>
-          </button>
+          {canDuplicateJournal && (
+            <button
+              type="button"
+              className="journal-view-action journal-view-action--duplicate"
+              onClick={() => navigate(`/journal/create?duplicate=${encodeURIComponent(journal.journal_id)}`)}
+            >
+              <i className="fas fa-copy" aria-hidden="true" />
+              <span>Duplicate journal</span>
+            </button>
+          )}
 
           {journal.payment_link ? (
-            journal.payment_link.can_manage ? (
+            journal.payment_link.can_manage && canLinkPayment ? (
               <button
                 type="button"
                 className="journal-view-action journal-view-action--payment"
@@ -219,7 +230,7 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
                 <span>Payment · {journal.payment_link.invoice_number}</span>
               </span>
             )
-          ) : isBalanced ? (
+          ) : isBalanced && canLinkPayment ? (
             <button
               type="button"
               className="journal-view-action journal-view-action--payment"
@@ -230,27 +241,31 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
             </button>
           ) : null}
 
-          <button
-            type="button"
-            className="journal-view-action journal-view-action--print"
-            onClick={handlePrintJournal}
-            disabled={isPrinting}
-          >
-            <i
-              className={`fas ${isPrinting ? "fa-spinner fa-spin" : "fa-print"}`}
-              aria-hidden="true"
-            />
-            <span>{isPrinting ? "Preparing…" : "Print PDF"}</span>
-          </button>
+          {canExportJournal && (
+            <>
+              <button
+                type="button"
+                className="journal-view-action journal-view-action--print"
+                onClick={handlePrintJournal}
+                disabled={isPrinting}
+              >
+                <i
+                  className={`fas ${isPrinting ? "fa-spinner fa-spin" : "fa-print"}`}
+                  aria-hidden="true"
+                />
+                <span>{isPrinting ? "Preparing…" : "Print PDF"}</span>
+              </button>
 
-          <PDFDownloadLink
-            document={<DownloadJournal journal={journal} />}
-            className="journal-view-action journal-view-action--download"
-            fileName={`${journal?.journal_type || "Journal"} Voucher ${journal?.journal_id || ""}.pdf`}
-          >
-            <i className="fas fa-file-pdf" aria-hidden="true" />
-            <span>Download PDF</span>
-          </PDFDownloadLink>
+              <PDFDownloadLink
+                document={<DownloadJournal journal={journal} />}
+                className="journal-view-action journal-view-action--download"
+                fileName={`${journal?.journal_type || "Journal"} Voucher ${journal?.journal_id || ""}.pdf`}
+              >
+                <i className="fas fa-file-pdf" aria-hidden="true" />
+                <span>Download PDF</span>
+              </PDFDownloadLink>
+            </>
+          )}
         </div>
       </header>
 
@@ -356,7 +371,7 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
                             type="button"
                             className="journal-view-ledger-link"
                             onClick={() => handleLedgerNavigation(row.ledger_number)}
-                            disabled={!row.ledger_number}
+                            disabled={!row.ledger_number || !canViewLedger}
                           >
                             <strong>{row.ledger_name || "Unnamed ledger"}</strong>
                             <span>
@@ -503,7 +518,8 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
       </div>
     </motion.section>
 
-    <RegisterJournalInvoicePaymentModal
+    {canLinkPayment && (
+      <RegisterJournalInvoicePaymentModal
       isOpen={showPaymentRegistration}
       journal={journal}
       onClose={() => setShowPaymentRegistration(false)}
@@ -511,7 +527,8 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
         setShowPaymentRegistration(false);
         onPaymentRegistered?.(payment);
       }}
-    />
+      />
+    )}
     </>
   );
 };

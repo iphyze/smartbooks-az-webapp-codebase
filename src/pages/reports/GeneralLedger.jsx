@@ -8,6 +8,8 @@ import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import "./GeneralLedger.css";
@@ -172,7 +174,7 @@ const TotalsStrip = ({ totals, currency }) => {
 /* ─────────────────────────────────────────────
    RESULTS TABLE
 ───────────────────────────────────────────── */
-const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSearch }) => {
+const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSearch, canExport, canViewLedgers }) => {
   const [sortCol, setSortCol]   = useState("ledger_name");
   const [sortDir, setSortDir]   = useState("asc");
   const handleSort = (col) => {
@@ -238,29 +240,33 @@ const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSe
               </button>
             )}
           </div>
-          <button className="gl-excel-btn" onClick={onExcel} disabled={excelLoading}>
-            {excelLoading
-              ? <><div className="gl-btn-loader gl-btn-loader--sm" /> Downloading...</>
-              : <><i className="fas fa-file-excel" /> Export Excel</>}
-          </button>
+          {canExport && (
+            <>
+              <button className="gl-excel-btn" onClick={onExcel} disabled={excelLoading}>
+                {excelLoading
+                  ? <><div className="gl-btn-loader gl-btn-loader--sm" /> Downloading...</>
+                  : <><i className="fas fa-file-excel" /> Export Excel</>}
+              </button>
 
-          <PDFDownloadLink
-            document={
-              <DownloadGeneralLedger
-                data={data}
-                totals={totals}
-                meta={meta}
-              />
-            }
-            fileName={`General_Ledger_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
-            className="gl-pdf-btn"
-          >
-            {({ loading: pdfLoading }) =>
-              pdfLoading
-                ? <><div className="gl-btn-loader gl-btn-loader--sm" /> Building PDF...</>
-                : <><i className="fas fa-file-pdf" /> Export PDF</>
-            }
-          </PDFDownloadLink>
+              <PDFDownloadLink
+                document={
+                  <DownloadGeneralLedger
+                    data={data}
+                    totals={totals}
+                    meta={meta}
+                  />
+                }
+                fileName={`General_Ledger_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
+                className="gl-pdf-btn"
+              >
+                {({ loading: pdfLoading }) =>
+                  pdfLoading
+                    ? <><div className="gl-btn-loader gl-btn-loader--sm" /> Building PDF...</>
+                    : <><i className="fas fa-file-pdf" /> Export PDF</>
+                }
+              </PDFDownloadLink>
+            </>
+          )}
         </div>
       </div>
 
@@ -320,12 +326,16 @@ const ResultsTable = ({ data, totals, meta, onExcel, excelLoading, search, setSe
                     <tr key={row.ledger_number} className={isActive ? "" : "gl-row-zero"}>
                       <td className="gl-td-num gl-row-num">{i + 1}</td>
                       <td className="gl-mono">
-                        <button 
-                          className="ls-ref-link"
-                          onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
-                        >
-                          {row.ledger_number}
-                        </button>
+                        {canViewLedgers ? (
+                          <button
+                            className="ls-ref-link"
+                            onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
+                          >
+                            {row.ledger_number}
+                          </button>
+                        ) : (
+                          <span>{row.ledger_number}</span>
+                        )}
                       </td>
                       <td className="gl-td-name">
                         <span className="gl-ledger-name">{row.ledger_name}</span>
@@ -383,6 +393,10 @@ const GeneralLedger = () => {
   const [currency, setCurrency] = useState(null);
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canExport = hasPermission(user, "general_ledger.export");
+  const canViewLedgers = hasPermission(user, "ledger.view");
+  const canViewReportHub = hasPermission(user, "report.view");
   const { generalLedger, fetchGeneralLedger, downloadGeneralLedgerExcel } = useLedgerReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -423,9 +437,9 @@ const GeneralLedger = () => {
   }, []);
 
   const links = [
-    { label: "Home",            to: "/", active: true },
-    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
-    { label: "General Ledger",  to: "/reports/ledger/general-ledger", active: false },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: "Reports & Analytics", to: "/reports/ledger", active: true }] : []),
+    { label: "General Ledger", to: "/reports/ledger/general-ledger", active: false },
   ];
 
   const validate = () => {
@@ -497,6 +511,8 @@ const GeneralLedger = () => {
                     excelLoading={excelLoading}
                     search={search}
                     setSearch={setSearch}
+                    canExport={canExport}
+                    canViewLedgers={canViewLedgers}
                   />
                 </motion.div>
               )}

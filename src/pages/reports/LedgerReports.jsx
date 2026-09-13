@@ -4,7 +4,9 @@ import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
 import { preloadRoute } from "../../utils/routePreloader";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import "./LedgerReports.css";
 
 const REPORT_GROUPS = [
@@ -16,23 +18,23 @@ const REPORT_GROUPS = [
     copy: "Review position, performance and ledger movements with period, currency and zero-balance controls.",
     reports: [
       {
-        key: "ledger-statement", path: "/reports/ledger/ledger-statement", icon: "fa-book-open", label: "Ledger Statement",
+        key: "ledger-statement", path: "/reports/ledger/ledger-statement", icon: "fa-book-open", label: "Ledger Statement", permission: "ledger_statement.view", rbacReady: true,
         description: "Running balances and detailed movements for a selected ledger.", tags: ["Per ledger", "Transactions"], accentClass: "lr-card--teal",
       },
       {
-        key: "general-ledger", path: "/reports/ledger/general-ledger", icon: "fa-table-list", label: "General Ledger",
+        key: "general-ledger", path: "/reports/ledger/general-ledger", icon: "fa-table-list", label: "General Ledger", permission: "general_ledger.view", rbacReady: true,
         description: "Aggregated debit, credit and balance positions across ledger accounts.", tags: ["All accounts", "Multi-currency"], accentClass: "lr-card--blue",
       },
       {
-        key: "trial-balance", path: "/reports/ledger/trial-balance", icon: "fa-scale-balanced", label: "Trial Balance",
+        key: "trial-balance", path: "/reports/ledger/trial-balance", icon: "fa-scale-balanced", label: "Trial Balance", permission: "trial_balance.view", rbacReady: true,
         description: "Validate debit and credit equality by class and reporting period.", tags: ["Debit vs credit", "By class"], accentClass: "lr-card--violet",
       },
       {
-        key: "profit-and-loss", path: "/reports/ledger/profit-and-loss", icon: "fa-chart-line", label: "Profit & Loss",
+        key: "profit-and-loss", path: "/reports/ledger/profit-and-loss", icon: "fa-chart-line", label: "Profit & Loss", permission: "profit_loss.view", rbacReady: true,
         description: "Analyse revenue, expenses and profitability over the selected period.", tags: ["Revenue", "Expenses"], accentClass: "lr-card--amber",
       },
       {
-        key: "balance-sheet", path: "/reports/ledger/balance-sheet", icon: "fa-building-columns", label: "Balance Sheet",
+        key: "balance-sheet", path: "/reports/ledger/balance-sheet", icon: "fa-building-columns", label: "Balance Sheet", permission: "balance_sheet.view", rbacReady: true,
         description: "Review assets, liabilities and equity as at a selected reporting date.", tags: ["Position", "Cumulative"], accentClass: "lr-card--emerald",
       },
     ],
@@ -45,19 +47,19 @@ const REPORT_GROUPS = [
     copy: "Monitor receivables, exchange exposure, reconciliation progress and staff time activity.",
     reports: [
       {
-        key: "invoice-aging", path: "/reports/invoice-aging", icon: "fa-clock-rotate-left", label: "Invoice Aging",
+        key: "invoice-aging", path: "/reports/invoice-aging", icon: "fa-clock-rotate-left", label: "Invoice Aging", permission: "invoice_aging.view", rbacReady: true,
         description: "Understand overdue receivables and collection exposure by aging bucket.", tags: ["Receivables", "Overdue"], accentClass: "lr-card--blue",
       },
       {
-        key: "fx", path: "/reports/fx-revaluation", icon: "fa-arrow-trend-up", label: "FX Gain / Loss",
+        key: "fx", path: "/reports/fx-revaluation", icon: "fa-arrow-trend-up", label: "FX Gain / Loss", permission: "fx.view", rbacReady: true,
         description: "Review unrealised exchange movement and post controlled revaluation entries.", tags: ["Revaluation", "Controls"], accentClass: "lr-card--amber",
       },
       {
-        key: "reconciliation", path: "/reports/bank-recon", icon: "fa-scale-unbalanced-flip", label: "Bank Reconciliation",
+        key: "reconciliation", path: "/reports/bank-recon", icon: "fa-scale-unbalanced-flip", label: "Bank Reconciliation", permission: "bank_reconciliation.view", rbacReady: true,
         description: "Match bank and ledger lines, classify differences and export results.", tags: ["Matching", "Exceptions"], accentClass: "lr-card--teal",
       },
       {
-        key: "timesheets", path: "/reports/timesheet", icon: "fa-business-time", label: "Timesheet Analysis",
+        key: "timesheets", path: "/reports/timesheet", icon: "fa-business-time", label: "Timesheet Analysis", permission: "timesheet.view", rbacReady: true,
         description: "Analyse recorded staff time across clients, projects and reporting periods.", tags: ["Hours", "People"], accentClass: "lr-card--violet",
       },
     ],
@@ -69,12 +71,23 @@ const LedgerReports = () => {
   const [query, setQuery] = useState("");
   const [activeGroup, setActiveGroup] = useState("all");
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const isRestrictedCostCenter = String(user?.cost_center_access_mode || 'all').toLowerCase() === 'restricted';
   const navigate = useNavigate();
 
-  const totalReports = REPORT_GROUPS.reduce((count, group) => count + group.reports.length, 0);
+  const allowedReportGroups = useMemo(() => REPORT_GROUPS.map((group) => ({
+    ...group,
+    reports: group.reports.filter((report) => {
+      if (isRestrictedCostCenter && report.path === '/reports/fx-revaluation') return false;
+      if (report.permission && !hasPermission(user, report.permission)) return false;
+      return true;
+    }),
+  })).filter((group) => group.reports.length > 0), [isRestrictedCostCenter, user]);
+
+  const totalReports = allowedReportGroups.reduce((count, group) => count + group.reports.length, 0);
   const normalizedQuery = query.trim().toLowerCase();
 
-  const visibleGroups = useMemo(() => REPORT_GROUPS
+  const visibleGroups = useMemo(() => allowedReportGroups
     .filter((group) => activeGroup === "all" || group.key === activeGroup)
     .map((group) => ({
       ...group,
@@ -86,11 +99,11 @@ const LedgerReports = () => {
           .includes(normalizedQuery);
       }),
     }))
-    .filter((group) => group.reports.length > 0), [activeGroup, normalizedQuery]);
+    .filter((group) => group.reports.length > 0), [activeGroup, allowedReportGroups, normalizedQuery]);
 
   const visibleCount = visibleGroups.reduce((count, group) => count + group.reports.length, 0);
   const links = [
-    { label: "Home", to: "/", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
     { label: "Report Library", to: "/reports/ledger", active: false },
   ];
 
@@ -113,7 +126,7 @@ const LedgerReports = () => {
               </div>
               <div className="lr-hero-metrics">
                 <span><strong>{totalReports}</strong><small>Available reports</small></span>
-                <span><strong>{REPORT_GROUPS.length}</strong><small>Report families</small></span>
+                <span><strong>{allowedReportGroups.length}</strong><small>Report families</small></span>
                 <span><strong>{visibleCount}</strong><small>Currently visible</small></span>
               </div>
             </section>
@@ -139,7 +152,7 @@ const LedgerReports = () => {
                 <button type="button" className={activeGroup === "all" ? "active" : ""} onClick={() => setActiveGroup("all")}>
                   <i className="fas fa-table-cells-large" /> All reports <span>{totalReports}</span>
                 </button>
-                {REPORT_GROUPS.map((group) => (
+                {allowedReportGroups.map((group) => (
                   <button key={group.key} type="button" className={activeGroup === group.key ? "active" : ""} onClick={() => setActiveGroup(group.key)}>
                     <i className={`fas ${group.icon}`} /> {group.shortLabel} <span>{group.reports.length}</span>
                   </button>

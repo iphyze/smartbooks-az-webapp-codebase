@@ -7,6 +7,8 @@ import PageNav from '../../components/PageNav';
 import TableLoaderComponent from '../../components/TableLoaderComponent';
 import { DateInput, parseISO, toISO } from '../../components/DashboardControls';
 import useThemeStore from '../../stores/useThemeStore';
+import useAuthStore from '../../stores/useAuthStore';
+import { hasPermission } from '../../utils/permissions';
 import useAccountingPeriodStore from '../../stores/useAccountingPeriodStore';
 import '../../components/DashboardControls.css';
 import './LockPeriod.css';
@@ -336,7 +338,7 @@ const LockPreviewModal = ({ period, preview, loading, locking, theme, onClose, o
   );
 };
 
-const UnlockModal = ({ period, theme, unlocking, onClose, onConfirm, onOpenClosures }) => {
+const UnlockModal = ({ period, theme, unlocking, onClose, onConfirm, onOpenClosures, canOpenClosures }) => {
   const [reason, setReason] = useState('');
   const valid = reason.trim().length >= 5 && reason.trim().length <= 500;
   const blockedByClose = Boolean(period.has_active_fiscal_close);
@@ -361,7 +363,7 @@ const UnlockModal = ({ period, theme, unlocking, onClose, onConfirm, onOpenClosu
           <i className="fas fa-scale-balanced" />
           <span>
             This period belongs to active fiscal-year closure <strong>{period.closure_code}</strong>. Reverse that closure before unlocking the period.
-            <button type="button" className="lp-text-btn" onClick={onOpenClosures}>Open fiscal-year closures</button>
+            {canOpenClosures && <button type="button" className="lp-text-btn" onClick={onOpenClosures}>Open fiscal-year closures</button>}
           </span>
         </div>
       ) : (
@@ -379,7 +381,7 @@ const UnlockModal = ({ period, theme, unlocking, onClose, onConfirm, onOpenClosu
   );
 };
 
-const FiscalClosePreview = ({ preview, confirmed, setConfirmed, description, setDescription, posting, onPost, onOpenFx, onOpenPeriods }) => {
+const FiscalClosePreview = ({ preview, confirmed, setConfirmed, description, setDescription, posting, onPost, onOpenFx, onOpenPeriods, canOpenFx }) => {
   const diagnostics = preview.diagnostics || {};
   const fxItems = preview.fx_readiness?.items || [];
   const canPost = Boolean(preview.can_post && preview.preview_token && confirmed && description.trim().length >= 5 && !posting);
@@ -410,7 +412,7 @@ const FiscalClosePreview = ({ preview, confirmed, setConfirmed, description, set
       {(needsFx || needsPeriods) && (
         <div className="lp-resolution-actions">
           {needsPeriods && <button type="button" className="lp-btn lp-btn--secondary" onClick={onOpenPeriods}><i className="fas fa-calendar-check" /> Review accounting periods</button>}
-          {needsFx && <button type="button" className="lp-btn lp-btn--secondary" onClick={onOpenFx}><i className="fas fa-arrow-trend-up" /> Open FX revaluation</button>}
+          {needsFx && canOpenFx && <button type="button" className="lp-btn lp-btn--secondary" onClick={onOpenFx}><i className="fas fa-arrow-trend-up" /> Open FX revaluation</button>}
         </div>
       )}
 
@@ -564,6 +566,19 @@ const LockPeriodOverview = () => {
   const [fiscalConfirmed, setFiscalConfirmed] = useState(false);
   const [journalDescription, setJournalDescription] = useState('');
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewPeriods = hasPermission(user, 'accounting_period.view');
+  const canCreatePeriod = hasPermission(user, 'accounting_period.create');
+  const canEditPeriod = hasPermission(user, 'accounting_period.edit');
+  const canLockPeriod = hasPermission(user, 'accounting_period.lock');
+  const canCloseFiscal = hasPermission(user, 'accounting_period.close');
+  const canReverseFiscal = hasPermission(user, 'accounting_period.reverse');
+  const canViewJournals = hasPermission(user, 'journal.view');
+  const canLoadPeriods = canViewPeriods || canEditPeriod || canLockPeriod || canCloseFiscal;
+  const canLoadClosures = canViewPeriods || canCloseFiscal || canReverseFiscal;
+  const canAccessPeriodsTab = canCreatePeriod || canLoadPeriods;
+  const canAccessFiscalTab = canLoadClosures;
+  const canOpenFx = hasPermission(user, 'fx.view') && String(user?.cost_center_access_mode || 'all').toLowerCase() !== 'restricted';
   const navigate = useNavigate();
   const store = useAccountingPeriodStore();
   const {
@@ -577,9 +592,17 @@ const LockPeriodOverview = () => {
 
   useEffect(() => {
     document.title = 'Smartbooks | Accounting Periods';
-    fetchPeriods();
-    fetchClosures();
-  }, [fetchPeriods, fetchClosures]);
+    if (canLoadPeriods) fetchPeriods();
+    if (canLoadClosures) fetchClosures();
+  }, [canLoadClosures, canLoadPeriods, fetchClosures, fetchPeriods]);
+
+  useEffect(() => {
+    if (activeTab === 'periods' && !canAccessPeriodsTab && canAccessFiscalTab) {
+      setActiveTab('fiscal');
+    } else if (activeTab === 'fiscal' && !canAccessFiscalTab && canAccessPeriodsTab) {
+      setActiveTab('periods');
+    }
+  }, [activeTab, canAccessFiscalTab, canAccessPeriodsTab]);
 
   const stats = useMemo(() => ({
     total: periods.length,
@@ -588,21 +611,28 @@ const LockPeriodOverview = () => {
     fiscal: closures.filter((closure) => closure.status === 'Posted').length,
   }), [periods, closures]);
 
-  const handleSave = async (payload) => (payload.id ? updatePeriod(payload) : createPeriod(payload));
+  const handleSave = async (payload) => {
+    if (payload.id && !canEditPeriod) return false;
+    if (!payload.id && !canCreatePeriod) return false;
+    return payload.id ? updatePeriod(payload) : createPeriod(payload, { refreshPeriods: canLoadPeriods });
+  };
 
   const openLockPreview = async (period) => {
+    if (!canLockPeriod) return;
     setLockTarget(period);
     clearLockPreview();
     await previewLockPeriod(period.id);
   };
 
   const confirmLock = async (reason) => {
-    const succeeded = await lockPeriod({ period: lockTarget, previewToken: lockPreview?.preview_token, lockReason: reason });
+    if (!canLockPeriod) return;
+    const succeeded = await lockPeriod({ period: lockTarget, previewToken: lockPreview?.preview_token, lockReason: reason, refreshClosures: canLoadClosures });
     if (succeeded) setLockTarget(null);
   };
 
   const confirmUnlock = async (reason) => {
-    const succeeded = await unlockPeriod({ period: unlockTarget, reason });
+    if (!canLockPeriod) return;
+    const succeeded = await unlockPeriod({ period: unlockTarget, reason, refreshClosures: canLoadClosures });
     if (succeeded) setUnlockTarget(null);
   };
 
@@ -613,6 +643,7 @@ const LockPeriodOverview = () => {
   };
 
   const handleFiscalPreview = async () => {
+    if (!canCloseFiscal) return;
     setFiscalConfirmed(false);
     const preview = await previewFiscalYearClose(fiscalForm);
     if (preview) {
@@ -621,6 +652,7 @@ const LockPeriodOverview = () => {
   };
 
   const handleFiscalPost = async () => {
+    if (!canCloseFiscal) return;
     const result = await postFiscalYearClose({
       ...fiscalForm,
       preview_token: fiscalPreview?.preview_token,
@@ -633,16 +665,19 @@ const LockPeriodOverview = () => {
   };
 
   const openReversal = async (closure) => {
+    if (!canReverseFiscal) return;
     setReversalTarget(closure);
     clearReversalPreview();
     await previewFiscalYearCloseReversal(closure.id);
   };
 
   const confirmReversal = async (reason) => {
+    if (!canReverseFiscal) return;
     const result = await reverseFiscalYearClose({
       closureId: reversalTarget.id,
       previewToken: reversalPreview?.preview_token,
       reason,
+      refreshPeriods: canLoadPeriods,
     });
     if (result) setReversalTarget(null);
   };
@@ -661,25 +696,31 @@ const LockPeriodOverview = () => {
                 <h1>Accounting period and fiscal close</h1>
                 <p>Lock completed periods after preview, then use the separate fiscal-year close to transfer the annual P&amp;L result to Retained Earnings.</p>
               </div>
-              {activeTab === 'periods' && (
+              {activeTab === 'periods' && canCreatePeriod && (
                 <button className="lp-btn lp-btn--primary" onClick={() => setModalPeriod(null)}><i className="fas fa-plus" /> New period</button>
               )}
             </section>
 
-            <div className="lp-stat-grid lp-stat-grid--four">
-              <article><i className="fas fa-calendar-days" /><div><strong>{stats.total}</strong><span>Total periods</span></div></article>
-              <article className="locked"><i className="fas fa-lock" /><div><strong>{stats.locked}</strong><span>Locked periods</span></div></article>
-              <article className="open"><i className="fas fa-lock-open" /><div><strong>{stats.open}</strong><span>Open periods</span></div></article>
-              <article className="fiscal"><i className="fas fa-scale-balanced" /><div><strong>{stats.fiscal}</strong><span>Active fiscal closes</span></div></article>
-            </div>
+            {(canLoadPeriods || canLoadClosures) && (
+              <div className="lp-stat-grid lp-stat-grid--four">
+                <article><i className="fas fa-calendar-days" /><div><strong>{canLoadPeriods ? stats.total : '—'}</strong><span>Total periods</span></div></article>
+                <article className="locked"><i className="fas fa-lock" /><div><strong>{canLoadPeriods ? stats.locked : '—'}</strong><span>Locked periods</span></div></article>
+                <article className="open"><i className="fas fa-lock-open" /><div><strong>{canLoadPeriods ? stats.open : '—'}</strong><span>Open periods</span></div></article>
+                <article className="fiscal"><i className="fas fa-scale-balanced" /><div><strong>{canLoadClosures ? stats.fiscal : '—'}</strong><span>Active fiscal closes</span></div></article>
+              </div>
+            )}
 
             <div className="lp-tabs" role="tablist" aria-label="Accounting period controls">
-              <button type="button" className={activeTab === 'periods' ? 'active' : ''} onClick={() => setActiveTab('periods')}>
-                <i className="fas fa-calendar-check" /> Accounting periods
-              </button>
-              <button type="button" className={activeTab === 'fiscal' ? 'active' : ''} onClick={() => setActiveTab('fiscal')}>
-                <i className="fas fa-book" /> Fiscal-year close
-              </button>
+              {canAccessPeriodsTab && (
+                <button type="button" className={activeTab === 'periods' ? 'active' : ''} onClick={() => setActiveTab('periods')}>
+                  <i className="fas fa-calendar-check" /> Accounting periods
+                </button>
+              )}
+              {canAccessFiscalTab && (
+                <button type="button" className={activeTab === 'fiscal' ? 'active' : ''} onClick={() => setActiveTab('fiscal')}>
+                  <i className="fas fa-book" /> Fiscal-year close
+                </button>
+              )}
             </div>
 
             {activeTab === 'periods' ? (
@@ -690,32 +731,41 @@ const LockPeriodOverview = () => {
                     <h2>Accounting periods</h2>
                     <p>Creating or editing a period does not lock it. Use the lock action to review journal integrity first.</p>
                   </div>
-                  <div className="lp-toolbar-actions">
-                    <div className="lp-search">
-                      <i className="fas fa-search" />
-                      <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        onKeyDown={(event) => event.key === 'Enter' && fetchPeriods()}
-                        placeholder="Search dates, reason or closure"
-                        autoComplete="off"
-                      />
+                  {canLoadPeriods && (
+                    <div className="lp-toolbar-actions">
+                      <div className="lp-search">
+                        <i className="fas fa-search" />
+                        <input
+                          type="search"
+                          value={searchQuery}
+                          onChange={(event) => setSearchQuery(event.target.value)}
+                          onKeyDown={(event) => event.key === 'Enter' && fetchPeriods()}
+                          placeholder="Search dates, reason or closure"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <button className="lp-btn lp-btn--secondary" onClick={fetchPeriods}><i className="fas fa-rotate" /> Refresh</button>
                     </div>
-                    <button className="lp-btn lp-btn--secondary" onClick={fetchPeriods}><i className="fas fa-rotate" /> Refresh</button>
-                  </div>
+                  )}
                 </div>
-                {loading ? <TableLoaderComponent /> : periods.length === 0 ? (
+                {!canLoadPeriods ? (
+                  <div className="lp-empty">
+                    <span><i className="fas fa-calendar-plus" /></span>
+                    <h3>Create accounting periods</h3>
+                    <p>You can create new periods, but your current permissions do not include access to existing period records.</p>
+                    {canCreatePeriod && <button className="lp-btn lp-btn--primary" onClick={() => setModalPeriod(null)}><i className="fas fa-plus" /> New period</button>}
+                  </div>
+                ) : loading ? <TableLoaderComponent /> : periods.length === 0 ? (
                   <div className="lp-empty">
                     <span><i className="fas fa-calendar-plus" /></span>
                     <h3>No accounting periods yet</h3>
                     <p>Create the first open period, then preview it before locking.</p>
-                    <button className="lp-btn lp-btn--primary" onClick={() => setModalPeriod(null)}><i className="fas fa-plus" /> New period</button>
+                    {canCreatePeriod && <button className="lp-btn lp-btn--primary" onClick={() => setModalPeriod(null)}><i className="fas fa-plus" /> New period</button>}
                   </div>
                 ) : (
                   <div className="lp-table-overflow">
                     <table className="lp-table">
-                      <thead><tr><th>Period</th><th>Status</th><th>Lock audit</th><th>Fiscal close</th><th>Last updated</th><th className="lp-table__actions">Actions</th></tr></thead>
+                      <thead><tr><th>Period</th><th>Status</th><th>Lock audit</th><th>Fiscal close</th><th>Last updated</th>{(canEditPeriod || canLockPeriod) && <th className="lp-table__actions">Actions</th>}</tr></thead>
                       <tbody>
                         {periods.map((period) => (
                           <tr key={period.id}>
@@ -736,14 +786,18 @@ const LockPeriodOverview = () => {
                               ) : '—'}
                             </td>
                             <td>{period.updated_by || period.created_by || '—'}<span className="lp-range">{formatDateTime(period.updated_at || period.created_at)}</span></td>
-                            <td className="lp-table__actions">
-                              <button className="lp-row-btn" onClick={() => setModalPeriod(period)} title={period.is_locked ? 'View locked period' : 'Edit period'}><i className={`fas ${period.is_locked ? 'fa-eye' : 'fa-pen'}`} /></button>
-                              {period.is_locked ? (
-                                <button className="lp-row-btn unlock" disabled={unlocking} onClick={() => setUnlockTarget(period)} title="Unlock period"><i className="fas fa-lock-open" /></button>
-                              ) : (
-                                <button className="lp-row-btn lock" disabled={locking || lockPreviewLoading || !period.is_active} onClick={() => openLockPreview(period)} title={period.is_active ? 'Preview and lock period' : 'Activate the period before locking'}><i className="fas fa-lock" /></button>
-                              )}
-                            </td>
+                            {(canEditPeriod || canLockPeriod) && (
+                              <td className="lp-table__actions">
+                                {canEditPeriod && (
+                                  <button className="lp-row-btn" onClick={() => setModalPeriod(period)} title={period.is_locked ? 'View locked period' : 'Edit period'}><i className={`fas ${period.is_locked ? 'fa-eye' : 'fa-pen'}`} /></button>
+                                )}
+                                {canLockPeriod && (period.is_locked ? (
+                                  <button className="lp-row-btn unlock" disabled={unlocking} onClick={() => setUnlockTarget(period)} title="Unlock period"><i className="fas fa-lock-open" /></button>
+                                ) : (
+                                  <button className="lp-row-btn lock" disabled={locking || lockPreviewLoading || !period.is_active} onClick={() => openLockPreview(period)} title={period.is_active ? 'Preview and lock period' : 'Activate the period before locking'}><i className="fas fa-lock" /></button>
+                                ))}
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -754,10 +808,11 @@ const LockPeriodOverview = () => {
               </section>
             ) : (
               <div className="lp-fiscal-layout">
-                <section className="lp-fiscal-card">
-                  <div className="lp-section-heading lp-section-heading--top">
-                    <div>
-                      <span className="lp-eyebrow">Annual close</span>
+                {canCloseFiscal && (
+                  <section className="lp-fiscal-card">
+                    <div className="lp-section-heading lp-section-heading--top">
+                      <div>
+                        <span className="lp-eyebrow">Annual close</span>
                       <h2>Prepare fiscal-year closing journal</h2>
                       <p>All accounting periods in the range must be active, continuously covered, locked and fully revalued for foreign currency.</p>
                     </div>
@@ -814,13 +869,16 @@ const LockPeriodOverview = () => {
                       onPost={handleFiscalPost}
                       onOpenPeriods={() => setActiveTab('periods')}
                       onOpenFx={() => navigate('/reports/fx-revaluation')}
+                      canOpenFx={canOpenFx}
                     />
                   )}
-                </section>
+                  </section>
+                )}
 
-                <section className="lp-fiscal-card">
-                  <div className="lp-section-heading lp-section-heading--top">
-                    <div><span className="lp-eyebrow">Audit trail</span><h2>Fiscal-year closures</h2><p>Posted closures remain visible. Reversals create an exact opposite journal rather than deleting history.</p></div>
+                {canLoadClosures && (
+                  <section className="lp-fiscal-card">
+                    <div className="lp-section-heading lp-section-heading--top">
+                      <div><span className="lp-eyebrow">Audit trail</span><h2>Fiscal-year closures</h2><p>Posted closures remain visible. Reversals create an exact opposite journal rather than deleting history.</p></div>
                     <button className="lp-btn lp-btn--secondary" onClick={fetchClosures}><i className="fas fa-rotate" /> Refresh</button>
                   </div>
                   {closuresLoading ? <TableLoaderComponent /> : closures.length === 0 ? (
@@ -828,27 +886,30 @@ const LockPeriodOverview = () => {
                   ) : (
                     <div className="lp-table-overflow">
                       <table className="lp-table lp-closures-table">
-                        <thead><tr><th>Closure</th><th>Result</th><th>Closing journal</th><th>Status</th><th>Posted by</th><th className="lp-table__actions">Actions</th></tr></thead>
+                        <thead><tr><th>Closure</th><th>Result</th><th>Closing journal</th><th>Status</th><th>Posted by</th>{canReverseFiscal && <th className="lp-table__actions">Actions</th>}</tr></thead>
                         <tbody>
                           {closures.map((closure) => (
                             <tr key={closure.id}>
                               <td><strong>{closure.closure_code}</strong><span className="lp-range">{formatDate(closure.period_start)} – {formatDate(closure.period_end)}</span></td>
                               <td><strong className={closure.result === 'Profit' ? 'lp-profit-text' : closure.result === 'Loss' ? 'lp-loss-text' : ''}>{closure.result}</strong><span className="lp-range">{money(Math.abs(closure.net_profit_loss_ngn))}</span></td>
-                              <td><button className="lp-journal-link" type="button" onClick={() => navigate(`/journal/view/${closure.journal_id}`)}>Journal #{closure.journal_id}</button>{closure.reversal_journal_id && <button className="lp-journal-link is-reversal" type="button" onClick={() => navigate(`/journal/view/${closure.reversal_journal_id}`)}>Reversal #{closure.reversal_journal_id}</button>}</td>
+                              <td>{canViewJournals ? <button className="lp-journal-link" type="button" onClick={() => navigate(`/journal/view/${closure.journal_id}`)}>Journal #{closure.journal_id}</button> : <span>Journal #{closure.journal_id}</span>}{closure.reversal_journal_id && (canViewJournals ? <button className="lp-journal-link is-reversal" type="button" onClick={() => navigate(`/journal/view/${closure.reversal_journal_id}`)}>Reversal #{closure.reversal_journal_id}</button> : <span className="lp-range">Reversal #{closure.reversal_journal_id}</span>)}</td>
                               <td><span className={`lp-pill ${closure.status === 'Posted' ? 'lp-pill--locked' : 'lp-pill--inactive'}`}>{closure.status}</span>{closure.reversal_reason && <span className="lp-range">{closure.reversal_reason}</span>}</td>
                               <td>{closure.posted_by_email || '—'}<span className="lp-range">{formatDateTime(closure.posted_at)}</span></td>
-                              <td className="lp-table__actions">
-                                {closure.status === 'Posted' && !closure.reversal_journal_id ? (
-                                  <button className="lp-row-btn lock" onClick={() => openReversal(closure)} disabled={reversalPreviewLoading || reversing} title="Preview reversal"><i className="fas fa-rotate-left" /></button>
-                                ) : <span className="lp-complete-icon" title="Closure reversed"><i className="fas fa-check" /></span>}
-                              </td>
+                              {canReverseFiscal && (
+                                <td className="lp-table__actions">
+                                  {closure.status === 'Posted' && !closure.reversal_journal_id ? (
+                                    <button className="lp-row-btn lock" onClick={() => openReversal(closure)} disabled={reversalPreviewLoading || reversing} title="Preview reversal"><i className="fas fa-rotate-left" /></button>
+                                  ) : <span className="lp-complete-icon" title="Closure reversed"><i className="fas fa-check" /></span>}
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   )}
-                </section>
+                  </section>
+                )}
               </div>
             )}
           </div>
@@ -856,10 +917,10 @@ const LockPeriodOverview = () => {
       </div>
 
       <AnimatePresence>
-        {modalPeriod !== undefined && (
+        {modalPeriod !== undefined && ((modalPeriod?.id && canEditPeriod) || (!modalPeriod?.id && canCreatePeriod)) && (
           <PeriodModal period={modalPeriod} saving={saving} theme={theme} onClose={() => setModalPeriod(undefined)} onSave={handleSave} />
         )}
-        {lockTarget && (
+        {lockTarget && canLockPeriod && (
           <LockPreviewModal
             period={lockTarget}
             preview={lockPreview}
@@ -871,7 +932,7 @@ const LockPeriodOverview = () => {
             onRefresh={() => previewLockPeriod(lockTarget.id)}
           />
         )}
-        {unlockTarget && (
+        {unlockTarget && canLockPeriod && (
           <UnlockModal
             period={unlockTarget}
             theme={theme}
@@ -879,9 +940,10 @@ const LockPeriodOverview = () => {
             onClose={() => setUnlockTarget(null)}
             onConfirm={confirmUnlock}
             onOpenClosures={() => { setUnlockTarget(null); setActiveTab('fiscal'); }}
+            canOpenClosures={canAccessFiscalTab}
           />
         )}
-        {reversalTarget && (
+        {reversalTarget && canReverseFiscal && (
           <FiscalReversalModal
             closure={reversalTarget}
             preview={reversalPreview}

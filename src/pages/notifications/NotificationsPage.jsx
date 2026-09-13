@@ -6,7 +6,9 @@ import NavBar from '../NavBar';
 import PageNav from '../../components/PageNav';
 import useThemeStore from '../../stores/useThemeStore';
 import useNotificationStore from '../../stores/useNotificationStore';
+import useAuthStore from '../../stores/useAuthStore';
 import { fadeInUp } from '../../utils/animation';
+import { defaultRouteForRole, hasPermission } from '../../utils/permissions';
 import './NotificationsPage.css';
 
 const MODULE_ICONS = {
@@ -62,6 +64,9 @@ const NotificationsPage = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const canMarkRead = hasPermission(user, 'notification.mark_read');
+  const canDismiss = hasPermission(user, 'notification.dismiss');
   const {
     items,
     counts,
@@ -98,7 +103,7 @@ const NotificationsPage = () => {
   }, [items]);
 
   const openNotification = async (notification) => {
-    if (!notification.is_read) {
+    if (canMarkRead && !notification.is_read) {
       await markRead(notification.id);
     }
     if (notification.action_url?.startsWith('/')) {
@@ -107,7 +112,7 @@ const NotificationsPage = () => {
   };
 
   const links = [
-    { label: 'Home', to: '/', active: true },
+    { label: 'Home', to: defaultRouteForRole(user), active: true },
     { label: 'Notifications', to: '/notifications', active: false },
   ];
 
@@ -176,14 +181,16 @@ const NotificationsPage = () => {
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  className="notification-page__mark-all"
-                  onClick={markAllRead}
-                  disabled={counts.unread_count === 0}
-                >
-                  <i className="fas fa-check-double" /> Mark all as read
-                </button>
+                {canMarkRead && (
+                  <button
+                    type="button"
+                    className="notification-page__mark-all"
+                    onClick={markAllRead}
+                    disabled={counts.unread_count === 0}
+                  >
+                    <i className="fas fa-check-double" /> Mark all as read
+                  </button>
+                )}
               </div>
 
               {listLoading ? (
@@ -257,19 +264,21 @@ const NotificationsPage = () => {
                             </button>
 
                             <div className="notification-page__item-actions">
-                              {!notification.is_read && (
+                              {canMarkRead && !notification.is_read && (
                                 <button type="button" onClick={() => markRead(notification.id)} title="Mark as read">
                                   <i className="fas fa-check" />
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                className="is-danger"
-                                onClick={() => dismiss(notification.id)}
-                                title="Dismiss notification"
-                              >
-                                <i className="fas fa-xmark" />
-                              </button>
+                              {canDismiss && (
+                                <button
+                                  type="button"
+                                  className="is-danger"
+                                  onClick={() => dismiss(notification.id)}
+                                  title="Dismiss notification"
+                                >
+                                  <i className="fas fa-xmark" />
+                                </button>
+                              )}
                             </div>
                           </article>
                         ))}

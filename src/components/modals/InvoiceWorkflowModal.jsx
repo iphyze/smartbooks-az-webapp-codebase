@@ -4,6 +4,7 @@ import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
 import useThemeStore from "../../stores/useThemeStore";
 import useToastStore from "../../stores/useToastStore";
+import { hasPermission } from "../../utils/permissions";
 import "../../pages/invoice/InvoiceWorkflow.css";
 
 const WORKFLOW_COPY = {
@@ -35,13 +36,13 @@ const InvoiceWorkflowModal = ({ invoice, isOpen, onClose, onUpdated }) => {
   const { user } = useAuthStore();
   const { showToast } = useToastStore();
   const currentStatus = invoice?.workflow_status || "Issued";
-  const isAdmin = user?.integrity === "Admin";
+  const canVoidInvoice = hasPermission(user, "invoice.void");
 
   const availableActions = useMemo(() => {
     if (currentStatus === "Cancelled") return ["Issued"];
     if (currentStatus === "Void") return [];
-    return isAdmin ? ["Cancelled", "Void"] : ["Cancelled"];
-  }, [currentStatus, isAdmin]);
+    return canVoidInvoice ? ["Cancelled", "Void"] : ["Cancelled"];
+  }, [currentStatus, canVoidInvoice]);
 
   const [selectedStatus, setSelectedStatus] = useState(availableActions[0] || "");
   const [reason, setReason] = useState("");

@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useBankStore from "../../stores/useBankStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import {
   formatOverviewDate,
   formatOverviewNumber,
@@ -24,6 +26,11 @@ const BankOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, "bank.create");
+  const canEdit = hasPermission(user, "bank.edit");
+  const canDelete = hasPermission(user, "bank.delete");
+  const canExport = hasPermission(user, "bank.export");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -72,8 +79,8 @@ const BankOverview = () => {
   const rowActions = (bank, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/banks/view/${bank.id}`, { state: { bank } }) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/banks/edit/${bank.id}`, { state: { bank } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(bank.id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/banks/edit/${bank.id}`, { state: { bank } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(bank.id) },
     ]} />
   );
 
@@ -101,7 +108,7 @@ const BankOverview = () => {
     { key: "total", label: "Bank accounts", value: formatOverviewNumber(total), note: "Full bank register", icon: "fa-building-columns", tone: "teal" },
     { key: "banks", label: "Institutions shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => item.bank_name)), note: "Distinct on this page", icon: "fa-landmark", tone: "blue" },
     { key: "currencies", label: "Currencies shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => item.account_currency)), note: "Distinct on this page", icon: "fa-coins", tone: "green" },
-    { key: "selected", label: "Selected accounts", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected accounts", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },] : []),
   ];
 
   return (
@@ -118,9 +125,9 @@ const BankOverview = () => {
             eyebrow: "Cash management",
             title: "Manage every bank account from one organised register",
             description: "Review account identities, institutions and currencies while keeping view, edit and maintenance actions close at hand.",
-            createLink: "/banks/create",
+            createLink: canCreate ? "/banks/create" : undefined,
             createLabel: "Add bank account",
-            onExport: exportToExcel,
+            onExport: canExport ? exportToExcel : undefined,
             exportDisabled: loading || data.length === 0,
           }}
           cards={cards}
@@ -138,7 +145,8 @@ const BankOverview = () => {
           searchPlaceholder="Search account, bank, number or currency"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
@@ -162,11 +170,11 @@ const BankOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-building-columns", message: "No bank accounts found matching your criteria", link: "/banks/create" }}
+          empty={{ icon: "fas fa-building-columns", message: "No bank accounts found matching your criteria", link: canCreate ? "/banks/create" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}

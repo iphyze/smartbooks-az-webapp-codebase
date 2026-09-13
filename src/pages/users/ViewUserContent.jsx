@@ -4,11 +4,15 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useAuthStore from "../../stores/useAuthStore";
+import { canManagePermissionTarget, hasPermission, isSuperAdmin } from "../../utils/permissions";
 import "./ViewUser.css";
+import "./UserCostCentreAccess.css";
 
 const ROLE_META = {
+  "Super Admin": { icon: "fa-crown", className: "admin" },
   Admin: { icon: "fa-user-shield", className: "admin" },
   Controller: { icon: "fa-scale-balanced", className: "controller" },
+  User: { icon: "fa-user", className: "user" },
   Timesheet: { icon: "fa-clock", className: "timesheet" },
 };
 
@@ -39,11 +43,14 @@ const ViewUserContent = ({ user }) => {
     .join("")
     .slice(0, 2)
     .toUpperCase() || "SU";
-  const role = user.integrity || "User";
+  const legacyRole = user.integrity || "User";
+  const role = user.rbac_role_name || legacyRole;
   const roleMeta = ROLE_META[role] || { icon: "fa-user", className: "user" };
-  const isAdmin = currentUser?.integrity === "Admin";
+  const canEditUsers = hasPermission(currentUser, "user.edit");
+  const targetIsSuperAdmin = isSuperAdmin(user);
+  const canEditTarget = canEditUsers && canManagePermissionTarget(currentUser, user) && (!targetIsSuperAdmin || isSuperAdmin(currentUser));
   const requiresPasswordChange = Boolean(user.must_change_password);
-  const isPrimaryAdmin = String(user.email || "").toLowerCase() === "admin@a-zconsultancyltd.com";
+  const isPrimaryAdmin = targetIsSuperAdmin;
 
   const formatDateTime = (value) => {
     if (!value) return "Not recorded";
@@ -102,7 +109,7 @@ const ViewUserContent = ({ user }) => {
             <i className="fas fa-arrow-left" />
             <span>Back to users</span>
           </button>
-          {isAdmin && (
+          {canEditTarget && (
             <button
               type="button"
               className="user-view-button user-view-button--primary"
@@ -134,7 +141,7 @@ const ViewUserContent = ({ user }) => {
           <span className="user-view-highlight__icon"><i className="fas fa-link" /></span>
           <div>
             <span>Linked staff profile</span>
-            <strong>{user.linked_staff_name || (role === "Timesheet" ? "Not linked" : "Not required")}</strong>
+            <strong>{user.linked_staff_name || (legacyRole === "Timesheet" ? "Not linked" : "Not required")}</strong>
           </div>
         </article>
         <article className="user-view-highlight">
@@ -181,7 +188,7 @@ const ViewUserContent = ({ user }) => {
             <DetailItem
               icon="fa-user-tie"
               label="Staff profile"
-              value={user.linked_staff_name || (role === "Timesheet" ? "Not linked" : "Not applicable")}
+              value={user.linked_staff_name || (legacyRole === "Timesheet" ? "Not linked" : "Not applicable")}
               subtle
             />
             <DetailItem
@@ -190,6 +197,40 @@ const ViewUserContent = ({ user }) => {
               value={isPrimaryAdmin ? "Primary admin protection enabled" : "Standard account protection"}
               subtle
             />
+          </div>
+        </section>
+
+        <section className="user-view-panel user-view-panel--wide">
+          <div className="user-view-panel__heading">
+            <span className="user-view-panel__heading-icon"><i className="fas fa-layer-group" /></span>
+            <div>
+              <h3>Cost centre access</h3>
+              <p>Divisions whose transaction data this account is allowed to access.</p>
+            </div>
+          </div>
+          <div className="user-view-panel__body">
+            <DetailItem
+              icon="fa-shield-halved"
+              label="Access scope"
+              value={String(user.cost_center_access_mode || "all").toLowerCase() === "restricted" ? "Restricted Cost Centres" : "All Cost Centres"}
+            />
+            <div className="user-cost-centre-access__summary">
+              {String(user.cost_center_access_mode || "all").toLowerCase() === "restricted" ? (
+                Array.isArray(user.cost_centers) && user.cost_centers.length > 0 ? (
+                  user.cost_centers.map((centre) => (
+                    <span className="user-cost-centre-chip" key={centre.id || centre.name}>
+                      <i className="fas fa-building" /> {centre.name}
+                    </span>
+                  ))
+                ) : (
+                  <span className="user-cost-centre-chip"><i className="fas fa-triangle-exclamation" /> No cost centre assigned</span>
+                )
+              ) : (
+                <span className="user-cost-centre-chip user-cost-centre-chip--all">
+                  <i className="fas fa-infinity" /> All current and future cost centres
+                </span>
+              )}
+            </div>
           </div>
         </section>
 

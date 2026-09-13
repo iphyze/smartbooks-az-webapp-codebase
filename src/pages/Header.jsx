@@ -5,7 +5,7 @@ import LogoDark from '../assets/images/smartbooks/smartbooks_dark.png';
 import useAuthStore from "../stores/useAuthStore";
 import useThemeStore from "../stores/useThemeStore";
 import useNotificationStore from "../stores/useNotificationStore";
-import { defaultRouteForRole } from "../utils/permissions";
+import { defaultRouteForRole, hasPermission } from "../utils/permissions";
 import GlobalSearch from "./GlobalSearch";
 import NotificationDropdown from "../components/notifications/NotificationDropdown";
 import './Header.css';
@@ -30,6 +30,8 @@ const Header = ({ nav, setNav }) => {
   const Logo = theme === 'dark' ? LogoDark : LogoLight;
   const isDark = theme === 'dark';
   const homePath = defaultRouteForRole(user);
+  const canViewNotifications = hasPermission(user, 'notification.view');
+  const canMarkNotificationsRead = hasPermission(user, 'notification.mark_read');
 
   const handleNavToggle = (event) => {
     event.preventDefault();
@@ -50,14 +52,14 @@ const Header = ({ nav, setNav }) => {
     setShowNotifications(opening);
     setShowUserMenu(false);
 
-    if (opening) {
+    if (opening && canViewNotifications) {
       if (!notificationsInitialized) {
         await fetchSummary();
       }
       const unseenIds = useNotificationStore.getState().recent
         .filter((item) => !item.is_seen)
         .map((item) => item.id);
-      if (unseenIds.length) {
+      if (canMarkNotificationsRead && unseenIds.length) {
         markSeen(unseenIds);
       }
     }
@@ -77,7 +79,8 @@ const Header = ({ nav, setNav }) => {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!user?.id || !canViewNotifications) {
+      setShowNotifications(false);
       resetNotifications();
       return undefined;
     }
@@ -99,7 +102,7 @@ const Header = ({ nav, setNav }) => {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id, canViewNotifications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const initials = user
     ? `${user.fname?.[0] || ""}`.toUpperCase() || "U"
@@ -146,25 +149,27 @@ const Header = ({ nav, setNav }) => {
           <span>{isDark ? "Light mode" : "Dark mode"}</span>
         </button>
 
-        <div className="sb-header__notification-wrap" ref={notificationRef}>
-          <button
-            type="button"
-            className={`sb-header__icon-btn sb-header__icon-btn--notif ${showNotifications ? 'sb-header__icon-btn--open' : ''}`}
-            aria-label={counts.unread_count > 0 ? `Notifications, ${counts.unread_count} unread` : 'Notifications'}
-            aria-haspopup="dialog"
-            aria-expanded={showNotifications}
-            onClick={toggleNotifications}
-          >
-            <i className="fas fa-bell" />
-            {counts.unread_count > 0 && (
-              <span className="sb-header__notif-badge" aria-hidden="true">{unreadLabel}</span>
-            )}
-          </button>
+        {canViewNotifications && (
+          <div className="sb-header__notification-wrap" ref={notificationRef}>
+            <button
+              type="button"
+              className={`sb-header__icon-btn sb-header__icon-btn--notif ${showNotifications ? 'sb-header__icon-btn--open' : ''}`}
+              aria-label={counts.unread_count > 0 ? `Notifications, ${counts.unread_count} unread` : 'Notifications'}
+              aria-haspopup="dialog"
+              aria-expanded={showNotifications}
+              onClick={toggleNotifications}
+            >
+              <i className="fas fa-bell" />
+              {counts.unread_count > 0 && (
+                <span className="sb-header__notif-badge" aria-hidden="true">{unreadLabel}</span>
+              )}
+            </button>
 
-          {showNotifications && (
-            <NotificationDropdown onClose={() => setShowNotifications(false)} />
-          )}
-        </div>
+            {showNotifications && (
+              <NotificationDropdown onClose={() => setShowNotifications(false)} />
+            )}
+          </div>
+        )}
 
         <div className="sb-header__user-wrap" ref={userMenuRef}>
           <button

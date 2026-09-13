@@ -8,6 +8,7 @@ import useLedgerSearchStore from "../../stores/useLedgerSearchStore";
 import useRateSearchStore from "../../stores/useRateSearchStore";
 import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import "../inputs-styles/Inputs.css";
 import "./JournalForm.css";
 import JournalFormView from "./JournalFormView";
@@ -20,6 +21,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { findEffectiveRateId } from "../../utils/helper";
 import JournalImportModal from "../../components/journal/JournalImportModal";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
+import useCostCenterOptions from "../../hooks/useCostCenterOptions";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -241,7 +243,14 @@ const CreateJournalForm = () => {
   const { ledgers, searchLedgers } = useLedgerSearchStore();
   const { rates, searchRates } = useRateSearchStore();
   const { clients, searchClients } = useClientSearchStore();
+  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
+  const canDuplicateJournal = hasPermission(user, "journal.duplicate");
+  const canImportJournal = hasPermission(user, "journal.import");
+  const canLinkPayment = hasPermission(user, "journal.payment_link");
+  const canCreateClient = hasPermission(user, "client.create");
+  const canCreateLedger = hasPermission(user, "ledger.create");
+  const canCreateRate = hasPermission(user, "exchange_rate.create");
   const [searchParams] = useSearchParams();
   const duplicateSourceId = searchParams.get("duplicate");
 
@@ -334,6 +343,13 @@ const CreateJournalForm = () => {
       setIsPreparingDuplicate(false);
       setDuplicateInfo(null);
       setDuplicateError("");
+      return undefined;
+    }
+
+    if (!canDuplicateJournal) {
+      setIsPreparingDuplicate(false);
+      setDuplicateInfo(null);
+      setDuplicateError("You do not have permission to duplicate journals.");
       return undefined;
     }
 
@@ -430,13 +446,28 @@ const CreateJournalForm = () => {
     return () => {
       active = false;
     };
-  }, [duplicateSourceId, duplicateReloadKey]);
+  }, [canDuplicateJournal, duplicateSourceId, duplicateReloadKey]);
 
-  /* ── Cost center options ── */
-  const costCenterOptions = useMemo(() => {
-    const clientOpts = clients.map((c) => ({ value: c.clients_name, label: c.clients_name }));
-    return [{ value: "Overhead", label: "Overhead" }, ...clientOpts];
-  }, [clients]);
+  /* ── Cost centre options respect the authenticated user scope. ── */
+  const {
+    costCenterOptions,
+    isRestrictedCostCenterUser,
+    isLoadingCostCenters,
+    costCenterLoadError,
+  } = useCostCenterOptions(clients);
+
+  useEffect(() => {
+    if (!isRestrictedCostCenterUser || isLoadingCostCenters) return;
+
+    const current = String(journalDetails.cost_center || "").trim();
+    const currentAllowed = costCenterOptions.some((option) => option.value === current);
+    if (currentAllowed) return;
+
+    setJournalDetails((previous) => ({
+      ...previous,
+      cost_center: costCenterOptions[0]?.value || "",
+    }));
+  }, [costCenterOptions, isLoadingCostCenters, isRestrictedCostCenterUser, journalDetails.cost_center]);
 
   const quickLedgers = useMemo(() => {
     const byName = new Map();
@@ -875,7 +906,7 @@ const CreateJournalForm = () => {
 
   const handleClientCreated = (newClient) => {
     setShowCreateClientModal(false); searchClients("");
-    if (newClient) handleDetailChange("cost_center", newClient.clients_name);
+    if (newClient && !isRestrictedCostCenterUser) handleDetailChange("cost_center", newClient.clients_name);
   };
 
   const handleLedgerCreated = (newLedger) => {
@@ -917,6 +948,10 @@ const CreateJournalForm = () => {
   });
 
   const previewInvoicePaymentRegistration = async () => {
+    if (!canLinkPayment) {
+      showToast("You do not have permission to register journal invoice payments.", "error");
+      return;
+    }
     setSubmitted(true);
     const headerValidation = validateHeader();
     const itemValidation = validateItems();
@@ -1020,7 +1055,7 @@ const CreateJournalForm = () => {
         setSubmitted(false);
         setJournalDetails({
           journal_date: new Date(), journal_type: "", journal_currency: "NGN",
-          transaction_type: "", main_journal_description: "", cost_center: "Overhead",
+          transaction_type: "", main_journal_description: "", cost_center: isRestrictedCostCenterUser ? (costCenterOptions[0]?.value || "") : "Overhead",
         });
         setMasterRateId("");
         setInvoicePaymentRegistration({
@@ -1117,6 +1152,9 @@ const CreateJournalForm = () => {
             headerErrors={headerErrors}
             handleDetailChange={handleDetailChange}
             costCenterOptions={costCenterOptions}
+            costCenterRestricted={isRestrictedCostCenterUser}
+            costCenterLoading={isLoadingCostCenters}
+            costCenterLoadError={costCenterLoadError}
             journalItems={journalItems}
             itemErrorMap={itemErrorMap}
             ledgers={ledgers}
@@ -1129,6 +1167,11 @@ const CreateJournalForm = () => {
             setShowCreateClientModal={setShowCreateClientModal}
             setShowCreateLedgerModal={setShowCreateLedgerModal}
             setShowCreateRateModal={setShowCreateRateModal}
+            canCreateClient={canCreateClient}
+            canCreateLedger={canCreateLedger}
+            canCreateRate={canCreateRate}
+            canImportJournal={canImportJournal}
+            canManagePaymentRegistration={canLinkPayment}
             setActiveRowId={setActiveRowId}
             handleRateChange={handleItemRateChange}
             onRemoveItem={(item) => requestRemoveItem(item.id)}
@@ -1165,7 +1208,7 @@ const CreateJournalForm = () => {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showCreateClientModal && (
+        {canCreateClient && showCreateClientModal && (
           <CreateClientsModal
             isOpen={showCreateClientModal}
             onClose={() => setShowCreateClientModal(false)}
@@ -1174,7 +1217,7 @@ const CreateJournalForm = () => {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showCreateLedgerModal && (
+        {canCreateLedger && showCreateLedgerModal && (
           <CreateLedgerModal
             isOpen={showCreateLedgerModal}
             onClose={() => setShowCreateLedgerModal(false)}
@@ -1183,7 +1226,7 @@ const CreateJournalForm = () => {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showCreateRateModal && (
+        {canCreateRate && showCreateRateModal && (
           <CreateRateModal
             isOpen={showCreateRateModal}
             onClose={() => setShowCreateRateModal(false)}
@@ -1192,11 +1235,13 @@ const CreateJournalForm = () => {
         )}
       </AnimatePresence>
 
-      <JournalImportModal
+      {canImportJournal && (
+        <JournalImportModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onApply={handleImportApply}
-      />
+        />
+      )}
     </>
   );
 };

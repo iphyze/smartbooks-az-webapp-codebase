@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
 import useStaffStore from "../../stores/useStaffStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useToastStore from "../../stores/useToastStore";
 import Select from "react-select";
 import DatePicker from "react-datepicker";
@@ -27,6 +29,8 @@ const EditStaffForm = ({ staffId, staff, onSaveSuccess }) => {
   const { showToast } = useToastStore();
   const { updateStaff } = useStaffStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "staff.view");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -149,7 +153,7 @@ const EditStaffForm = ({ staffId, staff, onSaveSuccess }) => {
     if (result && result.success) {
       setSubmitted(false);
       if (onSaveSuccess) onSaveSuccess();
-      navigate(`/staff/view/${staffDetails.staff_id}`);
+      navigate(canView ? `/staff/view/${staffDetails.staff_id}` : defaultRouteForRole(user));
     }
   };
 

@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import useClientStore from "../../stores/useClientStore";
 import { fadeInUp } from "../../utils/animation";
 import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
@@ -23,13 +25,17 @@ import {
 const ViewClientContent = ({ client }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, "client.edit");
+  const canExport = hasPermission(user, "client.export");
+  const canViewInvoices = hasPermission(user, "invoice.view");
   const invoices = useClientStore((state) => state.singleClientInvoices) || [];
   const summary = useClientStore((state) => state.singleClientSummary) || {};
 
   if (!client) return null;
 
   const currencies = Object.keys(summary || {});
-  const clientDocument = <DownloadClient client={client} invoices={invoices} summary={summary} />;
+  const clientDocument = canExport ? <DownloadClient client={client} invoices={invoices} summary={summary} /> : null;
 
   return (
     <motion.div
@@ -52,7 +58,7 @@ const ViewClientContent = ({ client }) => {
           <EntityViewActions
             onBack={() => navigate("/client/home")}
             backLabel="Back to clients"
-            onEdit={() => navigate(`/client/edit/${client.clients_id}`, { state: { client } })}
+            onEdit={canEdit ? () => navigate(`/client/edit/${client.clients_id}`, { state: { client } }) : undefined}
             editLabel="Edit client"
             pdfDocument={clientDocument}
             fileName={`Client Profile - ${client.clients_name || "Client"}.pdf`}
@@ -143,10 +149,12 @@ const ViewClientContent = ({ client }) => {
                   <td className="is-right is-strong">{formatCurrencyDecimals(invoice.invoice_amount || 0, invoice.currency || "NGN")}</td>
                   <td className="is-center"><EntityStatusBadge status={invoice.status} /></td>
                   <td className="is-right">
-                    <EntityTableAction
-                      label="View invoice"
-                      onClick={() => navigate(`/invoice/view/${invoice.invoice_number}`)}
-                    />
+                    {canViewInvoices && (
+                      <EntityTableAction
+                        label="View invoice"
+                        onClick={() => navigate(`/invoice/view/${invoice.invoice_number}`)}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}

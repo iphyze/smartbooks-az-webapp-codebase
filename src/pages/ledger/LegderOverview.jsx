@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useLedgerStore from "../../stores/useLedgerStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import {
   formatOverviewNumber,
   getOverviewInitials,
@@ -24,6 +26,11 @@ const LedgerOverview = () => {
   const [singleDeleteLedgerNumber, setSingleDeleteLedgerNumber] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, "ledger.create");
+  const canEdit = hasPermission(user, "ledger.edit");
+  const canDelete = hasPermission(user, "ledger.delete");
+  const canExport = hasPermission(user, "ledger.export");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -90,8 +97,8 @@ const LedgerOverview = () => {
   const rowActions = (ledger, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/ledger/view/${ledger.ledger_number}`, { state: { ledger } }) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/ledger/edit/${ledger.ledger_number}`, { state: { ledger } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(ledger.ledger_number) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/ledger/edit/${ledger.ledger_number}`, { state: { ledger } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(ledger.ledger_number) },
     ]} />
   );
 
@@ -117,7 +124,7 @@ const LedgerOverview = () => {
     { key: "total", label: "Ledgers", value: formatOverviewNumber(total), note: "Full ledger register", icon: "fa-book-open", tone: "teal" },
     { key: "classes", label: "Classes shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => item.ledger_class)), note: "Distinct on this page", icon: "fa-layer-group", tone: "violet" },
     { key: "displayed", label: "Rows displayed", value: formatOverviewNumber(data.length), note: `Page ${currentPage} of ${Math.max(totalPages, 1)}`, icon: "fa-table-list", tone: "blue" },
-    { key: "selected", label: "Selected ledgers", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected ledgers", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },] : []),
   ];
 
   return (
@@ -134,9 +141,9 @@ const LedgerOverview = () => {
             eyebrow: "Ledger workspace",
             title: "A cleaner view of every accounting ledger",
             description: "Review ledger identities and classifications, then move directly into statements, edits and maintenance actions.",
-            createLink: "/ledger/create",
+            createLink: canCreate ? "/ledger/create" : undefined,
             createLabel: "Create ledger",
-            onExport: exportToExcel,
+            onExport: canExport ? exportToExcel : undefined,
             exportDisabled: loading || data.length === 0,
           }}
           cards={cards}
@@ -154,7 +161,8 @@ const LedgerOverview = () => {
           searchPlaceholder="Search ledger number, name or class"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); setSingleDeleteLedgerNumber(""); if (action === "delete") setShowDeleteModal(true); }}
@@ -177,11 +185,11 @@ const LedgerOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-book-open", message: "No ledgers found matching your criteria", link: "/ledger/create" }}
+          empty={{ icon: "fas fa-book-open", message: "No ledgers found matching your criteria", link: canCreate ? "/ledger/create" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); setSingleDeleteLedgerNumber(""); clearSelection(); }}

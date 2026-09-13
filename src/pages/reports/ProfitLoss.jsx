@@ -8,6 +8,8 @@ import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadProfitLoss from "./DownloadProfitLoss";
@@ -88,7 +90,7 @@ const MilestoneRow = ({ label, value, isPAT }) => {
 /* ─────────────────────────────────────────────
    CATEGORY SECTION
 ───────────────────────────────────────────── */
-const CategorySection = ({ config, group, currency }) => {
+const CategorySection = ({ config, group, currency, canViewLedgers }) => {
   const records = group?.records || [];
   const total   = group?.total   || 0;
 
@@ -130,13 +132,17 @@ const CategorySection = ({ config, group, currency }) => {
                   <tr key={row.ledger_number || i}>
                     <td className="pl-td-sn">{i + 1}</td>
                     <td>
-                      <button
-                        className="pl-ledger-link"
-                        onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
-                        title={`View ledger ${row.ledger_number}`}
-                      >
-                        {row.ledger_number}
-                      </button>
+                      {canViewLedgers ? (
+                        <button
+                          className="pl-ledger-link"
+                          onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
+                          title={`View ledger ${row.ledger_number}`}
+                        >
+                          {row.ledger_number}
+                        </button>
+                      ) : (
+                        <span>{row.ledger_number}</span>
+                      )}
                     </td>
                     <td className="pl-ledger-name">{row.ledger_name}</td>
                     <td className={`pl-td-num pl-bal-cell ${isNeg ? "pl-neg-val" : ""}`}>
@@ -306,7 +312,7 @@ const PATStrip = ({ summary, currency }) => {
 /* ─────────────────────────────────────────────
    RESULTS VIEW
 ───────────────────────────────────────────── */
-const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
+const ResultsView = ({ data, summary, meta, onExcel, excelLoading, canExport, canViewLedgers }) => {
 
   const pdfDocument = useMemo(() => (
     <DownloadProfitLoss data={data} summary={summary} meta={meta} />
@@ -328,23 +334,27 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
           </div>
         </div>
         <div className="pl-action-right">
-          <button className="pl-excel-btn" onClick={onExcel} disabled={excelLoading}>
-            {excelLoading
-              ? <><div className="pl-btn-loader pl-btn-loader--sm" /> Downloading...</>
-              : <><i className="fas fa-file-excel" /> Export Excel</>}
-          </button>
-          <PDFDownloadLink
-            document={pdfDocument}
-            fileName={`Profit_Loss_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
-          >
-            {({ loading: pdfLoading }) => (
-              <button className="pl-pdf-btn" disabled={pdfLoading}>
-                {pdfLoading
-                  ? <><div className="pl-btn-loader pl-btn-loader--sm" /> Building PDF...</>
-                  : <><i className="fas fa-file-pdf" /> Export PDF</>}
+          {canExport && (
+            <>
+              <button className="pl-excel-btn" onClick={onExcel} disabled={excelLoading}>
+                {excelLoading
+                  ? <><div className="pl-btn-loader pl-btn-loader--sm" /> Downloading...</>
+                  : <><i className="fas fa-file-excel" /> Export Excel</>}
               </button>
-            )}
-          </PDFDownloadLink>
+              <PDFDownloadLink
+                document={pdfDocument}
+                fileName={`Profit_Loss_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
+              >
+                {({ loading: pdfLoading }) => (
+                  <button className="pl-pdf-btn" disabled={pdfLoading}>
+                    {pdfLoading
+                      ? <><div className="pl-btn-loader pl-btn-loader--sm" /> Building PDF...</>
+                      : <><i className="fas fa-file-pdf" /> Export PDF</>}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            </>
+          )}
         </div>
       </div>
 
@@ -374,6 +384,7 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
                   config={config}
                   group={group}
                   currency={meta?.currency}
+                  canViewLedgers={canViewLedgers}
                 />
 
                 {/* Milestone rows inserted after specific categories */}
@@ -413,6 +424,10 @@ const ProfitLoss = () => {
   const [zerobal,  setZerobal]  = useState(ZEROBAL_OPTIONS[1]);
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canExport = hasPermission(user, "profit_loss.export");
+  const canViewLedgers = hasPermission(user, "ledger.view");
+  const canViewReportHub = hasPermission(user, "report.view");
   const { profitLoss, fetchProfitLoss, downloadProfitLossExcel } = useLedgerReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -453,8 +468,8 @@ const ProfitLoss = () => {
   useEffect(() => { document.title = "Smartbooks | Profit & Loss"; }, []);
 
   const links = [
-    { label: "Home",       to: "/",active: true },
-    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: "Reports & Analytics", to: "/reports/ledger", active: true }] : []),
     { label: "Profit & Loss", to: "/reports/ledger/profit-and-loss", active: false },
   ];
 
@@ -525,6 +540,8 @@ const ProfitLoss = () => {
                     meta={profitLoss.meta}
                     onExcel={handleExcel}
                     excelLoading={excelLoading}
+                    canExport={canExport}
+                    canViewLedgers={canViewLedgers}
                   />
                 </motion.div>
               )}

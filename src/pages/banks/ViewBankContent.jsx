@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { fadeInUp } from "../../utils/animation";
 import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
 import DownloadBank from "./DownloadBank";
@@ -22,6 +24,10 @@ import {
 const ViewBankContent = ({ bank, invoices = [], summary = {} }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, "bank.edit");
+  const canExport = hasPermission(user, "bank.export");
+  const canViewInvoices = hasPermission(user, "invoice.view");
 
   if (!bank) return null;
 
@@ -49,16 +55,16 @@ const ViewBankContent = ({ bank, invoices = [], summary = {} }) => {
           <EntityViewActions
             onBack={() => navigate("/banks/home")}
             backLabel="Back to banks"
-            onEdit={() => navigate(`/banks/edit/${bank.id}`, { state: { bank } })}
+            onEdit={canEdit ? () => navigate(`/banks/edit/${bank.id}`, { state: { bank } }) : undefined}
             editLabel="Edit bank"
-            pdfDocument={bankDocument}
+            pdfDocument={canExport ? bankDocument : undefined}
             fileName={`Bank Account Profile - ${bank.account_name || "Bank"}.pdf`}
             printTitle={`Preparing ${bank.account_name || "bank account"} profile`}
           />
         )}
         highlights={[
           { label: "Account number", value: bank.account_number || "Not assigned", icon: "fa-hashtag" },
-          { label: "Associated invoices", value: `${invoices.length} invoice${invoices.length === 1 ? "" : "s"}`, icon: "fa-file-invoice-dollar" },
+          ...(canViewInvoices ? [{ label: "Associated invoices", value: `${invoices.length} invoice${invoices.length === 1 ? "" : "s"}`, icon: "fa-file-invoice-dollar" }] : []),
           { label: "Currencies tracked", value: currencies.length ? currencies.join(", ") : bank.account_currency || "No activity yet", icon: "fa-money-bill-transfer" },
         ]}
       >
@@ -84,7 +90,7 @@ const ViewBankContent = ({ bank, invoices = [], summary = {} }) => {
           <EntityViewDetail icon="fa-calendar-check" label="Updated on" value={formatDateLong(bank.updated_at)} />
         </EntityViewPanel>
 
-        {currencies.length > 0 && (
+        {canViewInvoices && currencies.length > 0 && (
           <div className="entity-view-section">
             <EntityViewSectionHeading
               icon="fa-chart-pie"
@@ -109,6 +115,7 @@ const ViewBankContent = ({ bank, invoices = [], summary = {} }) => {
           </div>
         )}
 
+        {canViewInvoices && (
         <div className="entity-view-section">
           <EntityViewSectionHeading
             icon="fa-file-invoice-dollar"
@@ -155,6 +162,7 @@ const ViewBankContent = ({ bank, invoices = [], summary = {} }) => {
             />
           )}
         </div>
+        )}
       </EntityViewShell>
     </motion.div>
   );

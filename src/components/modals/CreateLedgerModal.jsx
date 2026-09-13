@@ -4,6 +4,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { motion } from "framer-motion";
 import useToastStore from "../../stores/useToastStore";
 import useLedgerStore from "../../stores/useLedgerStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import useAccountSearchStore from "../../stores/useAccountSearchStore";
 import CreateAccountModal from "./CreateAccountModal"; // Import nested modal
 import Select from "react-select";
@@ -17,6 +19,8 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
   const { theme } = useThemeStore();
   const modalRef = useRef(null);
   const { createLedger } = useLedgerStore();
+  const user = useAuthStore((state) => state.user);
+  const canCreateAccount = hasPermission(user, "account.create");
   const { accounts, searchAccounts, isLoading: accountsLoading } = useAccountSearchStore();
   const { showToast } = useToastStore();
 
@@ -173,9 +177,9 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
                     </div>
                     {errors.account_type && <div className="input-error-message">{errors.account_type}</div>}
                   </div>
-                  <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateAccountModal(true)} title="Add New Account Type" disabled={isCreating}>
+                  {canCreateAccount && <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateAccountModal(true)} title="Add New Account Type" disabled={isCreating}>
                     <span className="fas fa-plus"></span>
-                  </button>
+                  </button>}
                 </div>
               </div>
             </div>
@@ -192,7 +196,7 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
 
       {/* Nested Account Modal */}
       <AnimatePresence>
-        {showCreateAccountModal && (
+        {canCreateAccount && showCreateAccountModal && (
           <CreateAccountModal
             isOpen={showCreateAccountModal}
             onClose={() => setShowCreateAccountModal(false)}

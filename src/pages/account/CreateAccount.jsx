@@ -7,14 +7,18 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import CreateAccountForm from "./CreateAccountForm";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 
 const CreateAccount = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "account.view");
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Accounts", to: "/account/home", active: true },
+    ...(canView ? [{ label: "Accounts", to: "/account/home", active: true }] : []),
     { label: "Create Account", to: "/account/create", active: false }
   ];
 

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import { Link, NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeIn, fadeInUp, fadeInDown } from "../../utils/animation";
@@ -12,13 +14,16 @@ import CreateInvoiceForm from "./CreateInvoiceForm";
 const CreateInvoice = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewInvoices = hasPermission(user, "invoice.view");
+  const homeRoute = defaultRouteForRole(user);
   const [isLoading, setIsLoading] = useState(true);
 
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Invoice", to: "/invoice/home", active: true },
-    { label: "Create Invoice", to: "/", active: false }
+    { label: "Home", to: homeRoute, active: true },
+    ...(canViewInvoices ? [{ label: "Invoice", to: "/invoice/home", active: true }] : []),
+    { label: "Create Invoice", to: homeRoute, active: false }
   ]
 
   useEffect(() => {

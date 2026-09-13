@@ -16,7 +16,7 @@ const formatDateTime = (value) => {
   });
 };
 
-const InvoiceReminderPanel = ({ invoice, onCreateReminder, onRefresh }) => {
+const InvoiceReminderPanel = ({ invoice, onCreateReminder, onRefresh, canManageReminders = false }) => {
   const { showToast } = useToastStore();
   const [cancellingId, setCancellingId] = useState(null);
   const reminders = Array.isArray(invoice?.reminders) ? invoice.reminders : [];
@@ -30,10 +30,10 @@ const InvoiceReminderPanel = ({ invoice, onCreateReminder, onRefresh }) => {
   );
   const workflowLocked = ["Cancelled", "Void"].includes(invoice?.workflow_status);
   const balance = Number(invoice?.payment_summary?.balance_due ?? Math.max(Number(invoice?.invoice_amount || 0) - Number(invoice?.paid || 0), 0));
-  const canRemind = !workflowLocked && balance > 0.009;
+  const canRemind = canManageReminders && !workflowLocked && balance > 0.009;
 
   const cancelReminder = async (reminder) => {
-    if (cancellingId) return;
+    if (!canManageReminders || cancellingId) return;
     setCancellingId(reminder.id);
     try {
       const response = await api.post("/invoice/cancel-reminder", {
@@ -60,10 +60,12 @@ const InvoiceReminderPanel = ({ invoice, onCreateReminder, onRefresh }) => {
             <p>Send a professional reminder now or schedule one for later.</p>
           </div>
         </div>
-        <button type="button" onClick={onCreateReminder} disabled={!canRemind}>
-          <span className="fas fa-bell" aria-hidden="true" />
-          <span>{balance <= 0.009 ? "Fully paid" : "New reminder"}</span>
-        </button>
+        {canManageReminders && (
+          <button type="button" onClick={onCreateReminder} disabled={!canRemind}>
+            <span className="fas fa-bell" aria-hidden="true" />
+            <span>{balance <= 0.009 ? "Fully paid" : "New reminder"}</span>
+          </button>
+        )}
       </header>
 
       <div className="invoice-reminder-card__summary">
@@ -98,10 +100,12 @@ const InvoiceReminderPanel = ({ invoice, onCreateReminder, onRefresh }) => {
                   <span>{formatDateTime(reminder.scheduled_for)} · {reminder.recipient_email}</span>
                   <small>{reminder.subject}</small>
                 </div>
-                <button type="button" onClick={() => cancelReminder(reminder)} disabled={cancellingId === reminder.id}>
-                  <span className={`fas ${cancellingId === reminder.id ? "fa-spinner fa-spin" : "fa-times"}`} aria-hidden="true" />
-                  Cancel
-                </button>
+                {canManageReminders && (
+                  <button type="button" onClick={() => cancelReminder(reminder)} disabled={cancellingId === reminder.id}>
+                    <span className={`fas ${cancellingId === reminder.id ? "fa-spinner fa-spin" : "fa-times"}`} aria-hidden="true" />
+                    Cancel
+                  </button>
+                )}
               </article>
             ))}
           </div>

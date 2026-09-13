@@ -6,6 +6,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import PageNav from "../../components/PageNav";
 import useToastStore from "../../stores/useToastStore";
 import useTimesheetStore from "../../stores/useTimesheetStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole } from "../../utils/permissions";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
 import ViewTimesheetContent from "./ViewTimesheetContent";
 
@@ -15,13 +17,14 @@ const ViewTimesheet = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { fetchSingleTimesheet } = useTimesheetStore();
+  const user = useAuthStore((state) => state.user);
   const [nav, setNav] = useState(false);
 
   const [pageState, setPageState] = useState("checking");
   const [timesheetData, setTimesheetData] = useState(null);
 
   const links = [
-    { label: "Home", to: "/", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
     { label: "Timesheets", to: "/timesheet/home", active: true },
     { label: "Details", to: "/", active: false },
   ];

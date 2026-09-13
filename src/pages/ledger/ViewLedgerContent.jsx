@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { fadeInUp } from "../../utils/animation";
 import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
 import DownloadLedger from "./DownloadLedger";
@@ -21,6 +23,10 @@ import {
 const ViewLedgerContent = ({ ledger, journalEntries = [], summary = {} }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, "ledger.edit");
+  const canExport = hasPermission(user, "ledger.export");
+  const canViewJournals = hasPermission(user, "journal.view");
 
   if (!ledger) return null;
 
@@ -48,9 +54,9 @@ const ViewLedgerContent = ({ ledger, journalEntries = [], summary = {} }) => {
           <EntityViewActions
             onBack={() => navigate("/ledger/home")}
             backLabel="Back to ledgers"
-            onEdit={() => navigate(`/ledger/edit/${ledger.ledger_number}`, { state: { ledger } })}
+            onEdit={canEdit ? () => navigate(`/ledger/edit/${ledger.ledger_number}`, { state: { ledger } }) : undefined}
             editLabel="Edit ledger"
-            pdfDocument={ledgerDocument}
+            pdfDocument={canExport ? ledgerDocument : undefined}
             fileName={`Ledger - ${ledger.ledger_name || "Ledger"}.pdf`}
             printTitle={`Preparing ${ledger.ledger_name || "ledger"} profile`}
           />
@@ -143,10 +149,12 @@ const ViewLedgerContent = ({ ledger, journalEntries = [], summary = {} }) => {
                   <td className="is-right is-strong">{formatCurrencyDecimals(entry.debit_ngn || 0, entry.journal_currency || "NGN")}</td>
                   <td className="is-right is-strong">{formatCurrencyDecimals(entry.credit_ngn || 0, entry.journal_currency || "NGN")}</td>
                   <td className="is-right">
-                    <EntityTableAction
-                      label="View journal"
-                      onClick={() => navigate(`/journal/view/${entry.journal_id}`)}
-                    />
+                    {canViewJournals && (
+                      <EntityTableAction
+                        label="View journal"
+                        onClick={() => navigate(`/journal/view/${entry.journal_id}`)}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}

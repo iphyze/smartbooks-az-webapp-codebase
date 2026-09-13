@@ -83,6 +83,7 @@ const ColumnToolbar = ({
   totalCount, filteredCount,
   allVisibleSelected, onSelectAll,
   selectedCount,
+  canSelect = true,
 }) => {
   const [sortOpen, setSortOpen] = useState(false);
   const [classOpen, setClassOpen] = useState(false);
@@ -250,28 +251,30 @@ const ColumnToolbar = ({
 
       {/* ── Row 3: select-all + count ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 2 }}>
-        <button
-          type="button"
-          onClick={onSelectAll}
-          disabled={filteredCount === 0}
-          style={{
-            width: 18, height: 18, borderRadius: 5, flexShrink: 0, padding: 0,
-            border: `1.5px solid ${allVisibleSelected && filteredCount > 0 ? 'var(--sb-brand,#00b196)' : 'var(--sb-border,#deeee9)'}`,
-            background: allVisibleSelected && filteredCount > 0 ? 'var(--sb-brand,#00b196)' : 'var(--sb-surface-2,#f8fcfb)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            cursor: filteredCount > 0 ? 'pointer' : 'not-allowed', transition: '.15s',
-          }}
-        >
-          {allVisibleSelected && filteredCount > 0 && (
-            <i className="fas fa-check" style={{ fontSize: 8, color: '#fff', pointerEvents: 'none' }} />
-          )}
-        </button>
+        {canSelect && (
+          <button
+            type="button"
+            onClick={onSelectAll}
+            disabled={filteredCount === 0}
+            style={{
+              width: 18, height: 18, borderRadius: 5, flexShrink: 0, padding: 0,
+              border: `1.5px solid ${allVisibleSelected && filteredCount > 0 ? 'var(--sb-brand,#00b196)' : 'var(--sb-border,#deeee9)'}`,
+              background: allVisibleSelected && filteredCount > 0 ? 'var(--sb-brand,#00b196)' : 'var(--sb-surface-2,#f8fcfb)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              cursor: filteredCount > 0 ? 'pointer' : 'not-allowed', transition: '.15s',
+            }}
+          >
+            {allVisibleSelected && filteredCount > 0 && (
+              <i className="fas fa-check" style={{ fontSize: 8, color: '#fff', pointerEvents: 'none' }} />
+            )}
+          </button>
+        )}
         <span style={{ fontSize: 11, color: 'var(--sb-text-3,#7aada6)', fontWeight: 600 }}>
           {selectedCount > 0
             ? <span style={{ color: 'var(--sb-brand,#00b196)' }}>{selectedCount} selected</span>
             : `${filteredCount} of ${totalCount} shown`}
         </span>
-        {selectedCount > 0 && filteredCount > 0 && !allVisibleSelected && (
+        {canSelect && selectedCount > 0 && filteredCount > 0 && !allVisibleSelected && (
           <button
             type="button"
             onClick={onSelectAll}
@@ -286,7 +289,7 @@ const ColumnToolbar = ({
 };
 
 /* ── Main matcher ──────────────────────────────────────────── */
-const BankReconMatcher = () => {
+const BankReconMatcher = ({ canMatch = false, canEdit = false }) => {
   const {
     current, ui,
     matchLines, matchSelectedLines, unmatchLines,
@@ -325,8 +328,9 @@ const BankReconMatcher = () => {
     ids.includes(Number(id)) ? ids.filter((x) => x !== Number(id)) : [...ids, Number(id)]
   ));
 
-  const canSelectBank   = (line) => line.match_status !== 'Matched';
-  const canSelectLedger = (line) => line.match_status !== 'Matched';
+  const canSelectLines = canMatch || canEdit;
+  const canSelectBank   = (line) => canSelectLines && line.match_status !== 'Matched';
+  const canSelectLedger = (line) => canSelectLines && line.match_status !== 'Matched';
 
   // Filtered + sorted views
   const bankFiltered = useMemo(() => applyFiltersAndSort(bank_lines, {
@@ -366,7 +370,7 @@ const BankReconMatcher = () => {
   const tolerance    = Number(current.reconciliation?.tolerance_amount ?? 0);
   const matchDiff    = Math.abs(bankTotal - ledgerTotal);
   const canFullMatch = matchDiff <= Math.max(tolerance, 0.01);
-  const canBulkMatch = selectedBankIds.length > 0 && selectedLedgerIds.length > 0 && (canFullMatch || partialMode);
+  const canBulkMatch = canMatch && selectedBankIds.length > 0 && selectedLedgerIds.length > 0 && (canFullMatch || partialMode);
 
   const clearSelections = () => { setSelectedBankIds([]); setSelectedLedgerIds([]); };
   const switchMode = (nextMode) => { setMatchMode(nextMode); clearSelections(); };
@@ -489,18 +493,22 @@ const BankReconMatcher = () => {
           {saving && <><div className="br-spinner br-spinner--sm" />Saving…</>}
         </div>
         <div className="br-bulk-actions">
-          <button className="br-btn-ghost-sm" onClick={() => openClassifySelected('bank')} disabled={!selectedBankIds.length}>
-            <i className="fas fa-layer-group" />
-            {selectedBankIds.some((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status))
-              ? 'Re-classify Bank' : 'Categorise Bank'}
-          </button>
-          <button className="br-btn-ghost-sm" onClick={() => openClassifySelected('ledger')} disabled={!selectedLedgerIds.length}>
-            <i className="fas fa-layer-group" />
-            {selectedLedgerIds.some((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status))
-              ? 'Re-classify Ledger' : 'Categorise Ledger'}
-          </button>
+          {canMatch && (
+            <button className="br-btn-ghost-sm" onClick={() => openClassifySelected('bank')} disabled={!selectedBankIds.length}>
+              <i className="fas fa-layer-group" />
+              {selectedBankIds.some((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status))
+                ? 'Re-classify Bank' : 'Categorise Bank'}
+            </button>
+          )}
+          {canMatch && (
+            <button className="br-btn-ghost-sm" onClick={() => openClassifySelected('ledger')} disabled={!selectedLedgerIds.length}>
+              <i className="fas fa-layer-group" />
+              {selectedLedgerIds.some((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status))
+                ? 'Re-classify Ledger' : 'Categorise Ledger'}
+            </button>
+          )}
           {/* Unclassify bulk — only show when classified lines are selected */}
-          {selectedBankIds.some((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status)) && (
+          {canMatch && selectedBankIds.some((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status)) && (
             <button className="br-btn-ghost-sm" style={{ color: '#f47c7c', borderColor: '#f47c7c' }}
               onClick={() => requestUnclassify('bank', selectedBankIds.filter((id) => ['Classified','Bank-Only'].includes(bank_lines.find((l) => Number(l.id) === id)?.match_status)))}
               disabled={saving}
@@ -508,7 +516,7 @@ const BankReconMatcher = () => {
               <i className="fas fa-tag-slash" />Remove from Class
             </button>
           )}
-          {selectedLedgerIds.some((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status)) && (
+          {canMatch && selectedLedgerIds.some((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status)) && (
             <button className="br-btn-ghost-sm" style={{ color: '#f47c7c', borderColor: '#f47c7c' }}
               onClick={() => requestUnclassify('ledger', selectedLedgerIds.filter((id) => ['Classified'].includes(ledger_lines.find((l) => Number(l.id) === id)?.match_status)))}
               disabled={saving}
@@ -516,32 +524,40 @@ const BankReconMatcher = () => {
               <i className="fas fa-tag-slash" />Remove from Class
             </button>
           )}
-          <button
-            className="br-btn-ghost-sm br-btn-danger-sm"
-            onClick={() => handleDeleteLines('bank', selectedBankIds)}
-            disabled={!selectedBankIds.length || saving}
-          >
-            <i className="fas fa-trash-can" />Delete Bank
-          </button>
-          <button
-            className="br-btn-ghost-sm br-btn-danger-sm"
-            onClick={() => handleDeleteLines('ledger', selectedLedgerIds)}
-            disabled={!selectedLedgerIds.length || saving}
-          >
-            <i className="fas fa-trash-can" />Delete Ledger
-          </button>
-          <button
-            type="button"
-            className={`br-btn-ghost-sm ${partialMode ? 'br-btn-ghost-sm--active' : ''}`}
-            onClick={() => setPartialMode((v) => !v)}
-            disabled={!selectedBankIds.length || !selectedLedgerIds.length || saving}
-            title="Allow the smaller side to be allocated and leave the balance outstanding"
-          >
-            <i className="fas fa-code-branch" />Partial Match {partialMode ? 'On' : 'Off'}
-          </button>
-          <button className="br-btn-primary br-btn-primary--sm" onClick={submitBulkMatch} disabled={!canBulkMatch || saving}>
-            <i className="fas fa-link" />{partialMode && !canFullMatch ? 'Allocate Partial' : 'Match Selected'}
-          </button>
+          {canEdit && (
+            <>
+              <button
+                className="br-btn-ghost-sm br-btn-danger-sm"
+                onClick={() => handleDeleteLines('bank', selectedBankIds)}
+                disabled={!selectedBankIds.length || saving}
+              >
+                <i className="fas fa-trash-can" />Delete Bank
+              </button>
+              <button
+                className="br-btn-ghost-sm br-btn-danger-sm"
+                onClick={() => handleDeleteLines('ledger', selectedLedgerIds)}
+                disabled={!selectedLedgerIds.length || saving}
+              >
+                <i className="fas fa-trash-can" />Delete Ledger
+              </button>
+            </>
+          )}
+          {canMatch && (
+            <>
+              <button
+                type="button"
+                className={`br-btn-ghost-sm ${partialMode ? 'br-btn-ghost-sm--active' : ''}`}
+                onClick={() => setPartialMode((v) => !v)}
+                disabled={!selectedBankIds.length || !selectedLedgerIds.length || saving}
+                title="Allow the smaller side to be allocated and leave the balance outstanding"
+              >
+                <i className="fas fa-code-branch" />Partial Match {partialMode ? 'On' : 'Off'}
+              </button>
+              <button className="br-btn-primary br-btn-primary--sm" onClick={submitBulkMatch} disabled={!canBulkMatch || saving}>
+                <i className="fas fa-link" />{partialMode && !canFullMatch ? 'Allocate Partial' : 'Match Selected'}
+              </button>
+            </>
+          )}
           <button className="br-btn-ghost-sm" onClick={clearSelections} disabled={!selectedBankIds.length && !selectedLedgerIds.length}>
             <i className="fas fa-xmark" />Clear
           </button>
@@ -553,8 +569,11 @@ const BankReconMatcher = () => {
         <div className="br-banner-inner br-banner-idle">
           <i className="fas fa-circle-info" />
           <span>
-            Use filters and sort to find transactions, then use <strong>Select All</strong> in each column to bulk-select the filtered results.
-            Match activates when Bank Debit totals equal Ledger Credit totals and Bank Credit totals equal Ledger Debit totals within tolerance. Turn on Partial Match when one side should be allocated and the remaining balance should stay outstanding.
+            {!canSelectLines
+              ? <>Use filters and sort to review bank and ledger transactions. Your current access is read-only.</>
+              : canMatch
+                ? <>Use filters and sort to find transactions, then use <strong>Select All</strong> to bulk-select results. Matching activates when the selected sides balance within tolerance; Partial Match can allocate the smaller side and leave the remainder outstanding.</>
+                : <>Use filters and sort to review transactions. Selection is available for line-maintenance actions permitted to your account.</>}
           </span>
         </div>
       </div>
@@ -583,6 +602,7 @@ const BankReconMatcher = () => {
             selectedCount={selectedBankIds.length}
             allVisibleSelected={allBankSelected}
             onSelectAll={handleSelectAllBank}
+            canSelect={canSelectLines}
           />
           <div className="br-col-scroll">
             {bankFiltered.length === 0 && (
@@ -604,11 +624,11 @@ const BankReconMatcher = () => {
                 isSelected={selectedBankIds.includes(Number(line.id))}
                 canSelect={canSelectBank(line)}
                 onToggleSelect={toggleId(setSelectedBankIds)}
-                onUnmatch={unmatchLines}
-                onClassify={(lineIds, source) => setClassifyTarget({ source, lineIds })}
-                onEditLine={(l, s) => setEditTarget({ line: l, source: s })}
-                onUnclassify={(lineId) => requestUnclassify('bank', [lineId], line.reference || line.description?.slice(0, 50))}
-                onDeleteLine={(line) => handleDeleteLines('bank', [line.id], line.reference || line.description?.slice(0, 50))}
+                onUnmatch={canMatch ? unmatchLines : null}
+                onClassify={canMatch ? (lineIds, source) => setClassifyTarget({ source, lineIds }) : null}
+                onEditLine={canEdit ? (l, s) => setEditTarget({ line: l, source: s }) : null}
+                onUnclassify={canMatch ? (lineId) => requestUnclassify('bank', [lineId], line.reference || line.description?.slice(0, 50)) : null}
+                onDeleteLine={canEdit ? (line) => handleDeleteLines('bank', [line.id], line.reference || line.description?.slice(0, 50)) : null}
               />
             ))}
           </div>
@@ -642,6 +662,7 @@ const BankReconMatcher = () => {
             selectedCount={selectedLedgerIds.length}
             allVisibleSelected={allLedgerSelected}
             onSelectAll={handleSelectAllLedger}
+            canSelect={canSelectLines}
           />
           <div className="br-col-scroll">
             {lgFiltered.length === 0 && (
@@ -663,11 +684,11 @@ const BankReconMatcher = () => {
                 isSelected={selectedLedgerIds.includes(Number(line.id))}
                 canSelect={canSelectLedger(line)}
                 onToggleSelect={toggleId(setSelectedLedgerIds)}
-                onUnmatch={unmatchLines}
-                onClassify={(lineIds, source) => setClassifyTarget({ source, lineIds })}
-                onEditLine={(l, s) => setEditTarget({ line: l, source: s })}
-                onUnclassify={(lineId) => requestUnclassify('ledger', [lineId], line.reference || line.description?.slice(0, 50))}
-                onDeleteLine={(line) => handleDeleteLines('ledger', [line.id], line.reference || line.description?.slice(0, 50))}
+                onUnmatch={canMatch ? unmatchLines : null}
+                onClassify={canMatch ? (lineIds, source) => setClassifyTarget({ source, lineIds }) : null}
+                onEditLine={canEdit ? (l, s) => setEditTarget({ line: l, source: s }) : null}
+                onUnclassify={canMatch ? (lineId) => requestUnclassify('ledger', [lineId], line.reference || line.description?.slice(0, 50)) : null}
+                onDeleteLine={canEdit ? (line) => handleDeleteLines('ledger', [line.id], line.reference || line.description?.slice(0, 50)) : null}
               />
             ))}
           </div>

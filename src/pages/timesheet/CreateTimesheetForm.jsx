@@ -17,6 +17,7 @@ import CreateStaffModal from "../../components/modals/CreateStaffModal";
 import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateProjectModal from "../../components/modals/CreateProjectModal";
 import { useNavigate } from "react-router-dom";
+import { hasPermission, isTimesheetOnly } from "../../utils/permissions";
 
 /* ─────────────────────────────────────────────
    Portal Component for DatePicker
@@ -90,7 +91,12 @@ const CreateTimesheetForm = () => {
   const { staff, clients, projects, searchStaff, searchClients, searchProjects } = useTimesheetReferenceStore();
   const { createTimesheet } = useTimesheetStore();
   const { user } = useAuthStore();
-  const isTimesheetUser = user?.integrity === "Timesheet";
+  const isTimesheetUser = isTimesheetOnly(user);
+  const canViewTimesheets = hasPermission(user, "timesheet.view");
+  const canCreateClients = hasPermission(user, "client.create");
+  const canCreateProjects = hasPermission(user, "project.create");
+  // Staff RBAC is migrated in a later batch; preserve the current operational-role boundary for now.
+  const canCreateStaff = hasPermission(user, "staff.create");
   const ownStaff = isTimesheetUser ? staff[0] : null;
   
   const [isLoading, setIsLoading] = useState(false);
@@ -262,8 +268,13 @@ const CreateTimesheetForm = () => {
     
     if (result.success) {
       setSubmitted(false);
-      setTimesheetItems([createEmptyItem()]);
-      navigate("/timesheet/home");
+      const nextItem = createEmptyItem();
+      setTimesheetItems([
+        isTimesheetUser && ownStaff
+          ? { ...nextItem, staff_name: ownStaff.staff_name, staff_id: ownStaff.staff_id }
+          : nextItem,
+      ]);
+      if (canViewTimesheets) navigate("/timesheet/home");
     }
   };
 
@@ -358,7 +369,7 @@ const CreateTimesheetForm = () => {
                           </div>
                           {rowErr.staff_name && <div className="input-error-message">{rowErr.staff_name}</div>}
                         </div>
-                        {!isTimesheetUser && (
+                        {canCreateStaff && (
                           <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateStaffModal(true); }} title="Add New Staff">
                             <span className="fas fa-plus"></span>
                           </button>
@@ -392,7 +403,7 @@ const CreateTimesheetForm = () => {
                           </div>
                           {rowErr.clients_name && <div className="input-error-message">{rowErr.clients_name}</div>}
                         </div>
-                        {!isTimesheetUser && (
+                        {canCreateClients && (
                           <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateClientModal(true); }} title="Add New Client">
                             <span className="fas fa-plus"></span>
                           </button>
@@ -442,7 +453,7 @@ const CreateTimesheetForm = () => {
                             </div>
                           </div>
                         </div>
-                        {!isTimesheetUser && (
+                        {canCreateProjects && (
                           <button type="button" className="inv-form-flex-btn" onClick={() => { setActiveRowId(item.id); setShowCreateProjectModal(true); }} title="Add New Project">
                             <span className="fas fa-plus"></span>
                           </button>
@@ -559,21 +570,21 @@ const CreateTimesheetForm = () => {
             isNew={true} 
           />
         )}
-        {!isTimesheetUser && showCreateStaffModal && (
+        {canCreateStaff && showCreateStaffModal && (
           <CreateStaffModal 
             isOpen={showCreateStaffModal} 
             onClose={() => setShowCreateStaffModal(false)} 
             onStaffCreated={handleStaffCreated} 
           />
         )}
-        {!isTimesheetUser && showCreateClientModal && (
+        {canCreateClients && showCreateClientModal && (
           <CreateClientsModal 
             isOpen={showCreateClientModal} 
             onClose={() => setShowCreateClientModal(false)} 
             onClientCreated={handleClientCreated} 
           />
         )}
-        {!isTimesheetUser && showCreateProjectModal && (
+        {canCreateProjects && showCreateProjectModal && (
           <CreateProjectModal 
             isOpen={showCreateProjectModal} 
             onClose={() => setShowCreateProjectModal(false)} 

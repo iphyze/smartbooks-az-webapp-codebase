@@ -8,6 +8,8 @@ import EditStaffForm from "./EditStaffForm";
 import useToastStore from "../../stores/useToastStore";
 import useStaffStore from "../../stores/useStaffStore";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 
 const EditStaff = () => {
   const { id } = useParams();
@@ -15,6 +17,10 @@ const EditStaff = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const canViewDashboard = hasPermission(user, "dashboard.view");
+  const canViewStaff = hasPermission(user, "staff.view");
+  const fallbackRoute = canViewStaff ? "/staff/home" : defaultRouteForRole(user);
 
   // Consume states from useStaffStore
   // Assuming the store is updated to manage single item state similar to useProjectStore
@@ -26,9 +32,9 @@ const EditStaff = () => {
   } = useStaffStore();
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Staff", to: "/staff/home", active: true },
-    { label: "Edit Staff", to: "/staff/edit", active: false },
+    ...(canViewDashboard ? [{ label: "Home", to: "/", active: true }] : []),
+    ...(canViewStaff ? [{ label: "Staff", to: "/staff/home", active: true }] : []),
+    { label: "Edit Staff", to: `/staff/edit/${id}`, active: false },
   ];
 
   useEffect(() => {
@@ -37,20 +43,20 @@ const EditStaff = () => {
     // 1. Basic format check
     if (!id) {
       showToast("Invalid staff ID. Redirecting…", "error");
-      navigate("/staff/home");
+      navigate(fallbackRoute);
       return;
     }
 
     // 2. Fetch data using the store action
     fetchSingleStaff(id);
-  }, [id]);
+  }, [id, fetchSingleStaff, navigate, showToast, fallbackRoute]);
 
   // 3. Handle fetch error by redirecting
   useEffect(() => {
     if (fetchError) {
-      navigate("/staff/home");
+      navigate(fallbackRoute);
     }
-  }, [fetchError]);
+  }, [fetchError, navigate, fallbackRoute]);
 
   const handleSaveSuccess = () => {
     // Callback if needed after save

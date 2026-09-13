@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useStaffStore from "../../stores/useStaffStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import {
   formatOverviewDate,
   formatOverviewNumber,
@@ -24,6 +26,11 @@ const StaffOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canViewDashboard = hasPermission(user, "dashboard.view");
+  const canCreate = hasPermission(user, "staff.create");
+  const canEdit = hasPermission(user, "staff.edit");
+  const canDelete = hasPermission(user, "staff.delete");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -73,8 +80,8 @@ const StaffOverview = () => {
   const rowActions = (staff, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/staff/view/${staff.staff_id}`, { state: { staff } }) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/staff/edit/${staff.staff_id}`, { state: { staff } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(staff.staff_id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/staff/edit/${staff.staff_id}`, { state: { staff } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(staff.staff_id) },
     ]} />
   );
 
@@ -103,7 +110,7 @@ const StaffOverview = () => {
     { key: "total", label: "Staff records", value: formatOverviewNumber(total), note: "Full staff directory", icon: "fa-id-badge", tone: "teal" },
     { key: "roles", label: "Job titles shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => item.job_title)), note: "Distinct on this page", icon: "fa-briefcase", tone: "violet" },
     { key: "new", label: `Joined in ${currentYear}`, value: formatOverviewNumber(data.filter((item) => new Date(item.date_of_joining).getFullYear() === currentYear).length), note: "Records on this page", icon: "fa-user-plus", tone: "green" },
-    { key: "selected", label: "Selected staff", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected staff", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" }] : []),
   ];
 
   return (
@@ -114,13 +121,13 @@ const StaffOverview = () => {
         <OverviewWorkspace
           theme={theme}
           pageTitle="Staff Overview"
-          links={[{ label: "Home", to: "/", active: true }, { label: "Staff", to: "/staff/home", active: false }]}
+          links={[...(canViewDashboard ? [{ label: "Home", to: "/", active: true }] : []), { label: "Staff", to: "/staff/home", active: false }]}
           hero={{
             icon: "fa-id-badge",
             eyebrow: "People directory",
             title: "A polished directory for every staff record",
             description: "Keep staff identities, roles and contact details organised for timesheets, projects and day-to-day administration.",
-            createLink: "/staff/create-staff",
+            createLink: canCreate ? "/staff/create-staff" : undefined,
             createLabel: "Add staff",
           }}
           cards={cards}
@@ -138,7 +145,8 @@ const StaffOverview = () => {
           searchPlaceholder="Search staff ID, name, title or email"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
@@ -162,11 +170,11 @@ const StaffOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-id-badge", message: "No staff records found matching your criteria", link: "/staff/create-staff" }}
+          empty={{ icon: "fas fa-id-badge", message: "No staff records found matching your criteria", link: canCreate ? "/staff/create-staff" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}

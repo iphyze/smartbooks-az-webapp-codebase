@@ -12,7 +12,7 @@ import useThemeStore from '../../stores/useThemeStore';
 import useTimesheetReportStore from '../../stores/useTimesheetReportStore';
 import useTimesheetReferenceStore from '../../stores/useTimesheetReferenceStore';
 import useAuthStore from '../../stores/useAuthStore';
-import { isTimesheetOnly } from '../../utils/permissions';
+import { defaultRouteForRole, hasPermission, isTimesheetOnly } from '../../utils/permissions';
 import DownloadTimesheetReport from './DownloadTimesheetReport';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
 import './TimesheetReport.css';
@@ -312,7 +312,7 @@ const Pagination = ({ pagination, loading, onPageChange }) => {
   );
 };
 
-const ResultsView = ({ data, summary, meta, pagination, onExcel, excelLoading, onPdf, pdfLoading, onPageChange, loading }) => {
+const ResultsView = ({ data, summary, meta, pagination, onExcel, excelLoading, onPdf, pdfLoading, onPageChange, loading, canExport }) => {
   return (
     <motion.div variants={fadeUp} initial="hidden" animate="show">
       <div className="tsr-action-bar">
@@ -322,14 +322,16 @@ const ResultsView = ({ data, summary, meta, pagination, onExcel, excelLoading, o
           <div className="tsr-meta-badge"><i className="fas fa-users" /> {meta?.staff_filter || 'All Staff'}</div>
           <div className="tsr-meta-badge"><i className="fas fa-layer-group" /> Page {pagination?.page || 1} of {pagination?.pages || 1}</div>
         </div>
-        <div className="tsr-action-right">
-          <button className="tsr-excel-btn" onClick={onExcel} disabled={excelLoading}>
-            {excelLoading ? <><div className="tsr-btn-loader tsr-btn-loader--sm" /> Downloading...</> : <><i className="fas fa-file-excel" /> Export Excel</>}
-          </button>
-          <button className="tsr-pdf-btn" onClick={onPdf} disabled={pdfLoading}>
-            {pdfLoading ? <><div className="tsr-btn-loader tsr-btn-loader--sm" /> Building PDF...</> : <><i className="fas fa-file-pdf" /> Export PDF</>}
-          </button>
-        </div>
+        {canExport && (
+          <div className="tsr-action-right">
+            <button className="tsr-excel-btn" onClick={onExcel} disabled={excelLoading}>
+              {excelLoading ? <><div className="tsr-btn-loader tsr-btn-loader--sm" /> Downloading...</> : <><i className="fas fa-file-excel" /> Export Excel</>}
+            </button>
+            <button className="tsr-pdf-btn" onClick={onPdf} disabled={pdfLoading}>
+              {pdfLoading ? <><div className="tsr-btn-loader tsr-btn-loader--sm" /> Building PDF...</> : <><i className="fas fa-file-pdf" /> Export PDF</>}
+            </button>
+          </div>
+        )}
       </div>
 
       <KpiStrip summary={summary} />
@@ -430,6 +432,8 @@ const TimesheetReport = () => {
   const { theme } = useThemeStore();
   const { user } = useAuthStore();
   const isTimesheetUser = isTimesheetOnly(user);
+  const canExport = hasPermission(user, 'timesheet.export');
+  const canViewReportHub = hasPermission(user, 'report.view');
   const { timesheetReport, fetchPaginatedTimesheetReport, fetchTimesheetReportForExport, downloadTimesheetExcel } = useTimesheetReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -473,16 +477,12 @@ const TimesheetReport = () => {
 
   useEffect(() => { document.title = 'Smartbooks | Timesheet Report'; }, []);
 
-  const links = isTimesheetUser
-    ? [
-        { label: 'Timesheets', to: '/timesheet/home', active: true },
-        { label: 'Timesheet Report', to: '/reports/timesheet', active: false },
-      ]
-    : [
-        { label: 'Home', to: '/', active: true },
-        { label: 'Reports & Analytics', to: '/reports/ledger', active: true },
-        { label: 'Timesheet Report', to: '/reports/timesheet', active: false },
-      ];
+  const links = [
+    { label: 'Home', to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: 'Reports & Analytics', to: '/reports/ledger', active: true }] : []),
+    ...(!canViewReportHub ? [{ label: 'Timesheets', to: '/timesheet/home', active: true }] : []),
+    { label: 'Timesheet Report', to: '/reports/timesheet', active: false },
+  ];
 
   const validate = useCallback(() => {
     const e = {};
@@ -596,6 +596,7 @@ const TimesheetReport = () => {
                     pdfLoading={pdfLoading}
                     onPageChange={handleSearch}
                     loading={timesheetReport.loading}
+                    canExport={canExport}
                   />
                 </motion.div>
               )}

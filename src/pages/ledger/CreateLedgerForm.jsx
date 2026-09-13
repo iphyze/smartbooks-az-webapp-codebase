@@ -5,6 +5,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useLedgerStore from "../../stores/useLedgerStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import useAccountSearchStore from "../../stores/useAccountSearchStore";
 import Select, { components } from "react-select";
 import CreateAccountModal from "../../components/modals/CreateAccountModal"; // Import the Modal
@@ -28,6 +30,9 @@ const CreateLedgerForm = () => {
   const { createLedger } = useLedgerStore();
   const { accounts, searchAccounts, isLoading: accountsLoading } = useAccountSearchStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canViewLedgers = hasPermission(user, "ledger.view");
+  const canCreateAccount = hasPermission(user, "account.create");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -113,7 +118,7 @@ const CreateLedgerForm = () => {
         ledger_name: "",
         account_type: "",
       });
-      navigate("/ledger/home");
+      if (canViewLedgers) navigate("/ledger/home");
     }
   };
 
@@ -204,9 +209,11 @@ const CreateLedgerForm = () => {
                   )}
                 </div>
                 {/* Button to trigger Create Account Modal */}
-                <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateAccountModal(true)} title="Add New Account Type">
-                  <span className="fas fa-plus"></span>
-                </button>
+                {canCreateAccount && (
+                  <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateAccountModal(true)} title="Add New Account Type">
+                    <span className="fas fa-plus"></span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -234,7 +241,7 @@ const CreateLedgerForm = () => {
 
       {/* Create Account Modal */}
       <AnimatePresence>
-        {showCreateAccountModal && (
+        {canCreateAccount && showCreateAccountModal && (
           <CreateAccountModal 
             isOpen={showCreateAccountModal} 
             onClose={() => setShowCreateAccountModal(false)} 

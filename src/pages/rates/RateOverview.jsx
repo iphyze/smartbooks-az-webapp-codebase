@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useRateStore from "../../stores/useRateStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { formatCurrencyDecimals } from "../../utils/helper";
 import {
   formatOverviewDate,
@@ -24,6 +26,12 @@ const RateOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canViewDashboard = hasPermission(user, "dashboard.view");
+  const canCreate = hasPermission(user, "exchange_rate.create");
+  const canEdit = hasPermission(user, "exchange_rate.edit");
+  const canDelete = hasPermission(user, "exchange_rate.delete");
+  const canExport = hasPermission(user, "exchange_rate.export");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -71,8 +79,8 @@ const RateOverview = () => {
 
   const rowActions = (rate, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/rate/edit/${rate.id}`, { state: { rate } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(rate.id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/rate/edit/${rate.id}`, { state: { rate } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(rate.id) },
     ]} />
   );
 
@@ -90,7 +98,7 @@ const RateOverview = () => {
     { key: "total", label: "Rate records", value: formatOverviewNumber(total), note: "Full exchange-rate history", icon: "fa-arrow-right-arrow-left", tone: "teal" },
     { key: "currencies", label: "Currencies tracked", value: "4", note: "NGN, USD, GBP and EUR", icon: "fa-coins", tone: "blue" },
     { key: "dates", label: "Rate dates shown", value: formatOverviewNumber(uniqueOverviewCount(data, (item) => String(item.effective_date || item.created_at || "").slice(0, 10))), note: "Distinct on this page", icon: "fa-calendar-day", tone: "violet" },
-    { key: "selected", label: "Selected records", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected records", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" }] : []),
   ];
 
   return (
@@ -101,15 +109,15 @@ const RateOverview = () => {
         <OverviewWorkspace
           theme={theme}
           pageTitle="Exchange Rate Overview"
-          links={[{ label: "Home", to: "/", active: true }, { label: "Exchange Rates", to: "/rate/home", active: false }]}
+          links={[...(canViewDashboard ? [{ label: "Home", to: "/", active: true }] : []), { label: "Exchange Rates", to: "/rate/home", active: false }]}
           hero={{
             icon: "fa-arrow-right-arrow-left",
             eyebrow: "Currency controls",
             title: "Maintain exchange-rate history with greater clarity",
             description: "Review each rate's effective date separately from when it was recorded, including historical closing rates entered in a later year.",
-            createLink: "/rate/create",
+            createLink: canCreate ? "/rate/create" : undefined,
             createLabel: "Add exchange rate",
-            onExport: exportToExcel,
+            onExport: canExport ? exportToExcel : undefined,
             exportDisabled: loading || data.length === 0,
           }}
           cards={cards}
@@ -127,7 +135,8 @@ const RateOverview = () => {
           searchPlaceholder="Search effective date, source, rate or recorder"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
@@ -153,11 +162,11 @@ const RateOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-arrow-right-arrow-left", message: "No exchange rates found matching your criteria", link: "/rate/create" }}
+          empty={{ icon: "fas fa-arrow-right-arrow-left", message: "No exchange rates found matching your criteria", link: canCreate ? "/rate/create" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}

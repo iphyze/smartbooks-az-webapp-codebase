@@ -8,6 +8,8 @@ import EditRateForm from "./EditRateForm"; // Updated import
 import useToastStore from "../../stores/useToastStore";
 import useRateStore from "../../stores/useRateStore"; // Updated import
 import EditLoaderComponent from "../../components/EditLoaderComponent";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 
 const EditRate = () => {
   const { id } = useParams(); // Updated parameter
@@ -15,6 +17,10 @@ const EditRate = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const canViewDashboard = hasPermission(user, "dashboard.view");
+  const canViewRates = hasPermission(user, "exchange_rate.view");
+  const fallbackRoute = canViewRates ? "/rate/home" : defaultRouteForRole(user);
 
   // Consume states from useRateStore instead of local state
   const {
@@ -25,9 +31,9 @@ const EditRate = () => {
   } = useRateStore();
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Rates", to: "/rate/home", active: true }, // Updated link
-    { label: "Edit Rate", to: "/rate/edit", active: false }, // Updated link
+    ...(canViewDashboard ? [{ label: "Home", to: "/", active: true }] : []),
+    ...(canViewRates ? [{ label: "Rates", to: "/rate/home", active: true }] : []),
+    { label: "Edit Rate", to: `/rate/edit/${id}`, active: false },
   ];
 
   useEffect(() => {
@@ -37,20 +43,20 @@ const EditRate = () => {
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
       showToast("Invalid rate ID. Redirecting…", "error");
-      navigate("/rate/home");
+      navigate(fallbackRoute);
       return;
     }
 
     // 2. Fetch data using the store action
     fetchSingleRate(parsedId);
-  }, [id]);
+  }, [id, fetchSingleRate, navigate, showToast, fallbackRoute]);
 
   // 3. Handle fetch error by redirecting (toast is already shown by the store)
   useEffect(() => {
     if (fetchError) {
-      navigate("/rate/home");
+      navigate(fallbackRoute);
     }
-  }, [fetchError]);
+  }, [fetchError, navigate, fallbackRoute]);
 
   const handleSaveSuccess = () => {
     // Optional: Redirect or show success message after save

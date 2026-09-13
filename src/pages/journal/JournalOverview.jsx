@@ -11,6 +11,8 @@ import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationM
 import ErrorModal from "../../components/modals/ErrorModal";
 import useThemeStore from "../../stores/useThemeStore";
 import useJournalStore from "../../stores/useJournalStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { formatCurrencyDecimals } from "../../utils/helper";
 import { fadeInUp } from "../../utils/animation";
 import JournalKPICards from "./JournalKPICards";
@@ -43,6 +45,12 @@ const JournalOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreateJournal = hasPermission(user, "journal.create");
+  const canEditJournal = hasPermission(user, "journal.edit");
+  const canDeleteJournal = hasPermission(user, "journal.delete");
+  const canDuplicateJournal = hasPermission(user, "journal.duplicate") && canCreateJournal;
+  const canExportJournal = hasPermission(user, "journal.export");
 
   const {
     data,
@@ -78,10 +86,9 @@ const JournalOverview = () => {
   const pageLimitOptions = [5, 10, 25, 50, 100, 200, 500]
     .map((limit) => ({ id: limit, label: String(limit) }));
 
-  const actionOptions = [
-    { id: "", label: "Select Action" },
-    { id: "delete", label: "Delete" },
-  ];
+  const actionOptions = canDeleteJournal
+    ? [{ id: "", label: "Select Action" }, { id: "delete", label: "Delete" }]
+    : [{ id: "", label: "Select Action" }];
 
   useEffect(() => {
     document.title = "Smartbooks | Journal Overview";
@@ -258,16 +265,18 @@ const JournalOverview = () => {
 
   const renderRowActions = (journal, compact = false) => (
     <div className={`invoice-row-actions journal-row-actions ${compact ? "invoice-row-actions--mobile" : ""}`}>
-      <button
-        type="button"
-        className="invoice-row-action invoice-row-action--edit"
-        title="Edit journal"
-        aria-label={`Edit journal ${journal.journal_id}`}
-        onClick={() => handleEditJournal(journal)}
-      >
-        <i className="fas fa-pen" />
-        {compact && <span>Edit</span>}
-      </button>
+      {canEditJournal && (
+        <button
+          type="button"
+          className="invoice-row-action invoice-row-action--edit"
+          title="Edit journal"
+          aria-label={`Edit journal ${journal.journal_id}`}
+          onClick={() => handleEditJournal(journal)}
+        >
+          <i className="fas fa-pen" />
+          {compact && <span>Edit</span>}
+        </button>
+      )}
       <button
         type="button"
         className="invoice-row-action invoice-row-action--view"
@@ -278,26 +287,30 @@ const JournalOverview = () => {
         <i className="fas fa-arrow-up-right-from-square" />
         {compact && <span>View</span>}
       </button>
-      <button
-        type="button"
-        className="invoice-row-action journal-row-action--duplicate"
-        title="Duplicate journal"
-        aria-label={`Duplicate journal ${journal.journal_id}`}
-        onClick={() => handleDuplicateJournal(journal)}
-      >
-        <i className="fas fa-copy" />
-        {compact && <span>Duplicate</span>}
-      </button>
-      <button
-        type="button"
-        className="invoice-row-action invoice-row-action--delete"
-        title="Delete journal"
-        aria-label={`Delete journal ${journal.journal_id}`}
-        onClick={() => handleDeleteJournal(journal.journal_id)}
-      >
-        <i className="fas fa-trash" />
-        {compact && <span>Delete</span>}
-      </button>
+      {canDuplicateJournal && (
+        <button
+          type="button"
+          className="invoice-row-action journal-row-action--duplicate"
+          title="Duplicate journal"
+          aria-label={`Duplicate journal ${journal.journal_id}`}
+          onClick={() => handleDuplicateJournal(journal)}
+        >
+          <i className="fas fa-copy" />
+          {compact && <span>Duplicate</span>}
+        </button>
+      )}
+      {canDeleteJournal && (
+        <button
+          type="button"
+          className="invoice-row-action invoice-row-action--delete"
+          title="Delete journal"
+          aria-label={`Delete journal ${journal.journal_id}`}
+          onClick={() => handleDeleteJournal(journal.journal_id)}
+        >
+          <i className="fas fa-trash" />
+          {compact && <span>Delete</span>}
+        </button>
+      )}
     </div>
   );
 
@@ -326,19 +339,23 @@ const JournalOverview = () => {
                 <p>Search, sort and manage posted entries while keeping journal amounts, currencies and supporting actions easy to review.</p>
               </div>
               <div className="invoice-overview-hero__actions">
-                <button
-                  type="button"
-                  className="invoice-overview-button invoice-overview-button--secondary"
-                  onClick={exportToExcel}
-                  disabled={loading || data.length === 0}
-                >
-                  <i className="fas fa-file-excel" />
-                  <span>Export current page</span>
-                </button>
-                <Link to="/journal/create" className="invoice-overview-button invoice-overview-button--primary">
-                  <i className="fas fa-plus" />
-                  <span>Create journal</span>
-                </Link>
+                {canExportJournal && (
+                  <button
+                    type="button"
+                    className="invoice-overview-button invoice-overview-button--secondary"
+                    onClick={exportToExcel}
+                    disabled={loading || data.length === 0}
+                  >
+                    <i className="fas fa-file-excel" />
+                    <span>Export current page</span>
+                  </button>
+                )}
+                {canCreateJournal && (
+                  <Link to="/journal/create" className="invoice-overview-button invoice-overview-button--primary">
+                    <i className="fas fa-plus" />
+                    <span>Create journal</span>
+                  </Link>
+                )}
               </div>
             </motion.section>
 
@@ -394,7 +411,7 @@ const JournalOverview = () => {
                     />
                   </div>
 
-                  {selectedItems.length > 0 && (
+                  {canDeleteJournal && selectedItems.length > 0 && (
                     <div className="invoice-overview-filter invoice-overview-filter--action">
                       <label>Bulk action</label>
                       <ChartSearchableSelect
@@ -408,7 +425,7 @@ const JournalOverview = () => {
                 </div>
               </div>
 
-              {selectedItems.length > 0 && (
+              {canDeleteJournal && selectedItems.length > 0 && (
                 <div className="invoice-selection-banner">
                   <span><i className="fas fa-circle-check" /> {selectedItems.length} selected</span>
                   <button type="button" onClick={clearSelection}>Clear selection</button>
@@ -425,15 +442,17 @@ const JournalOverview = () => {
                         <table className="invoice-overview-table journal-overview-table">
                           <thead>
                             <tr>
-                              <th className="invoice-check-cell">
-                                <input
-                                  type="checkbox"
-                                  checked={allCurrentPageSelected}
-                                  onChange={handleSelectAll}
-                                  aria-label="Select all journals on this page"
-                                  className="table-checkbox"
-                                />
-                              </th>
+                              {canDeleteJournal && (
+                                <th className="invoice-check-cell">
+                                  <input
+                                    type="checkbox"
+                                    checked={allCurrentPageSelected}
+                                    onChange={handleSelectAll}
+                                    aria-label="Select all journals on this page"
+                                    className="table-checkbox"
+                                  />
+                                </th>
+                              )}
                               <th className="sortable" onClick={() => handleSort("journal_id")}>Journal {getSortIcon("journal_id")}</th>
                               <th className="sortable" onClick={() => handleSort("journal_date")}>Date {getSortIcon("journal_date")}</th>
                               <th>Description</th>
@@ -449,15 +468,17 @@ const JournalOverview = () => {
                               const displayAmount = getJournalAmount(journal);
                               return (
                                 <tr key={journal.id || journal.journal_id} className={selected ? "selected" : ""}>
-                                  <td className="invoice-check-cell">
-                                    <input
-                                      type="checkbox"
-                                      className="table-checkbox"
-                                      checked={selected}
-                                      onChange={() => toggleItemSelection(journal.journal_id)}
-                                      aria-label={`Select journal ${journal.journal_id}`}
-                                    />
-                                  </td>
+                                  {canDeleteJournal && (
+                                    <td className="invoice-check-cell">
+                                      <input
+                                        type="checkbox"
+                                        className="table-checkbox"
+                                        checked={selected}
+                                        onChange={() => toggleItemSelection(journal.journal_id)}
+                                        aria-label={`Select journal ${journal.journal_id}`}
+                                      />
+                                    </td>
+                                  )}
                                   <td>
                                     <button type="button" className="invoice-number-link" onClick={() => handleViewJournal(journal)}>
                                       <span>JRN</span> {journal.journal_id}
@@ -501,15 +522,17 @@ const JournalOverview = () => {
                           return (
                             <article key={`mobile-${journal.id || journal.journal_id}`} className={`invoice-mobile-card journal-mobile-card ${selected ? "selected" : ""}`}>
                               <div className="invoice-mobile-card__top">
-                                <label className="invoice-mobile-check">
-                                  <input
-                                    type="checkbox"
-                                    checked={selected}
-                                    onChange={() => toggleItemSelection(journal.journal_id)}
-                                    aria-label={`Select journal ${journal.journal_id}`}
-                                  />
-                                  <span />
-                                </label>
+                                {canDeleteJournal && (
+                                  <label className="invoice-mobile-check">
+                                    <input
+                                      type="checkbox"
+                                      checked={selected}
+                                      onChange={() => toggleItemSelection(journal.journal_id)}
+                                      aria-label={`Select journal ${journal.journal_id}`}
+                                    />
+                                    <span />
+                                  </label>
+                                )}
                                 <button type="button" className="invoice-mobile-number" onClick={() => handleViewJournal(journal)}>
                                   JRN {journal.journal_id}
                                 </button>
@@ -605,7 +628,8 @@ const JournalOverview = () => {
                       <EmptyTable
                         icon="fas fa-book-open"
                         message="No journals found matching your criteria"
-                        link="/journal/create"
+                        link={canCreateJournal ? "/journal/create" : undefined}
+                        actionLabel="Create journal"
                       />
                     </div>
                   )}

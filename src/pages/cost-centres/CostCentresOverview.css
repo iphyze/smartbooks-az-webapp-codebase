@@ -1,0 +1,67 @@
+.cc-page { padding-bottom: 40px; }
+.cc-hero { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:22px 0 18px; padding:24px 28px; border:1px solid var(--sb-border); border-radius:20px; background:var(--sb-surface); }
+.cc-hero small,.cc-modal__heading small { color:var(--sb-brand); font:10px "Montserrat-SemiBold",sans-serif; letter-spacing:1.2px; }
+.cc-hero h1 { margin:5px 0 7px; color:var(--sb-text-1); font:22px "Montserrat-Bold",sans-serif; }
+.cc-hero p { margin:0; color:var(--sb-text-2); font-size:11px; line-height:1.65; }
+.cc-btn { min-height:42px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:0 17px; border:1px solid transparent; border-radius:12px; cursor:pointer; font:11px "Montserrat-SemiBold",sans-serif; transition:.2s ease; }
+.cc-btn:disabled { opacity:.55; cursor:not-allowed; }
+.cc-btn--primary { color:#fff; background:linear-gradient(135deg,var(--sb-brand),#21b7c9); box-shadow:0 10px 26px rgba(0,177,150,.16); }
+.cc-btn--ghost { color:var(--sb-text-2); background:var(--sb-surface-2); border-color:var(--sb-border); }
+.cc-btn--danger { color:#fff; background:#d95864; }
+.cc-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.cc-summary-grid article { display:flex; align-items:center; gap:13px; padding:17px; border:1px solid var(--sb-border); border-radius:16px; background:var(--sb-surface); }
+.cc-summary-grid article>span { width:38px;height:38px;display:grid;place-items:center;border-radius:11px;color:var(--sb-brand);background:var(--sb-brand-dim); }
+.cc-summary-grid strong { display:block; color:var(--sb-text-1); font:18px "Montserrat-Bold",sans-serif; }
+.cc-summary-grid small { color:var(--sb-text-3); font-size:9.5px; }
+.cc-panel { overflow:hidden; border:1px solid var(--sb-border); border-radius:20px; background:var(--sb-surface); }
+.cc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px; border-bottom:1px solid var(--sb-border); }
+.cc-search { min-width:300px; max-width:520px; flex:1; display:flex; align-items:center; border:1px solid var(--sb-border); border-radius:11px; background:var(--sb-surface-2); overflow:hidden; }
+.cc-search>i { margin-left:13px; color:var(--sb-text-3); }
+.cc-search input { flex:1; min-width:0; padding:12px 10px; border:0; outline:0; color:var(--sb-text-1); background:transparent; font-size:11px; }
+.cc-search button { align-self:stretch; border:0; padding:0 15px; cursor:pointer; color:var(--sb-brand); background:var(--sb-brand-dim); font:10px "Montserrat-SemiBold",sans-serif; }
+.cc-status-tabs { display:flex; gap:5px; padding:4px; border:1px solid var(--sb-border); border-radius:11px; background:var(--sb-surface-2); }
+.cc-status-tabs button { border:0; border-radius:8px; padding:8px 11px; cursor:pointer; color:var(--sb-text-3); background:transparent; font:9.5px "Montserrat-SemiBold",sans-serif; }
+.cc-status-tabs button.active { color:var(--sb-brand); background:var(--sb-brand-dim); }
+.cc-error { margin:14px 16px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 13px; border:1px solid rgba(220,70,82,.25); border-radius:10px; color:#df6671; background:rgba(220,70,82,.07); font-size:10px; }
+.cc-error button { border:0;background:transparent;color:inherit;cursor:pointer;font:10px "Montserrat-SemiBold"; }
+.cc-table-wrap { overflow-x:auto; }
+.cc-table { width:100%; border-collapse:collapse; min-width:860px; }
+.cc-table th { padding:13px 15px; text-align:left; color:var(--sb-text-3); background:var(--sb-surface-2); border-bottom:1px solid var(--sb-border); font:9px "Montserrat-SemiBold",sans-serif; letter-spacing:.45px; text-transform:uppercase; }
+.cc-table td { padding:14px 15px; color:var(--sb-text-2); border-bottom:1px solid var(--sb-border-light); font-size:10px; }
+.cc-table tbody tr:last-child td { border-bottom:0; }
+.cc-table tbody tr:hover { background:var(--sb-brand-dim); }
+.cc-name { display:flex; align-items:center; gap:10px; }
+.cc-name>span { width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:var(--sb-brand);background:var(--sb-brand-dim); }
+.cc-name strong,.cc-date strong { display:block;color:var(--sb-text-1);font:10px "Montserrat-SemiBold",sans-serif; }
+.cc-name small,.cc-date small { display:block;margin-top:3px;color:var(--sb-text-3);font-size:8.5px; }
+.cc-status { display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font:9px "Montserrat-SemiBold",sans-serif; }
+.cc-status i { font-size:5px; }
+.cc-status.active { color:#11a77f;background:rgba(17,167,127,.1); }
+.cc-status.inactive { color:#9a7f4e;background:rgba(176,137,64,.11); }
+.cc-number { color:var(--sb-text-1);font:11px "Montserrat-SemiBold",sans-serif; }
+.cc-actions { display:flex; gap:6px; }
+.cc-actions button { width:32px;height:32px;border:1px solid var(--sb-border);border-radius:9px;cursor:pointer;color:var(--sb-text-2);background:var(--sb-surface-2); }
+.cc-actions button:hover { color:var(--sb-brand);border-color:rgba(0,177,150,.3); }
+.cc-actions button.danger:hover { color:#e05f6a;border-color:rgba(224,95,106,.3); }
+.cc-empty { padding:54px 20px;text-align:center;color:var(--sb-text-3); }
+.cc-empty>span { width:54px;height:54px;margin:0 auto 12px;display:grid;place-items:center;border-radius:16px;color:var(--sb-brand);background:var(--sb-brand-dim);font-size:20px; }
+.cc-empty h3 { margin:0 0 6px;color:var(--sb-text-1);font:13px "Montserrat-SemiBold",sans-serif; }.cc-empty p{margin:0;font-size:10px;}
+.cc-modal-backdrop { position:fixed;inset:0;z-index:2500;display:grid;place-items:center;padding:22px;background:rgba(3,10,18,.68);backdrop-filter:blur(5px); }
+.cc-modal { width:min(620px,100%);max-height:min(720px,calc(100vh - 44px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--sb-border);border-radius:19px;background:var(--sb-surface);box-shadow:0 30px 80px rgba(0,0,0,.28); }
+.cc-modal__header,.cc-modal__footer { flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px 20px;border-color:var(--sb-border);background:var(--sb-surface); }
+.cc-modal__header { border-bottom:1px solid var(--sb-border); }.cc-modal__footer{justify-content:flex-end;border-top:1px solid var(--sb-border);}
+.cc-modal__heading { display:flex;align-items:center;gap:12px; }.cc-modal__heading h2{margin:3px 0 0;color:var(--sb-text-1);font:16px "Montserrat-Bold",sans-serif;}
+.cc-modal__icon { width:39px;height:39px;display:grid;place-items:center;border-radius:11px;color:var(--sb-brand);background:var(--sb-brand-dim); }
+.cc-modal__close { width:34px;height:34px;border:1px solid var(--sb-border);border-radius:9px;cursor:pointer;color:var(--sb-text-3);background:var(--sb-surface-2); }
+.cc-modal__body { overflow-y:auto;padding:20px; }
+.cc-field>span { display:block;margin-bottom:7px;color:var(--sb-text-2);font:9.5px "Montserrat-SemiBold",sans-serif; }.cc-field>span b{color:#df6671;}
+.cc-field input { width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid var(--sb-border);border-radius:11px;outline:0;color:var(--sb-text-1);background:var(--sb-surface-2);font-size:11px; }.cc-field input:focus{border-color:var(--sb-brand);box-shadow:0 0 0 3px var(--sb-brand-dim);}
+.cc-field small { display:block;margin-top:7px;color:var(--sb-text-3);font-size:9px;line-height:1.55; }
+.cc-status-control { margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px;border:1px solid var(--sb-border);border-radius:12px;background:var(--sb-surface-2); }.cc-status-control strong{display:block;color:var(--sb-text-1);font:10px "Montserrat-SemiBold";}.cc-status-control span{display:block;margin-top:4px;color:var(--sb-text-3);font-size:9px;line-height:1.5;}
+.cc-switch { width:43px;height:24px;padding:2px;border:1px solid var(--sb-border);border-radius:999px;cursor:pointer;background:var(--sb-border);transition:.2s; }.cc-switch i{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}.cc-switch.on{background:var(--sb-brand);border-color:var(--sb-brand);}.cc-switch.on i{transform:translateX(17px);}
+.cc-info { display:flex;gap:9px;margin-top:14px;padding:11px;border:1px solid rgba(0,177,150,.18);border-radius:10px;color:var(--sb-text-2);background:var(--sb-brand-dim);font-size:9px;line-height:1.55; }.cc-info i{color:var(--sb-brand);margin-top:2px;}
+.cc-detail-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }.cc-detail-grid>div{padding:13px;border:1px solid var(--sb-border);border-radius:11px;background:var(--sb-surface-2);}.cc-detail-grid span{display:block;color:var(--sb-text-3);font-size:8.5px;text-transform:uppercase;letter-spacing:.5px;}.cc-detail-grid strong{display:block;margin-top:5px;color:var(--sb-text-1);font:10.5px "Montserrat-SemiBold";}.cc-detail-grid small{display:block;margin-top:4px;color:var(--sb-text-3);font-size:8.5px;}.cc-detail-grid__wide{grid-column:1/-1;}
+.cc-source-list { display:flex;flex-wrap:wrap;gap:7px;margin-top:9px; }.cc-source-list em{font-style:normal;padding:5px 8px;border-radius:8px;color:var(--sb-text-2);background:var(--sb-brand-dim);font-size:8.5px;text-transform:capitalize;}.cc-source-list b{color:var(--sb-brand);margin-left:4px;}
+.cc-delete-message p { margin:0;color:var(--sb-text-2);font-size:10.5px;line-height:1.7; }.cc-delete-message p strong{color:var(--sb-text-1);}.cc-usage-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}.cc-usage-grid span{padding:13px;border:1px solid var(--sb-border);border-radius:11px;color:var(--sb-text-3);background:var(--sb-surface-2);font-size:9px;}.cc-usage-grid strong{display:block;margin-bottom:4px;color:var(--sb-text-1);font:17px "Montserrat-Bold";}
+@media(max-width:900px){.cc-summary-grid{grid-template-columns:repeat(2,1fr)}.cc-toolbar{align-items:stretch;flex-direction:column}.cc-search{max-width:none}.cc-status-tabs{align-self:flex-start}}
+@media(max-width:620px){.cc-hero{align-items:flex-start;flex-direction:column}.cc-summary-grid{grid-template-columns:1fr}.cc-search{min-width:0}.cc-detail-grid{grid-template-columns:1fr}.cc-detail-grid__wide{grid-column:auto}.cc-modal-backdrop{padding:10px}.cc-modal{max-height:calc(100vh - 20px)}.cc-modal__footer{flex-wrap:wrap}.cc-modal__footer .cc-btn{flex:1}}

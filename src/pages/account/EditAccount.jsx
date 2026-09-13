@@ -8,6 +8,8 @@ import EditAccountForm from "./EditAccountForm";
 import useToastStore from "../../stores/useToastStore";
 import useAccountStore from "../../stores/useAccountStore";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 
 const EditAccount = () => {
   const { id } = useParams();
@@ -15,6 +17,8 @@ const EditAccount = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "account.view");
 
   // Consume states from useAccountStore
   const {
@@ -26,7 +30,7 @@ const EditAccount = () => {
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Accounts", to: "/account/home", active: true },
+    ...(canView ? [{ label: "Accounts", to: "/account/home", active: true }] : []),
     { label: "Edit Account", to: "/account/edit", active: false },
   ];
 
@@ -37,20 +41,20 @@ const EditAccount = () => {
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
       showToast("Invalid account ID. Redirecting…", "error");
-      navigate("/account/home");
+      navigate(canView ? "/account/home" : "/users/my-profile");
       return;
     }
 
     // 2. Fetch data using the store action
     fetchSingleAccount(parsedId);
-  }, [id]);
+  }, [id, navigate, showToast, fetchSingleAccount, canView]);
 
   // 3. Handle fetch error by redirecting (toast is already shown by the store)
   useEffect(() => {
     if (fetchError) {
-      navigate("/account/home");
+      navigate(canView ? "/account/home" : "/users/my-profile");
     }
-  }, [fetchError]);
+  }, [fetchError, navigate, canView]);
 
   const handleSaveSuccess = () => {
     // Optional: Redirect or show success message after save

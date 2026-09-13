@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import useAccountStore from "../../stores/useAccountStore";
 import { fadeInUp } from "../../utils/animation";
 import { formatCurrencyDecimals, formatDateLong } from "../../utils/helper";
@@ -22,6 +24,10 @@ import {
 const ViewAccountContent = ({ account }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, "account.edit");
+  const canExport = hasPermission(user, "account.export");
+  const canViewLedgers = hasPermission(user, "ledger.view");
   const ledgers = useAccountStore((state) => state.singleAccountLedgers) || [];
   const accountSummary = useAccountStore((state) => state.singleAccountSummary) || {};
 
@@ -53,16 +59,16 @@ const ViewAccountContent = ({ account }) => {
           <EntityViewActions
             onBack={() => navigate("/account/home")}
             backLabel="Back to accounts"
-            onEdit={() => navigate(`/account/edit/${account.id}`, { state: { account } })}
+            onEdit={canEdit ? () => navigate(`/account/edit/${account.id}`, { state: { account } }) : undefined}
             editLabel="Edit account"
-            pdfDocument={accountDocument}
+            pdfDocument={canExport ? accountDocument : undefined}
             fileName={`Account Type - ${account.type || "Account"}.pdf`}
             printTitle={`Preparing ${account.type || "account"} profile`}
           />
         )}
         highlights={[
           { label: "Category ID", value: account.category_id || "Not assigned", icon: "fa-hashtag" },
-          { label: "Associated ledgers", value: `${ledgers.length} ledger${ledgers.length === 1 ? "" : "s"}`, icon: "fa-book-open" },
+          ...(canViewLedgers ? [{ label: "Associated ledgers", value: `${ledgers.length} ledger${ledgers.length === 1 ? "" : "s"}`, icon: "fa-book-open" }] : []),
           { label: "Currencies tracked", value: currencies.length ? currencies.join(", ") : "No activity yet", icon: "fa-coins" },
         ]}
       >
@@ -88,7 +94,7 @@ const ViewAccountContent = ({ account }) => {
           <EntityViewDetail icon="fa-calendar-check" label="Updated on" value={formatDateLong(account.updated_at)} />
         </EntityViewPanel>
 
-        {currencies.length > 0 && (
+        {canViewLedgers && currencies.length > 0 && (
           <div className="entity-view-section">
             <EntityViewSectionHeading
               icon="fa-chart-pie"
@@ -114,6 +120,7 @@ const ViewAccountContent = ({ account }) => {
           </div>
         )}
 
+        {canViewLedgers && (
         <div className="entity-view-section">
           <EntityViewSectionHeading
             icon="fa-book-open"
@@ -158,6 +165,7 @@ const ViewAccountContent = ({ account }) => {
             />
           )}
         </div>
+        )}
       </EntityViewShell>
     </motion.div>
   );

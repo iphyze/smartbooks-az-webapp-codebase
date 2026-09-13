@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useNotificationStore from '../../stores/useNotificationStore';
+import useAuthStore from '../../stores/useAuthStore';
+import { hasPermission } from '../../utils/permissions';
 import './NotificationDropdown.css';
 
 const MODULE_ICONS = {
@@ -30,6 +32,9 @@ const formatRelativeTime = (value) => {
 
 const NotificationDropdown = ({ onClose }) => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const canMarkRead = hasPermission(user, 'notification.mark_read');
+  const canDismiss = hasPermission(user, 'notification.dismiss');
   const {
     recent,
     counts,
@@ -40,7 +45,7 @@ const NotificationDropdown = ({ onClose }) => {
   } = useNotificationStore();
 
   const openNotification = async (notification) => {
-    if (!notification.is_read) {
+    if (canMarkRead && !notification.is_read) {
       await markRead(notification.id);
     }
     onClose?.();
@@ -69,13 +74,15 @@ const NotificationDropdown = ({ onClose }) => {
 
       <div className="notification-dropdown__toolbar">
         <span>Latest updates</span>
-        <button
-          type="button"
-          onClick={markAllRead}
-          disabled={counts.unread_count === 0}
-        >
-          <i className="fas fa-check-double" /> Mark all read
-        </button>
+        {canMarkRead && (
+          <button
+            type="button"
+            onClick={markAllRead}
+            disabled={counts.unread_count === 0}
+          >
+            <i className="fas fa-check-double" /> Mark all read
+          </button>
+        )}
       </div>
 
       <div className="notification-dropdown__list">
@@ -118,18 +125,20 @@ const NotificationDropdown = ({ onClose }) => {
                   </span>
                 </span>
               </button>
-              <button
-                type="button"
-                className="notification-dropdown__dismiss"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  dismiss(notification.id);
-                }}
-                aria-label={`Dismiss ${notification.title}`}
-                title="Dismiss notification"
-              >
-                <i className="fas fa-xmark" />
-              </button>
+              {canDismiss && (
+                <button
+                  type="button"
+                  className="notification-dropdown__dismiss"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    dismiss(notification.id);
+                  }}
+                  aria-label={`Dismiss ${notification.title}`}
+                  title="Dismiss notification"
+                >
+                  <i className="fas fa-xmark" />
+                </button>
+              )}
             </article>
           ))
         )}

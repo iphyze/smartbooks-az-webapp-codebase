@@ -2,10 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import useThemeStore from "../stores/useThemeStore";
+import useAuthStore from "../stores/useAuthStore";
+import { defaultRouteForRole } from "../utils/permissions";
 import "./PageNav.css";
 
 const PageNav = ({ pageTitle, links = [] }) => {
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const homeRoute = defaultRouteForRole(user);
   const visibleLinks = links.filter((link, index) => !(index === 0 && link.label?.toLowerCase() === "home"));
 
   return (
@@ -21,7 +25,7 @@ const PageNav = ({ pageTitle, links = [] }) => {
       </div>
 
       <nav className="pn-breadcrumb" aria-label="Breadcrumb">
-        <Link to="/" className="pn-home-link" aria-label="Return to dashboard">
+        <Link to={homeRoute} className="pn-home-link" aria-label="Return home">
           <i className="fas fa-house pn-home-icon" />
         </Link>
         {visibleLinks.map((link, index) => {

@@ -99,7 +99,7 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
         </span>
         <StatusPill status={partial ? 'Partially Matched' : line.match_status} />
 
-        {matched && (
+        {matched && onUnmatch && (
           <button
             className="br-unmatch-btn"
             title="Remove this match"
@@ -131,7 +131,7 @@ export const LineCard = ({ line, side, isSelected, canSelect = true, onToggleSel
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-        {!matched && (
+        {!matched && onClassify && (
           <button
             className="br-classify-link"
             style={{ margin: 0 }}

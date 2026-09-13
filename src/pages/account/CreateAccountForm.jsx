@@ -5,6 +5,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useAccountStore from "../../stores/useAccountStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import Select from "react-select";
 import "../inputs-styles/Inputs.css";
 
@@ -37,6 +39,8 @@ const CreateAccountForm = () => {
   const { showToast } = useToastStore();
   const { createAccountType } = useAccountStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "account.view");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -113,7 +117,7 @@ const CreateAccountForm = () => {
         category: "",
         sub_category: "",
       });
-      navigate("/account/home");
+      if (canView) navigate("/account/home");
     }
   };
 

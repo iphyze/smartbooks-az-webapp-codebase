@@ -8,6 +8,8 @@ import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadTrialBalance from "./DownloadTrialBalance";
@@ -261,7 +263,7 @@ const TotalsStrip = ({ totals, currency }) => {
 /* ─────────────────────────────────────────────
    CLASS SECTION
 ───────────────────────────────────────────── */
-const ClassSection = ({ className, group, search }) => {
+const ClassSection = ({ className, group, search, canViewLedgers }) => {
   const config = CLASS_CONFIG[className] || { label: className, icon: "fa-folder", color: "#7aada6" };
   const records = group?.records || [];
 
@@ -350,15 +352,19 @@ const ClassSection = ({ className, group, search }) => {
                 <tr key={row.ledger_number} className={!isActive ? "tb-row-zero" : ""}>
                   <td className="tb-td-sn">{index + 1}</td>
                   <td className="tb-mono">
-                    <button
-                      type="button"
-                      className="tb-ledger-link"
-                      onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
-                      aria-label={`Open ledger ${row.ledger_number}`}
-                    >
-                      {row.ledger_number}
-                      <i className="fas fa-arrow-up-right-from-square" />
-                    </button>
+                    {canViewLedgers ? (
+                      <button
+                        type="button"
+                        className="tb-ledger-link"
+                        onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
+                        aria-label={`Open ledger ${row.ledger_number}`}
+                      >
+                        {row.ledger_number}
+                        <i className="fas fa-arrow-up-right-from-square" />
+                      </button>
+                    ) : (
+                      <span>{row.ledger_number}</span>
+                    )}
                   </td>
                   <td>
                     <div className="tb-name-cell">
@@ -398,7 +404,7 @@ const ClassSection = ({ className, group, search }) => {
 /* ─────────────────────────────────────────────
    RESULTS VIEW
 ───────────────────────────────────────────── */
-const ResultsView = ({ data, totals, meta, onExcel, excelLoading, search, setSearch }) => {
+const ResultsView = ({ data, totals, meta, onExcel, excelLoading, search, setSearch, canExport, canViewLedgers }) => {
 
   const totalLedgers = Object.values(data || {}).reduce((s, g) => s + (g?.records?.length || 0), 0);
 
@@ -439,24 +445,28 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading, search, setSea
             )}
           </div>
 
-          <button className="tb-excel-btn" onClick={onExcel} disabled={excelLoading}>
-            {excelLoading
-              ? <><div className="tb-btn-loader tb-btn-loader--sm" /> Downloading...</>
-              : <><i className="fas fa-file-excel" /> Export Excel</>}
-          </button>
-
-          <PDFDownloadLink
-            document={pdfDocument}
-            fileName={`Trial_Balance_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
-          >
-            {({ loading: pdfLoading }) => (
-              <button className="tb-pdf-btn" disabled={pdfLoading}>
-                {pdfLoading
-                  ? <><div className="tb-btn-loader tb-btn-loader--sm" /> Building PDF...</>
-                  : <><i className="fas fa-file-pdf" /> Export PDF</>}
+          {canExport && (
+            <>
+              <button className="tb-excel-btn" onClick={onExcel} disabled={excelLoading}>
+                {excelLoading
+                  ? <><div className="tb-btn-loader tb-btn-loader--sm" /> Downloading...</>
+                  : <><i className="fas fa-file-excel" /> Export Excel</>}
               </button>
-            )}
-          </PDFDownloadLink>
+
+              <PDFDownloadLink
+                document={pdfDocument}
+                fileName={`Trial_Balance_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}
+              >
+                {({ loading: pdfLoading }) => (
+                  <button className="tb-pdf-btn" disabled={pdfLoading}>
+                    {pdfLoading
+                      ? <><div className="tb-btn-loader tb-btn-loader--sm" /> Building PDF...</>
+                      : <><i className="fas fa-file-pdf" /> Export PDF</>}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            </>
+          )}
         </div>
       </div>
 
@@ -486,6 +496,7 @@ const ResultsView = ({ data, totals, meta, onExcel, excelLoading, search, setSea
                 className={cls}
                 group={data[cls]}
                 search={search}
+                canViewLedgers={canViewLedgers}
               />
             ) : null
           )}
@@ -511,6 +522,10 @@ const TrialBalance = () => {
   const [zerobal,  setZerobal]  = useState(ZEROBAL_OPTIONS[1]); // default: No
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canExport = hasPermission(user, "trial_balance.export");
+  const canViewLedgers = hasPermission(user, "ledger.view");
+  const canViewReportHub = hasPermission(user, "report.view");
   const { trialBalance, fetchTrialBalance, downloadTrialBalanceExcel } = useLedgerReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -553,8 +568,8 @@ const TrialBalance = () => {
   useEffect(() => { document.title = "Smartbooks | Trial Balance"; }, []);
 
   const links = [
-    { label: "Home",          to: "/", active: true },
-    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: "Reports & Analytics", to: "/reports/ledger", active: true }] : []),
     { label: "Trial Balance", to: "/reports/ledger/trial-balance", active: false },
   ];
 
@@ -627,6 +642,8 @@ const TrialBalance = () => {
                     excelLoading={excelLoading}
                     search={search}
                     setSearch={setSearch}
+                    canExport={canExport}
+                    canViewLedgers={canViewLedgers}
                   />
                 </motion.div>
               )}

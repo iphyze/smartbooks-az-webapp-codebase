@@ -35,3 +35,40 @@
   font-size: 9px;
   opacity: 0.8;
 }
+
+
+.user-access-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.user-access-scope--all {
+  color: #5d48b8;
+  background: rgba(95, 70, 216, 0.09);
+  border-color: rgba(95, 70, 216, 0.14);
+}
+
+.user-access-scope--restricted {
+  color: #176b57;
+  background: rgba(34, 143, 106, 0.09);
+  border-color: rgba(34, 143, 106, 0.14);
+}
+
+.theme-dark .user-access-scope--all {
+  color: #b3a6f4;
+  background: rgba(126, 103, 222, 0.12);
+  border-color: rgba(154, 137, 230, 0.16);
+}
+
+.theme-dark .user-access-scope--restricted {
+  color: #7bd8bc;
+  background: rgba(50, 165, 132, 0.12);
+  border-color: rgba(88, 191, 160, 0.16);
+}

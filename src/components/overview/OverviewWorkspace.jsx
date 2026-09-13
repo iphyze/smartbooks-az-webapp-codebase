@@ -53,6 +53,7 @@ const OverviewWorkspace = ({
   searchPlaceholder = "Search records",
   pageLimitOptions = [],
   onItemsPerPageChange,
+  selectionEnabled = true,
   selectedCount = 0,
   selectedAction = "",
   actionOptions = [],
@@ -193,7 +194,7 @@ const OverviewWorkspace = ({
                 />
               </div>
 
-              {selectedCount > 0 && (
+              {selectionEnabled && selectedCount > 0 && (
                 <div className="entity-overview-filter entity-overview-filter--action">
                   <label>Bulk action</label>
                   <ChartSearchableSelect
@@ -207,7 +208,7 @@ const OverviewWorkspace = ({
             </div>
           </div>
 
-          {selectedCount > 0 && (
+          {selectionEnabled && selectedCount > 0 && (
             <div className="entity-overview-selection">
               <span><i className="fas fa-circle-check" aria-hidden="true" /> {selectedCount} selected</span>
               <button type="button" onClick={onClearSelection}>Clear selection</button>
@@ -224,15 +225,17 @@ const OverviewWorkspace = ({
                     <table className="entity-overview-table">
                       <thead>
                         <tr>
-                          <th className="entity-overview-check-cell">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(allSelected)}
-                              onChange={onToggleSelectAll}
-                              aria-label={`Select all ${register.itemLabel}s on this page`}
-                              className="table-checkbox"
-                            />
-                          </th>
+                          {selectionEnabled && (
+                            <th className="entity-overview-check-cell">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(allSelected)}
+                                onChange={onToggleSelectAll}
+                                aria-label={`Select all ${register.itemLabel}s on this page`}
+                                className="table-checkbox"
+                              />
+                            </th>
+                          )}
                           {columns.map((column) => (
                             <th
                               key={column.key}
@@ -247,18 +250,20 @@ const OverviewWorkspace = ({
                       <tbody>
                         {data.map((item, index) => {
                           const key = getRowKey(item, index);
-                          const selected = isSelected(item);
+                          const selected = selectionEnabled && isSelected(item);
                           return (
                             <tr key={key} className={selected ? "selected" : ""}>
-                              <td className="entity-overview-check-cell">
-                                <input
-                                  type="checkbox"
-                                  className="table-checkbox"
-                                  checked={selected}
-                                  onChange={() => onToggleSelection(item)}
-                                  aria-label={`Select ${register.itemLabel}`}
-                                />
-                              </td>
+                              {selectionEnabled && (
+                                <td className="entity-overview-check-cell">
+                                  <input
+                                    type="checkbox"
+                                    className="table-checkbox"
+                                    checked={selected}
+                                    onChange={() => onToggleSelection(item)}
+                                    aria-label={`Select ${register.itemLabel}`}
+                                  />
+                                </td>
+                              )}
                               {columns.map((column) => (
                                 <td key={column.key} className={column.cellClassName || ""}>
                                   {column.render(item, index)}
@@ -274,19 +279,21 @@ const OverviewWorkspace = ({
                   <div className="entity-overview-mobile-list">
                     {data.map((item, index) => {
                       const key = getRowKey(item, index);
-                      const selected = isSelected(item);
+                      const selected = selectionEnabled && isSelected(item);
                       return (
                         <article key={`mobile-${key}`} className={`entity-overview-mobile-card ${selected ? "selected" : ""}`}>
                           <div className="entity-overview-mobile-card__top">
-                            <label className="entity-overview-mobile-check">
-                              <input
-                                type="checkbox"
-                                checked={selected}
-                                onChange={() => onToggleSelection(item)}
-                                aria-label={`Select ${register.itemLabel}`}
-                              />
-                              <span />
-                            </label>
+                            {selectionEnabled && (
+                              <label className="entity-overview-mobile-check">
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  onChange={() => onToggleSelection(item)}
+                                  aria-label={`Select ${register.itemLabel}`}
+                                />
+                                <span />
+                              </label>
+                            )}
                             <div className="entity-overview-mobile-card__identity">
                               <strong>{mobile.title(item)}</strong>
                               {mobile.subtitle && <small>{mobile.subtitle(item)}</small>}

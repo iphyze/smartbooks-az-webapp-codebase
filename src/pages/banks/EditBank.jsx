@@ -9,6 +9,7 @@ import useToastStore from "../../stores/useToastStore";
 import useAuthStore from "../../stores/useAuthStore";
 import api from "../../services/api";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
+import { hasPermission } from "../../utils/permissions";
 
 const EditBank = () => {
   const { id } = useParams();
@@ -16,6 +17,8 @@ const EditBank = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "bank.view");
 
   // Local state for fetching single bank
   const [bankData, setBankData] = useState(null);
@@ -24,7 +27,7 @@ const EditBank = () => {
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Banks", to: "/banks/home", active: true },
+    ...(canView ? [{ label: "Banks", to: "/banks/home", active: true }] : []),
     { label: "Edit Bank", to: `/banks/edit/${id}`, active: false },
   ];
 
@@ -35,7 +38,7 @@ const EditBank = () => {
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
       showToast("Invalid bank ID. Redirecting…", "error");
-      navigate("/banks/home");
+      navigate(canView ? "/banks/home" : "/users/my-profile");
       return;
     }
 
@@ -60,14 +63,14 @@ const EditBank = () => {
     };
 
     fetchSingleBank();
-  }, [id, navigate, showToast]);
+  }, [id, navigate, showToast, canView]);
 
   // 3. Handle fetch error by redirecting
   useEffect(() => {
     if (fetchError) {
-      navigate("/banks/home");
+      navigate(canView ? "/banks/home" : "/users/my-profile");
     }
-  }, [fetchError, navigate]);
+  }, [fetchError, navigate, canView]);
 
   const handleSaveSuccess = () => {
     // Optional: Redirect or show success message after save

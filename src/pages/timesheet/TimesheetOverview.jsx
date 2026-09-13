@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useTimesheetStore from "../../stores/useTimesheetStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import {
   formatOverviewDate,
   formatOverviewNumber,
@@ -27,6 +29,10 @@ const TimesheetOverview = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, "timesheet.create");
+  const canEdit = hasPermission(user, "timesheet.edit");
+  const canDelete = hasPermission(user, "timesheet.delete");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -78,8 +84,8 @@ const TimesheetOverview = () => {
   const rowActions = (entry, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/timesheet/view/${entry.id}`) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/timesheet/edit/${entry.id}`) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(entry.id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/timesheet/edit/${entry.id}`) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(entry.id) },
     ]} />
   );
 
@@ -116,13 +122,13 @@ const TimesheetOverview = () => {
         <OverviewWorkspace
           theme={theme}
           pageTitle="Timesheet Overview"
-          links={[{ label: "Home", to: "/", active: true }, { label: "Timesheets", to: "/timesheet/home", active: false }]}
+          links={[{ label: "Home", to: defaultRouteForRole(user), active: true }, { label: "Timesheets", to: "/timesheet/home", active: false }]}
           hero={{
             icon: "fa-clock",
             eyebrow: "Time workspace",
             title: "Review recorded time in one focused workspace",
             description: "Track staff, client, time range and hours while preserving every existing timesheet view, edit and delete action.",
-            createLink: "/timesheet/create-timesheet",
+            createLink: canCreate ? "/timesheet/create-timesheet" : null,
             createLabel: "Log time",
           }}
           cards={cards}
@@ -140,9 +146,10 @@ const TimesheetOverview = () => {
           searchPlaceholder="Search date, staff or client"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
+          selectionEnabled={canDelete}
           selectedCount={selectedItems.length}
           selectedAction={selectedAction}
-          actionOptions={overviewDeleteActions}
+          actionOptions={canDelete ? overviewDeleteActions : []}
           onActionChange={(action) => { setSelectedAction(action); setDeleteTarget(null); if (action === "delete") setShowDeleteModal(true); }}
           onClearSelection={clearSelection}
           columns={columns}
@@ -164,7 +171,7 @@ const TimesheetOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-clock", message: "No timesheet entries found matching your criteria", link: "/timesheet/create-timesheet" }}
+          empty={{ icon: "fas fa-clock", message: "No timesheet entries found matching your criteria", link: canCreate ? "/timesheet/create-timesheet" : null }}
         />
 
         <AnimatePresence>

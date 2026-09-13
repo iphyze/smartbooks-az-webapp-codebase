@@ -93,6 +93,9 @@ export default function JournalFormView({
   headerErrors,
   handleDetailChange,
   costCenterOptions,
+  costCenterRestricted = false,
+  costCenterLoading = false,
+  costCenterLoadError = "",
   journalItems,
   itemErrorMap,
   ledgers,
@@ -105,6 +108,11 @@ export default function JournalFormView({
   setShowCreateClientModal,
   setShowCreateLedgerModal,
   setShowCreateRateModal,
+  canCreateClient = false,
+  canCreateLedger = false,
+  canCreateRate = false,
+  canImportJournal = false,
+  canManagePaymentRegistration = false,
   setActiveRowId,
   handleRateChange,
   onRemoveItem,
@@ -319,7 +327,8 @@ export default function JournalFormView({
                       options={costCenterOptions}
                       onChange={(option) => handleDetailChange("cost_center", option?.value || "")}
                       value={costCenterOptions.find((option) => option.value === journalDetails.cost_center) || null}
-                      placeholder="Select cost center"
+                      placeholder={costCenterLoading ? "Loading cost centres..." : "Select cost center"}
+                      isDisabled={costCenterLoading || (costCenterRestricted && costCenterOptions.length === 0)}
                       className={`form-input-select journal-form-select ${headerErrors.cost_center ? "input-error" : ""}`}
                       classNamePrefix="form-input-select"
                       inputId="cost_center"
@@ -329,11 +338,17 @@ export default function JournalFormView({
                     <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "cost_center" ? "chevron-rotate" : "", headerErrors.cost_center ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                   </div>
                 </div>
-                <button type="button" className="journal-form-secondary-action" onClick={() => setShowCreateClientModal(true)}>
-                  <i className="fas fa-plus" />
-                  Add client
-                </button>
+                {!costCenterRestricted && canCreateClient && (
+                  <button type="button" className="journal-form-secondary-action" onClick={() => setShowCreateClientModal(true)}>
+                    <i className="fas fa-plus" />
+                    Add client
+                  </button>
+                )}
               </div>
+              {costCenterLoadError && <FieldError message={costCenterLoadError} />}
+              {!costCenterLoadError && costCenterRestricted && !costCenterLoading && costCenterOptions.length === 0 && (
+                <FieldError message="No cost centre has been assigned to your account. Contact an administrator." />
+              )}
               <FieldError message={headerErrors.cost_center} />
             </div>
 
@@ -357,7 +372,7 @@ export default function JournalFormView({
         </div>
       </section>
 
-      {invoicePaymentRegistration ? (
+      {invoicePaymentRegistration && canManagePaymentRegistration ? (
         <section className={`journal-form-section journal-payment-registration ${invoicePaymentRegistration?.enabled ? "is-enabled" : ""}`}>
           <SectionHeader
             icon={linkedPayment ? "fa-link" : "fa-file-invoice-dollar"}
@@ -563,7 +578,7 @@ export default function JournalFormView({
           description="Each line has enough room for the ledger, narration, posting date, currency and amount."
           action={(
             <div className="journal-form-section-actions">
-              {!isEdit && onOpenImport ? (
+              {!isEdit && canImportJournal && onOpenImport ? (
                 <button type="button" className="journal-form-import-action" onClick={onOpenImport}>
                   <i className="fas fa-file-import" />
                   Import Excel / CSV
@@ -693,17 +708,19 @@ export default function JournalFormView({
                             <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `ledger_${item.id}` ? "chevron-rotate" : "", rowErr.ledger_name ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          className="journal-form-secondary-action"
-                          onClick={() => {
-                            setActiveRowId(item.id);
-                            setShowCreateLedgerModal(true);
-                          }}
-                        >
-                          <i className="fas fa-plus" />
-                          New ledger
-                        </button>
+                        {canCreateLedger && (
+                          <button
+                            type="button"
+                            className="journal-form-secondary-action"
+                            onClick={() => {
+                              setActiveRowId(item.id);
+                              setShowCreateLedgerModal(true);
+                            }}
+                          >
+                            <i className="fas fa-plus" />
+                            New ledger
+                          </button>
+                        )}
                       </div>
                       <FieldError message={rowErr.ledger_name} />
                       {item.ledger_name ? (
@@ -838,9 +855,11 @@ export default function JournalFormView({
                             <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === `rate_${item.id}` ? "chevron-rotate" : "", rowErr.jrate ? "input-icon-error" : ""].filter(Boolean).join(" ")} />
                           </div>
                         </div>
-                        <button type="button" className="journal-form-icon-action" onClick={() => setShowCreateRateModal(true)} title="Create exchange rate" aria-label="Create exchange rate">
-                          <i className="fas fa-plus" />
-                        </button>
+                        {canCreateRate && (
+                          <button type="button" className="journal-form-icon-action" onClick={() => setShowCreateRateModal(true)} title="Create exchange rate" aria-label="Create exchange rate">
+                            <i className="fas fa-plus" />
+                          </button>
+                        )}
                       </div>
                       <FieldError message={rowErr.jrate} />
                     </div>

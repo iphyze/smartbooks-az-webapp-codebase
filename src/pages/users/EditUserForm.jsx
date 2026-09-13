@@ -3,18 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import usePermissionsStore from "../../stores/usePermissionsStore";
 import useToastStore from "../../stores/useToastStore";
 import useUsersStore from "../../stores/useUsersStore";
 import useTimesheetReferenceStore from "../../stores/useTimesheetReferenceStore";
+import useCostCenterOptions from "../../hooks/useCostCenterOptions";
+import { canManagePermissionTarget, hasPermission, isSuperAdmin } from "../../utils/permissions";
+import UserPermissionMatrix from "./UserPermissionMatrix";
 import Select from "react-select";
 import "../inputs-styles/Inputs.css";
 import "./UserPasswordNotice.css";
+import "./UserCostCentreAccess.css";
+import "./UserPermissionMatrix.css";
 
-const ROLE_OPTIONS = [
-  { value: "Admin", label: "Admin" },
-  { value: "Controller", label: "Controller" },
-  { value: "Timesheet", label: "Timesheet" },
+const ACCESS_MODE_OPTIONS = [
+  { value: "all", label: "All Cost Centres" },
+  { value: "restricted", label: "Restricted Cost Centres" },
 ];
+
+const roleOptionFromUser = (user) => ({
+  value: user?.integrity || "User",
+  label: user?.rbac_role_name || user?.integrity || "User",
+  code: user?.rbac_role_code || "user",
+  permissions: Array.isArray(user?.permissions) ? user.permissions : [],
+});
 
 /* ─────────────────────────────────────────────────────────────────────────
    Field wrapper — defined at MODULE level so React never unmounts/remounts
@@ -42,9 +55,18 @@ const Field = ({ id, label, required, error, children }) => (
 ───────────────────────────────────────────────────────────────────────── */
 const EditUserForm = ({ userId, user, onSaveSuccess }) => {
   const { theme } = useThemeStore();
+  const { user: currentUser } = useAuthStore();
   const { showToast } = useToastStore();
   const { updateUser } = useUsersStore();
+  const {
+    catalogue: permissionCatalogue,
+    roles: permissionRoles,
+    loading: permissionsLoading,
+    error: permissionsError,
+    loadConfiguration,
+  } = usePermissionsStore();
   const { staff, searchStaff } = useTimesheetReferenceStore();
+  const { options: costCenterOptions, loading: costCentersLoading, error: costCentersError } = useCostCenterOptions();
   const navigate = useNavigate();
   const temporaryPassword = `Consultancy@${new Date().getFullYear()}`;
 
@@ -60,8 +82,50 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
     phone: "",
     integrity: "",
     staff_id: "",
+    cost_center_access_mode: "all",
+    cost_center_ids: [],
+    permissions: [],
     resetPassword: false,
   });
+
+  const targetIsSuperAdmin = isSuperAdmin(user);
+  const isSelf = String(currentUser?.id || "") === String(user?.id || userId || "");
+  const canManageTargetAccount = canManagePermissionTarget(currentUser, user);
+  const canManagePermissions = hasPermission(currentUser, "user.manage_permissions");
+  const canCustomizePermissions = canManagePermissions && canManageTargetAccount && !targetIsSuperAdmin && !isSelf;
+
+  const grantablePermissions = useMemo(() => {
+    if (isSuperAdmin(currentUser)) {
+      return permissionCatalogue.flatMap((module) => (module.permissions || []).map((permission) => permission.code));
+    }
+    return Array.isArray(currentUser?.permissions) ? currentUser.permissions : [];
+  }, [currentUser, permissionCatalogue]);
+
+  const roleOptions = useMemo(() => {
+    const currentOption = roleOptionFromUser(user);
+    if (!canCustomizePermissions) return [currentOption];
+
+    const grantableSet = new Set(grantablePermissions);
+    const options = permissionRoles
+      .filter((role) => !role.is_super_admin)
+      .filter((role) => isSuperAdmin(currentUser) || (role.permissions || []).every((code) => grantableSet.has(code)))
+      .map((role) => ({
+        value: role.name,
+        label: role.name,
+        code: role.code,
+        permissions: role.permissions || [],
+      }));
+
+    if (currentOption.value && !options.some((option) => option.value === currentOption.value)) {
+      options.unshift(currentOption);
+    }
+    return options;
+  }, [canCustomizePermissions, currentUser, grantablePermissions, permissionRoles, user]);
+
+  const selectedRole = useMemo(
+    () => roleOptions.find((role) => role.value === form.integrity) || roleOptionFromUser(user),
+    [form.integrity, roleOptions, user]
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -73,6 +137,9 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       phone: user.phone ?? "",
       integrity: user.integrity ?? "",
       staff_id: user.staff_id ?? "",
+      cost_center_access_mode: String(user.cost_center_access_mode || "all").toLowerCase(),
+      cost_center_ids: Array.isArray(user.cost_centers) ? user.cost_centers.map((item) => Number(item.id)).filter(Boolean) : [],
+      permissions: Array.isArray(user.permissions) ? user.permissions : [],
       resetPassword: false,
     });
   }, [user]);
@@ -82,7 +149,11 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
   };
 
   useEffect(() => {
-    if (form.integrity === "Timesheet") searchStaff("");
+    if (canManagePermissions) loadConfiguration();
+  }, [canManagePermissions, loadConfiguration]);
+
+  useEffect(() => {
+    if (form.integrity === "Timesheet") searchStaff("", "user_admin");
   }, [form.integrity, searchStaff]);
 
   const staffOptions = useMemo(() => {
@@ -102,6 +173,9 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       e.email = "Enter a valid email address";
     if (!form.integrity) e.integrity = "Role is required";
     if (form.integrity === "Timesheet" && !form.staff_id) e.staff_id = "Assign a staff profile for Timesheet access";
+    if (form.integrity !== "Timesheet" && form.cost_center_access_mode === "restricted" && form.cost_center_ids.length === 0) {
+      e.cost_center_ids = "Select at least one cost centre for restricted access";
+    }
     return e;
   }, [form]);
 
@@ -113,6 +187,11 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
+
+    if (!canManageTargetAccount) {
+      showToast("You cannot edit an account whose permissions exceed your own access", "error");
+      return;
+    }
 
     const formErrors = validateForm();
     if (Object.keys(formErrors).length > 0) {
@@ -130,8 +209,11 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
       phone: form.phone,
       integrity: form.integrity,
       staff_id: form.integrity === "Timesheet" ? form.staff_id : null,
+      cost_center_access_mode: form.integrity === "Timesheet" ? "all" : form.cost_center_access_mode,
+      cost_center_ids: form.integrity === "Timesheet" ? [] : form.cost_center_ids,
       reset_password: form.resetPassword,
     };
+    if (canCustomizePermissions) payload.permissions = form.permissions;
 
     const result = await updateUser(payload);
     setIsLoading(false);
@@ -241,13 +323,23 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
           <Field id="integrity" label="Role" required error={errors.integrity}>
             <div className="form-wrapper">
               <Select
-                options={ROLE_OPTIONS}
+                options={roleOptions}
                 onChange={(opt) => {
                   const role = opt?.value || "";
-                  setForm((prev) => ({ ...prev, integrity: role, staff_id: role === "Timesheet" ? prev.staff_id : "" }));
+                  const roleDefinition = roleOptions.find((item) => item.value === role);
+                  setForm((prev) => ({
+                    ...prev,
+                    integrity: role,
+                    staff_id: role === "Timesheet" ? prev.staff_id : "",
+                    cost_center_access_mode: role === "Timesheet" ? "all" : prev.cost_center_access_mode,
+                    cost_center_ids: role === "Timesheet" ? [] : prev.cost_center_ids,
+                    permissions: canCustomizePermissions ? (roleDefinition?.permissions || []) : prev.permissions,
+                  }));
                 }}
-                value={ROLE_OPTIONS.find((o) => o.value === form.integrity) || null}
+                value={selectedRole}
                 placeholder="Select role"
+                isLoading={canManagePermissions && permissionsLoading}
+                isDisabled={!canCustomizePermissions}
                 className={`form-input-select ${errors.integrity ? "input-error" : ""}`}
                 classNamePrefix="form-input-select"
                 inputId="integrity"
@@ -271,7 +363,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
               <div className="form-wrapper">
                 <Select
                   options={staffOptions}
-                  onInputChange={(value) => searchStaff(value.length > 1 ? value : "")}
+                  onInputChange={(value) => searchStaff(value.length > 1 ? value : "", "user_admin")}
                   onChange={(opt) => handleChange("staff_id", opt?.value || "")}
                   value={staffOptions.find((option) => String(option.value) === String(form.staff_id)) || null}
                   placeholder="Select the staff account this user owns"
@@ -282,6 +374,109 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
                 />
               </div>
             </Field>
+          )}
+
+
+
+          {form.integrity && form.integrity !== "Timesheet" && (
+            <section className="user-cost-centre-access" aria-label="Cost centre access">
+              <div className="user-cost-centre-access__heading">
+                <span className="user-cost-centre-access__icon"><i className="fas fa-layer-group" /></span>
+                <div>
+                  <h3>Cost Centre Data Access</h3>
+                  <p>
+                    Choose whether this account can see the whole company or only transactions and reports for selected divisions.
+                  </p>
+                </div>
+              </div>
+
+              <div className="user-cost-centre-access__grid">
+                <div className="user-cost-centre-access__field">
+                  <label htmlFor="cost_center_access_mode">Access scope *</label>
+                  <div className="form-wrapper">
+                    <Select
+                      options={ACCESS_MODE_OPTIONS}
+                      value={ACCESS_MODE_OPTIONS.find((option) => option.value === form.cost_center_access_mode) || ACCESS_MODE_OPTIONS[0]}
+                      onChange={(option) => setForm((prev) => ({
+                        ...prev,
+                        cost_center_access_mode: option?.value || "all",
+                        cost_center_ids: option?.value === "restricted" ? prev.cost_center_ids : [],
+                      }))}
+                      className="form-input-select"
+                      classNamePrefix="form-input-select"
+                      inputId="cost_center_access_mode"
+                      isSearchable={false}
+                    />
+                  </div>
+                  <p className="user-cost-centre-access__help">
+                    Changing this setting is a security change and revokes the user&apos;s active sessions.
+                  </p>
+                </div>
+
+                <div className="user-cost-centre-access__field">
+                  <label htmlFor="cost_center_ids">Assigned cost centres{form.cost_center_access_mode === "restricted" ? " *" : ""}</label>
+                  {form.cost_center_access_mode === "restricted" ? (
+                    costCentersLoading ? (
+                      <div className="user-cost-centre-access__loading">Loading cost centres…</div>
+                    ) : costCentersError ? (
+                      <div className="user-cost-centre-access__notice">{costCentersError}</div>
+                    ) : (
+                      <>
+                        <div className="form-wrapper">
+                          <Select
+                            isMulti
+                            closeMenuOnSelect={false}
+                            options={costCenterOptions}
+                            value={costCenterOptions.filter((option) => form.cost_center_ids.includes(option.id))}
+                            onChange={(selected) => handleChange("cost_center_ids", (selected || []).map((option) => option.id))}
+                            placeholder="Select one or more cost centres"
+                            className={`form-input-select ${errors.cost_center_ids ? "input-error" : ""}`}
+                            classNamePrefix="form-input-select"
+                            inputId="cost_center_ids"
+                            noOptionsMessage={() => "No cost centres available"}
+                          />
+                        </div>
+                        {errors.cost_center_ids && <div className="user-cost-centre-access__error">{errors.cost_center_ids}</div>}
+                      </>
+                    )
+                  ) : (
+                    <div className="user-cost-centre-access__notice">
+                      This user can access transactions and reports across all cost centres.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {!canManageTargetAccount && user && (
+            <div className="user-permission-matrix__state user-permission-matrix__state--error">
+              This account has permissions outside your own access. You can view it, but you cannot edit it.
+            </div>
+          )}
+
+          {canManagePermissions && !targetIsSuperAdmin && !isSelf && form.integrity && (
+            <UserPermissionMatrix
+              catalogue={permissionCatalogue}
+              selectedPermissions={form.permissions}
+              rolePermissions={selectedRole?.permissions || []}
+              grantablePermissions={grantablePermissions}
+              onChange={(permissions) => handleChange("permissions", permissions)}
+              loading={permissionsLoading}
+              error={permissionsError || ""}
+            />
+          )}
+
+          {targetIsSuperAdmin && (
+            <div className="user-permission-matrix__state">
+              <strong>Super Admin access is automatic.</strong> Permission checkboxes do not apply to this account.
+            </div>
+          )}
+
+          {canManagePermissions && isSelf && !targetIsSuperAdmin && (
+            <div className="user-permission-matrix__state">
+              Your own role and permission matrix cannot be changed from User Administration.
+            </div>
           )}
 
           <div className="invoice-form user-password-reset-span">
@@ -334,7 +529,7 @@ const EditUserForm = ({ userId, user, onSaveSuccess }) => {
             >
               Cancel
             </button>
-            <button type="submit" disabled={isLoading} className="invoice-submit-btn">
+            <button type="submit" disabled={isLoading || !canManageTargetAccount} className="invoice-submit-btn">
               {isLoading ? (
                 <div className="invoice-loader" />
               ) : (

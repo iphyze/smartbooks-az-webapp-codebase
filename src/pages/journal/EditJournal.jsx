@@ -8,6 +8,7 @@ import EditJournalForm from "./EditJournalForm";
 import useToastStore from "../../stores/useToastStore";
 import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
 
 const EditJournal = () => {
@@ -15,6 +16,7 @@ const EditJournal = () => {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
+  const user = useAuthStore((state) => state.user);
   const [nav, setNav] = useState(false);
 
   // State for page status and data
@@ -50,7 +52,13 @@ const EditJournal = () => {
       );
 
       if (response.data && response.data.data) {
-        setJournalData(response.data.data);
+        const loadedJournal = response.data.data;
+        if (loadedJournal.payment_link && !hasPermission(user, "journal.payment_link")) {
+          showToast("You need Journal Payment Link permission to edit a journal linked to an invoice payment.", "error");
+          navigate(`/journal/view/${parsedId}`, { replace: true });
+          return;
+        }
+        setJournalData(loadedJournal);
         setPageState("valid");
       } else {
         throw new Error("No data returned");

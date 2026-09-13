@@ -10,8 +10,10 @@ import EmptyTable from "../../components/EmptyTable";
 import DeleteConfirmationModal from "../../components/modals/DeleteConfirmationModal";
 import ErrorModal from "../../components/modals/ErrorModal";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
 import useInvoiceStore from "../../stores/useInvoiceStore";
 import { formatCurrencyDecimals } from "../../utils/helper";
+import { hasPermission } from "../../utils/permissions";
 import printPdfDocument from "../../utils/printPdfDocument";
 import useToastStore from "../../stores/useToastStore";
 import api from "../../services/api";
@@ -44,9 +46,14 @@ const clientInitials = (name) => String(name || "Client")
 const InvoiceOverview = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const { showToast } = useToastStore();
   const [printingInvoiceNumber, setPrintingInvoiceNumber] = useState(null);
+  const canCreate = hasPermission(user, "invoice.create");
+  const canEdit = hasPermission(user, "invoice.edit");
+  const canDelete = hasPermission(user, "invoice.delete");
+  const canExport = hasPermission(user, "invoice.export");
 
   const {
     data,
@@ -126,6 +133,7 @@ const InvoiceOverview = () => {
   };
 
   const handleSelectAll = () => {
+    if (!canDelete) return;
     if (allCurrentPageSelected) {
       useInvoiceStore.setState({
         selectedItems: selectedItems.filter((invoiceNumber) => !currentPageIds.includes(invoiceNumber)),
@@ -139,11 +147,13 @@ const InvoiceOverview = () => {
   };
 
   const handleActionChange = (actionId) => {
+    if (!canDelete) return;
     setSelectedAction(actionId);
     if (actionId === "delete") setShowDeleteModal(true);
   };
 
   const handleDelete = async () => {
+    if (!canDelete) return;
     await deleteSelectedItems();
     setShowDeleteModal(false);
     setSelectedAction("");
@@ -152,7 +162,7 @@ const InvoiceOverview = () => {
   };
 
   const handleDeleteInvoice = (invoiceNumber) => {
-    if (!invoiceNumber) return;
+    if (!canDelete || !invoiceNumber) return;
     useInvoiceStore.setState({ selectedItems: [invoiceNumber] });
     setShowDeleteModal(true);
   };
@@ -166,11 +176,12 @@ const InvoiceOverview = () => {
   };
 
   const handleEditInvoice = (invoice) => {
+    if (!canEdit) return;
     navigate(`/invoice/edit/${invoice.invoice_number}`, { state: { invoice } });
   };
 
   const handlePrintInvoice = async (invoice) => {
-    if (!invoice?.invoice_number || printingInvoiceNumber) return;
+    if (!canExport || !invoice?.invoice_number || printingInvoiceNumber) return;
 
     setPrintingInvoiceNumber(invoice.invoice_number);
     try {
@@ -281,16 +292,18 @@ const InvoiceOverview = () => {
 
   const renderRowActions = (invoice, compact = false) => (
     <div className={`invoice-row-actions ${compact ? "invoice-row-actions--mobile" : ""}`}>
-      <button
-        type="button"
-        className="invoice-row-action invoice-row-action--edit"
-        title="Edit invoice"
-        aria-label={`Edit invoice ${invoice.invoice_number}`}
-        onClick={() => handleEditInvoice(invoice)}
-      >
-        <i className="fas fa-pen" />
-        {compact && <span>Edit</span>}
-      </button>
+      {canEdit && (
+        <button
+          type="button"
+          className="invoice-row-action invoice-row-action--edit"
+          title="Edit invoice"
+          aria-label={`Edit invoice ${invoice.invoice_number}`}
+          onClick={() => handleEditInvoice(invoice)}
+        >
+          <i className="fas fa-pen" />
+          {compact && <span>Edit</span>}
+        </button>
+      )}
       <button
         type="button"
         className="invoice-row-action invoice-row-action--view"
@@ -301,27 +314,31 @@ const InvoiceOverview = () => {
         <i className="fas fa-arrow-up-right-from-square" />
         {compact && <span>View</span>}
       </button>
-      <button
-        type="button"
-        className="invoice-row-action invoice-row-action--print"
-        title="Print invoice"
-        aria-label={`Print invoice ${invoice.invoice_number}`}
-        onClick={() => handlePrintInvoice(invoice)}
-        disabled={printingInvoiceNumber === invoice.invoice_number}
-      >
-        <i className={`fas ${printingInvoiceNumber === invoice.invoice_number ? "fa-spinner fa-spin" : "fa-print"}`} />
-        {compact && <span>Print</span>}
-      </button>
-      <button
-        type="button"
-        className="invoice-row-action invoice-row-action--delete"
-        title="Delete invoice"
-        aria-label={`Delete invoice ${invoice.invoice_number}`}
-        onClick={() => handleDeleteInvoice(invoice.invoice_number)}
-      >
-        <i className="fas fa-trash" />
-        {compact && <span>Delete</span>}
-      </button>
+      {canExport && (
+        <button
+          type="button"
+          className="invoice-row-action invoice-row-action--print"
+          title="Print invoice"
+          aria-label={`Print invoice ${invoice.invoice_number}`}
+          onClick={() => handlePrintInvoice(invoice)}
+          disabled={printingInvoiceNumber === invoice.invoice_number}
+        >
+          <i className={`fas ${printingInvoiceNumber === invoice.invoice_number ? "fa-spinner fa-spin" : "fa-print"}`} />
+          {compact && <span>Print</span>}
+        </button>
+      )}
+      {canDelete && (
+        <button
+          type="button"
+          className="invoice-row-action invoice-row-action--delete"
+          title="Delete invoice"
+          aria-label={`Delete invoice ${invoice.invoice_number}`}
+          onClick={() => handleDeleteInvoice(invoice.invoice_number)}
+        >
+          <i className="fas fa-trash" />
+          {compact && <span>Delete</span>}
+        </button>
+      )}
     </div>
   );
 
@@ -350,19 +367,23 @@ const InvoiceOverview = () => {
                 <p>Track payment, workflow and delivery status while keeping daily invoice actions within easy reach.</p>
               </div>
               <div className="invoice-overview-hero__actions">
-                <button
-                  type="button"
-                  className="invoice-overview-button invoice-overview-button--secondary"
-                  onClick={exportToExcel}
-                  disabled={loading || data.length === 0}
-                >
-                  <i className="fas fa-file-excel" />
-                  <span>Export current page</span>
-                </button>
-                <Link to="/invoice/create" className="invoice-overview-button invoice-overview-button--primary">
-                  <i className="fas fa-plus" />
-                  <span>Create invoice</span>
-                </Link>
+                {canExport && (
+                  <button
+                    type="button"
+                    className="invoice-overview-button invoice-overview-button--secondary"
+                    onClick={exportToExcel}
+                    disabled={loading || data.length === 0}
+                  >
+                    <i className="fas fa-file-excel" />
+                    <span>Export current page</span>
+                  </button>
+                )}
+                {canCreate && (
+                  <Link to="/invoice/create" className="invoice-overview-button invoice-overview-button--primary">
+                    <i className="fas fa-plus" />
+                    <span>Create invoice</span>
+                  </Link>
+                )}
               </div>
             </motion.section>
 
@@ -418,7 +439,7 @@ const InvoiceOverview = () => {
                     />
                   </div>
 
-                  {selectedItems.length > 0 && (
+                  {canDelete && selectedItems.length > 0 && (
                     <div className="invoice-overview-filter invoice-overview-filter--action">
                       <label>Bulk action</label>
                       <ChartSearchableSelect
@@ -432,7 +453,7 @@ const InvoiceOverview = () => {
                 </div>
               </div>
 
-              {selectedItems.length > 0 && (
+              {canDelete && selectedItems.length > 0 && (
                 <div className="invoice-selection-banner">
                   <span><i className="fas fa-circle-check" /> {selectedItems.length} selected</span>
                   <button type="button" onClick={clearSelection}>Clear selection</button>
@@ -449,15 +470,17 @@ const InvoiceOverview = () => {
                         <table className="invoice-overview-table">
                           <thead>
                             <tr>
-                              <th className="invoice-check-cell">
-                                <input
-                                  type="checkbox"
-                                  checked={allCurrentPageSelected}
-                                  onChange={handleSelectAll}
-                                  aria-label="Select all invoices on this page"
-                                  className="table-checkbox"
-                                />
-                              </th>
+                              {canDelete && (
+                                <th className="invoice-check-cell">
+                                  <input
+                                    type="checkbox"
+                                    checked={allCurrentPageSelected}
+                                    onChange={handleSelectAll}
+                                    aria-label="Select all invoices on this page"
+                                    className="table-checkbox"
+                                  />
+                                </th>
+                              )}
                               <th className="sortable" onClick={() => handleSort("invoice_number")}>Invoice {getSortIcon("invoice_number")}</th>
                               <th className="sortable" onClick={() => handleSort("invoice_date")}>Issued {getSortIcon("invoice_date")}</th>
                               <th>Client</th>
@@ -474,15 +497,17 @@ const InvoiceOverview = () => {
                               const selected = selectedItems.includes(invoice.invoice_number);
                               return (
                                 <tr key={invoice.id || invoice.invoice_number} className={selected ? "selected" : ""}>
-                                  <td className="invoice-check-cell">
-                                    <input
-                                      type="checkbox"
-                                      className="table-checkbox"
-                                      checked={selected}
-                                      onChange={() => toggleItemSelection(invoice.invoice_number)}
-                                      aria-label={`Select invoice ${invoice.invoice_number}`}
-                                    />
-                                  </td>
+                                  {canDelete && (
+                                    <td className="invoice-check-cell">
+                                      <input
+                                        type="checkbox"
+                                        className="table-checkbox"
+                                        checked={selected}
+                                        onChange={() => toggleItemSelection(invoice.invoice_number)}
+                                        aria-label={`Select invoice ${invoice.invoice_number}`}
+                                      />
+                                    </td>
+                                  )}
                                   <td>
                                     <button type="button" className="invoice-number-link" onClick={() => handleViewInvoice(invoice)}>
                                       <span>INV</span> {invoice.invoice_number}
@@ -522,15 +547,17 @@ const InvoiceOverview = () => {
                           return (
                             <article key={`mobile-${invoice.id || invoice.invoice_number}`} className={`invoice-mobile-card ${selected ? "selected" : ""}`}>
                               <div className="invoice-mobile-card__top">
-                                <label className="invoice-mobile-check">
-                                  <input
-                                    type="checkbox"
-                                    checked={selected}
-                                    onChange={() => toggleItemSelection(invoice.invoice_number)}
-                                    aria-label={`Select invoice ${invoice.invoice_number}`}
-                                  />
-                                  <span />
-                                </label>
+                                {canDelete && (
+                                  <label className="invoice-mobile-check">
+                                    <input
+                                      type="checkbox"
+                                      checked={selected}
+                                      onChange={() => toggleItemSelection(invoice.invoice_number)}
+                                      aria-label={`Select invoice ${invoice.invoice_number}`}
+                                    />
+                                    <span />
+                                  </label>
+                                )}
                                 <button type="button" className="invoice-mobile-number" onClick={() => handleViewInvoice(invoice)}>
                                   INV {invoice.invoice_number}
                                 </button>
@@ -627,7 +654,7 @@ const InvoiceOverview = () => {
                       <EmptyTable
                         icon="fas fa-file-invoice"
                         message="No invoices found matching your criteria"
-                        link="/invoice/create"
+                        link={canCreate ? "/invoice/create" : undefined}
                       />
                     </div>
                   )}
@@ -636,7 +663,7 @@ const InvoiceOverview = () => {
             </motion.section>
 
             <AnimatePresence>
-              {showDeleteModal && (
+              {canDelete && showDeleteModal && (
                 <DeleteConfirmationModal
                   isOpen={showDeleteModal}
                   onClose={() => {

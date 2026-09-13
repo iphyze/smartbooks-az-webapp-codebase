@@ -148,15 +148,17 @@ const InvoiceLineEditor = ({
 
                 <div className="invoice-line-card__catalogue-footer">
                   <small>Selecting a service fills the description, amount and tax rates.</small>
-                  <button
-                    type="button"
-                    className="invoice-line-card__save-service"
-                    onClick={() => onSaveAsService?.(item)}
-                    title="Save this line for future invoices"
-                  >
-                    <span className="fas fa-bookmark" aria-hidden="true" />
-                    <span>Save as service</span>
-                  </button>
+                  {onSaveAsService && (
+                    <button
+                      type="button"
+                      className="invoice-line-card__save-service"
+                      onClick={() => onSaveAsService(item)}
+                      title="Save this line for future invoices"
+                    >
+                      <span className="fas fa-bookmark" aria-hidden="true" />
+                      <span>Save as service</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

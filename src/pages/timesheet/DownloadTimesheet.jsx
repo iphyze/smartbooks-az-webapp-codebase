@@ -1,13 +1,6 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import MontserratRegular from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-
-Font.register({ family: 'Montserrat-Regular', src: MontserratRegular });
-Font.register({ family: 'Montserrat-Light', src: MontserratLight });
-Font.register({ family: 'Montserrat-Medium', src: MontserratMedium });
 
 const DownloadTimesheet = ({ timesheet }) => {
   if (!timesheet) return null;
@@ -129,7 +122,7 @@ export default DownloadTimesheet;
 // Styles
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Helvetica',
     fontSize: 9,
     paddingTop: 30,
     paddingBottom: 40,
@@ -161,7 +154,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   metaLabel: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 7.2,
     width: 100,
     color: '#000000',
@@ -169,7 +162,7 @@ const styles = StyleSheet.create({
   },
   metaValue: {
     width: '70%',
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 7.2,
     flex: 1,
     color: '#000000',
@@ -180,13 +173,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   voucherTypeText: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 9.9,
     color: '#000000',
     textTransform: 'capitalize',
   },
   voucherId: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 8.1,
     color: '#00b196',
   },
@@ -213,7 +206,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 5,
     fontSize: 7.2,
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     color: '#00000',
     borderRightWidth: 0.5,
     borderRightColor: '#d3d7dd',
@@ -223,13 +216,13 @@ const styles = StyleSheet.create({
   },
   colColor: {
     color: 'white',
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     lineHeight: 1.4,
   },
   colTime: { width: '30%', textAlign: 'center' },
   colHours: { width: '40%', textAlign: 'center', borderRightWidth: 0 },
   boldText: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
   },
   footerContainer: {
     flexDirection: 'row',
@@ -248,13 +241,13 @@ const styles = StyleSheet.create({
   },
   signatureLabel: {
     width: '15%',
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 7.2,
     color: '#000000',
   },
   signatureValue: {
     width: '85%',
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 7.2,
     color: '#000000',
   },

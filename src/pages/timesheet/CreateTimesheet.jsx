@@ -2,17 +2,21 @@ import React, { useEffect, useState } from "react";
 import NavBar from "../NavBar";
 import Header from "../Header";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import PageNav from "../../components/PageNav";
 import CreateTimesheetForm from "./CreateTimesheetForm";
 
 const CreateTimesheet = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewTimesheets = hasPermission(user, "timesheet.view");
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Timesheets", to: "/timesheet/home", active: true },
-    { label: "Log Time", to: "/", active: false },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewTimesheets ? [{ label: "Timesheets", to: "/timesheet/home", active: true }] : []),
+    { label: "Log Time", to: "/timesheet/create-timesheet", active: false },
   ];
 
   useEffect(() => {

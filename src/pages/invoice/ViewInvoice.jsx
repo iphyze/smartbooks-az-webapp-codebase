@@ -9,6 +9,7 @@ import PageNav from "../../components/PageNav";
 import useToastStore from "../../stores/useToastStore";
 import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole } from "../../utils/permissions";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
 import ViewInvoiceContent from "./ViewInvoiceContent";
 
@@ -17,6 +18,8 @@ const ViewInvoice = () => {
   const navigate = useNavigate();
   // const location = useLocation(); // Not strictly needed if we always fallback to home
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const homeRoute = defaultRouteForRole(user);
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
 
@@ -25,7 +28,7 @@ const ViewInvoice = () => {
   const [invoiceData, setinvoiceData] = useState(null);
 
   const links = [
-    { label: "Home", to: "/", active: true },
+    { label: "Home", to: homeRoute, active: true },
     { label: "Invoice", to: "/invoice/home", active: true },
     { label: "Details", to: "/", active: false },
   ];

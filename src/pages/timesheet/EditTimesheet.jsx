@@ -7,6 +7,8 @@ import PageNav from "../../components/PageNav";
 import EditTimesheetForm from "./EditTimesheetForm";
 import useToastStore from "../../stores/useToastStore";
 import useTimesheetStore from "../../stores/useTimesheetStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
 
 const EditTimesheet = () => {
@@ -15,15 +17,18 @@ const EditTimesheet = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { fetchSingleTimesheet } = useTimesheetStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewTimesheets = hasPermission(user, "timesheet.view");
+  const fallbackRoute = canViewTimesheets ? "/timesheet/home" : defaultRouteForRole(user);
   const [nav, setNav] = useState(false);
 
   const [pageState, setPageState] = useState("checking");
   const [timesheetData, setTimesheetData] = useState(null);
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Timesheets", to: "/timesheet/home", active: true },
-    { label: "Edit Entry", to: "/", active: false },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewTimesheets ? [{ label: "Timesheets", to: "/timesheet/home", active: true }] : []),
+    { label: "Edit Entry", to: `/timesheet/edit/${id}`, active: false },
   ];
 
   useEffect(() => {
@@ -35,7 +40,7 @@ const EditTimesheet = () => {
     const parsedId = parseInt(id, 10);
     if (!id || isNaN(parsedId) || parsedId <= 0) {
       showToast("Invalid timesheet ID. Redirecting…", "error");
-      navigate("/timesheet/home");
+      navigate(fallbackRoute);
       return;
     }
 
@@ -45,7 +50,7 @@ const EditTimesheet = () => {
       setPageState("valid");
     } else {
       setPageState("invalid");
-      navigate("/timesheet/home");
+      navigate(fallbackRoute);
     }
   };
 

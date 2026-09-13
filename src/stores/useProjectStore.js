@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as XLSX from 'xlsx';
 import useToastStore from './useToastStore';
+import useAuthStore from './useAuthStore';
 import api from '../services/api';
+import { hasPermission } from '../utils/permissions';
 
 const useProjectStore = create(
   persist(
@@ -258,6 +260,11 @@ const useProjectStore = create(
          Export to Excel
       ═════════════════════════════════════════════════════════════════════ */
       exportToExcel: () => {
+        if (!hasPermission(useAuthStore.getState().user, 'project.export')) {
+          useToastStore.getState().showToast('You do not have permission to export this data', 'error');
+          return;
+        }
+
         try {
           const data = get().data;
           const exportData = data.map((project) => ({

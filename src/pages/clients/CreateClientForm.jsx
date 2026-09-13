@@ -5,6 +5,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useClientStore from "../../stores/useClientStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import Select from "react-select"; // Added React Select import
 import "../inputs-styles/Inputs.css";
 
@@ -23,6 +25,10 @@ const CreateClientForm = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { createClient, fetchNextClientId, nextClientId, fetchingNextId } = useClientStore();
+  const user = useAuthStore((state) => state.user);
+  const canCreateLedger = hasPermission(user, "ledger.create");
+  const canViewClients = hasPermission(user, "client.view");
+  const ledgerOptions = useMemo(() => canCreateLedger ? LEDGER_OPTIONS : LEDGER_OPTIONS.filter((option) => option.value === "No"), [canCreateLedger]);
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +41,7 @@ const CreateClientForm = () => {
     clients_email: "",
     clients_number: "",
     clients_address: "",
-    create_ledger: "Yes", // Added to state
+    create_ledger: canCreateLedger ? "Yes" : "No",
   });
 
   /* ── Fetch Next ID on Mount ── */
@@ -120,9 +126,13 @@ const CreateClientForm = () => {
         clients_email: "",
         clients_number: "",
         clients_address: "",
-        create_ledger: "Yes", // Reset to default
+        create_ledger: canCreateLedger ? "Yes" : "No",
       });
-      navigate("/client/home");
+      if (canViewClients) {
+        navigate("/client/home");
+      } else {
+        fetchNextClientId();
+      }
     }
   };
 
@@ -280,9 +290,9 @@ const CreateClientForm = () => {
                   </label>
                   <div className="form-wrapper">
                     <Select
-                      options={LEDGER_OPTIONS}
+                      options={ledgerOptions}
                       onChange={(opt) => handleDetailChange("create_ledger", opt?.value || "")}
-                      value={LEDGER_OPTIONS.find((o) => o.value === clientDetails.create_ledger) || null}
+                      value={ledgerOptions.find((o) => o.value === clientDetails.create_ledger) || null}
                       placeholder="Select"
                       className={`form-input-select ${errors.create_ledger ? "input-error" : ""}`}
                       classNamePrefix="form-input-select"

@@ -8,6 +8,8 @@ import NavBar from "../NavBar";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
 import useFXRevaluationStore from "../../stores/useFXRevaluationStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useRateSearchStore from "../../stores/useRateSearchStore";
 import { fmt, fmtDate, fmtDatetime, toLocalISO } from "../../utils/helper";
 import useReportPagePersistence, {
@@ -85,6 +87,7 @@ const FilterBar = ({
   errors,
   rateOptions,
   ratesLoading,
+  canPreview,
 }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -196,7 +199,7 @@ const FilterBar = ({
 
         <div className="fx-filter-field fx-filter-btn-cell">
           <label className="fx-filter-label">&nbsp;</label>
-          <button className="fx-preview-btn" onClick={onFetch} disabled={loading}>
+          <button className="fx-preview-btn" onClick={onFetch} disabled={loading || !canPreview} title={canPreview ? "Calculate the FX preview" : "You do not have permission to preview FX revaluation"}>
             {loading ? (
               <>
                 <div className="fx-btn-loader" /> Calculating...
@@ -228,14 +231,16 @@ const StatusBanner = ({ type = "info", icon = "fa-circle-info", title, children 
   </motion.div>
 );
 
-const EmptyPrompt = () => (
+const EmptyPrompt = ({ canPreview = true }) => (
   <motion.div className="fx-empty-prompt" variants={fadeUp} initial="hidden" animate="show">
     <div className="fx-empty-icon">
       <i className="fas fa-arrows-rotate" />
     </div>
-    <h3 className="fx-empty-title">No FX review calculated yet</h3>
+    <h3 className="fx-empty-title">{canPreview ? "No FX review calculated yet" : "FX preview access is restricted"}</h3>
     <p className="fx-empty-sub">
-      Select a period and foreign currency, then click <strong>Preview FX Gain / Loss</strong>. Realized FX already posted and the postable unrealized revaluation will be shown separately.
+      {canPreview
+        ? <>Select a period and foreign currency, then click <strong>Preview FX Gain / Loss</strong>. Realized FX already posted and the postable unrealized revaluation will be shown separately.</>
+        : <>Your account can open the FX module, but it does not have <strong>fx.preview</strong>. An authorized administrator must grant preview access before a revaluation can be calculated.</>}
     </p>
   </motion.div>
 );
@@ -1121,6 +1126,10 @@ const FXRevaluation = () => {
   const previousCurrencyRef = useRef(null);
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canPreview = hasPermission(user, "fx.preview");
+  const canPostPermission = hasPermission(user, "fx.post");
+  const canReversePermission = hasPermission(user, "fx.reverse");
   const {
     preview,
     posting,
@@ -1145,7 +1154,7 @@ const FXRevaluation = () => {
       setCurrency(restoredCurrency);
       setRateDate(restoredRateDate);
 
-      if (saved.hasCalculated && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
+      if (canPreview && saved.hasCalculated && restoredDateFrom && restoredDateTo && restoredCurrency?.value) {
         return fetchRevaluation({
           datefrom: toLocalISO(restoredDateFrom),
           dateto: toLocalISO(restoredDateTo),
@@ -1157,7 +1166,7 @@ const FXRevaluation = () => {
       }
       return undefined;
     },
-    [fetchRevaluation]
+    [canPreview, fetchRevaluation]
   );
 
   useReportPagePersistence(
@@ -1225,6 +1234,7 @@ const FXRevaluation = () => {
   };
 
   const handleFetch = useCallback(async () => {
+    if (!canPreview) return;
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -1236,10 +1246,11 @@ const FXRevaluation = () => {
       rate_id: rateDate,
     });
     if (result) setHasCalculated(true);
-  }, [currency, dateFrom, dateTo, fetchRevaluation, rateDate]);
+  }, [canPreview, currency, dateFrom, dateTo, fetchRevaluation, rateDate]);
 
   const handlePost = useCallback(
     async (body) => {
+      if (!canPostPermission) return;
       const result = await postRevaluation({ ...body, rate_id: rateDate });
       if (!result) return;
       setShowPostModal(false);
@@ -1250,11 +1261,12 @@ const FXRevaluation = () => {
         rate_id: rateDate,
       });
     },
-    [currency, dateFrom, dateTo, fetchRevaluation, postRevaluation, rateDate]
+    [canPostPermission, currency, dateFrom, dateTo, fetchRevaluation, postRevaluation, rateDate]
   );
 
   const handleReverse = useCallback(
     async (body) => {
+      if (!canReversePermission) return;
       const result = await reverseRevaluation(body);
       if (!result) return;
       setShowReverseModal(false);
@@ -1265,13 +1277,14 @@ const FXRevaluation = () => {
         rate_id: rateDate,
       });
     },
-    [currency, dateFrom, dateTo, fetchRevaluation, rateDate, reverseRevaluation]
+    [canReversePermission, currency, dateFrom, dateTo, fetchRevaluation, rateDate, reverseRevaluation]
   );
 
   const periodStatus = preview.periodStatus || {};
   const periodIsLocked = Boolean(periodStatus.is_locked);
   const alreadyPosted = Boolean(periodStatus.already_posted);
-  const canReverse = Boolean(periodStatus.can_reverse);
+  const periodCanReverse = Boolean(periodStatus.can_reverse);
+  const canReverse = canReversePermission && periodCanReverse;
   const schemaReady = preview.meta?.schema_ready !== false;
   const realizedSchemaReady =
     preview.meta?.realized_reporting_schema_ready !== false;
@@ -1287,6 +1300,7 @@ const FXRevaluation = () => {
     (!rateDate || String(preview.meta?.rate_id || "") === String(rateDate));
 
   const canPost =
+    canPostPermission &&
     hasPending &&
     schemaReady &&
     !periodIsLocked &&
@@ -1296,14 +1310,15 @@ const FXRevaluation = () => {
     !posting.loading;
 
   let postButtonTitle = "Post the journal shown in the preview";
-  if (!hasPending) postButtonTitle = "No FX difference to post";
+  if (!canPostPermission) postButtonTitle = "You do not have permission to post FX revaluation";
+  else if (!hasPending) postButtonTitle = "No FX difference to post";
   else if (!schemaReady) postButtonTitle = "Apply the FX database migration first";
   else if (periodIsLocked) postButtonTitle = "The closing date is in a locked period";
   else if (alreadyPosted) postButtonTitle = "A revaluation already exists for this closing date";
   else if (!previewMatchesFilters) postButtonTitle = "Refresh the preview after changing filters";
 
   const links = [
-    { label: "Home", to: "/", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
     { label: "FX Gain / Loss", to: "/reports/fx-revaluation", active: false },
   ];
 
@@ -1331,12 +1346,13 @@ const FXRevaluation = () => {
               errors={errors}
               rateOptions={rateOptions}
               ratesLoading={ratesLoading}
+              canPreview={canPreview}
             />
 
             <AnimatePresence mode="wait">
               {!hasCalculated ? (
                 <motion.div key="empty" variants={fadeUp} initial="hidden" animate="show" exit="exit">
-                  <EmptyPrompt />
+                  <EmptyPrompt canPreview={canPreview} />
                 </motion.div>
               ) : (
                 <motion.div key="results" variants={fadeUp} initial="hidden" animate="show" exit="exit">
@@ -1365,8 +1381,10 @@ const FXRevaluation = () => {
                     {alreadyPosted ? (
                       <StatusBanner key="posted" type="warn" icon="fa-triangle-exclamation" title="Revaluation already exists for this closing date.">
                         Journal {periodStatus.posted_journal_id}{periodStatus.batch_code ? ` · Batch ${periodStatus.batch_code}` : ""}.
-                        {canReverse
-                          ? " Reverse the active journal before posting a same-date replacement."
+                        {periodCanReverse
+                          ? (canReversePermission
+                            ? " Reverse the active journal before posting a same-date replacement."
+                            : " The active journal can be reversed by a user with FX reversal permission.")
                           : ` It was reversed on ${periodStatus.reversal_date || "a later date"} and remains part of the historical closing-date balance.`}
                       </StatusBanner>
                     ) : null}
@@ -1444,7 +1462,7 @@ const FXRevaluation = () => {
                       </p>
                     </div>
                     <div className="fx-action-right">
-                      {alreadyPosted ? (
+                      {alreadyPosted && canReversePermission ? (
                         <button
                           className="fx-post-btn fx-post-btn--danger"
                           onClick={() => setShowReverseModal(true)}
@@ -1453,7 +1471,7 @@ const FXRevaluation = () => {
                         >
                           <i className="fas fa-rotate-left" /> {canReverse ? "Reverse Journal" : "Historical Journal"}
                         </button>
-                      ) : (
+                      ) : !alreadyPosted && canPostPermission ? (
                         <button
                           className="fx-post-btn"
                           onClick={() => setShowPostModal(true)}
@@ -1466,7 +1484,7 @@ const FXRevaluation = () => {
                             <><i className="fas fa-file-pen" /> Post Previewed Journal</>
                           )}
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
@@ -1511,7 +1529,7 @@ const FXRevaluation = () => {
       </div>
 
       <AnimatePresence>
-        {showPostModal ? (
+        {canPostPermission && showPostModal ? (
           <PostModal
             open={showPostModal}
             onClose={() => setShowPostModal(false)}
@@ -1525,7 +1543,7 @@ const FXRevaluation = () => {
           />
         ) : null}
 
-        {showReverseModal ? (
+        {canReversePermission && showReverseModal ? (
           <ReverseModal
             open={showReverseModal}
             onClose={() => setShowReverseModal(false)}

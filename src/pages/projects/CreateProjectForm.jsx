@@ -5,6 +5,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useProjectStore from "../../stores/useProjectStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import "../inputs-styles/Inputs.css";
 
 /* ─────────────────────────────────────────────
@@ -14,6 +16,8 @@ const CreateProjectForm = () => {
   const { theme } = useThemeStore();
   const { showToast } = useToastStore();
   const { createProject, fetchNextProjectCode, nextProjectCode, fetchingNextCode } = useProjectStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewProjects = hasPermission(user, "project.view");
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +87,11 @@ const CreateProjectForm = () => {
       setProjectDetails({
         project_name: "",
       });
-      navigate("/project/home");
+      if (canViewProjects) {
+        navigate("/project/home");
+      } else {
+        fetchNextProjectCode();
+      }
     }
   };
 

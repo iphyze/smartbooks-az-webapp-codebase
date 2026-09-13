@@ -8,12 +8,17 @@ import EditInvoiceForm from "./EditInvoiceForm";
 import useToastStore from "../../stores/useToastStore";
 import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import EditLoaderComponent from "../../components/EditLoaderComponent";
 
 const EditInvoice = () => {
   const { invoice_number } = useParams();
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canViewInvoices = hasPermission(user, "invoice.view");
+  const homeRoute = defaultRouteForRole(user);
+  const invoiceFallbackRoute = canViewInvoices ? "/invoice/home" : homeRoute;
   const { showToast } = useToastStore();
   const [nav, setNav] = useState(false);
 
@@ -22,9 +27,9 @@ const EditInvoice = () => {
   const [invoiceData, setInvoiceData] = useState(null);
 
   const links = [
-    { label: "Home", to: "/", active: true },
-    { label: "Invoice", to: "/invoice/home", active: true },
-    { label: "Edit Invoice", to: "/", active: false },
+    { label: "Home", to: homeRoute, active: true },
+    ...(canViewInvoices ? [{ label: "Invoice", to: "/invoice/home", active: true }] : []),
+    { label: "Edit Invoice", to: homeRoute, active: false },
   ];
 
   useEffect(() => {
@@ -37,7 +42,7 @@ const EditInvoice = () => {
     const parsedId = parseInt(invoice_number, 10);
     if (!invoice_number || isNaN(parsedId) || parsedId <= 0) {
       showToast("Invalid invoice ID. Redirecting…", "error");
-      navigate("/invoice/home");
+      navigate(invoiceFallbackRoute);
       return;
     }
 
@@ -61,7 +66,7 @@ const EditInvoice = () => {
         `Invoice #${parsedId} does not exist.`;
       showToast(msg, "error");
       setPageState("invalid");
-      navigate("/invoice/home");
+      navigate(invoiceFallbackRoute);
     }
   };
 

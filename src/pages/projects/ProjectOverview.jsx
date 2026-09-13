@@ -8,6 +8,8 @@ import ErrorModal from "../../components/modals/ErrorModal";
 import OverviewWorkspace, { OverviewBadge, OverviewRowActions } from "../../components/overview/OverviewWorkspace";
 import useThemeStore from "../../stores/useThemeStore";
 import useProjectStore from "../../stores/useProjectStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import {
   formatOverviewDate,
   formatOverviewNumber,
@@ -23,6 +25,11 @@ const ProjectOverview = () => {
   const [selectedAction, setSelectedAction] = useState("");
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canCreate = hasPermission(user, "project.create");
+  const canEdit = hasPermission(user, "project.edit");
+  const canDelete = hasPermission(user, "project.delete");
+  const canExport = hasPermission(user, "project.export");
 
   const {
     data, loading, error, total, currentPage, itemsPerPage, sortBy, sortOrder,
@@ -72,8 +79,8 @@ const ProjectOverview = () => {
   const rowActions = (project, compact = false) => (
     <OverviewRowActions compact={compact} actions={[
       { key: "view", label: "View", icon: "fa-arrow-up-right-from-square", tone: "view", onClick: () => navigate(`/project/view/${project.project_code}`, { state: { project } }) },
-      { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/project/edit/${project.project_code}`, { state: { project } }) },
-      { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(project.id) },
+      canEdit && { key: "edit", label: "Edit", icon: "fa-pen", tone: "edit", onClick: () => navigate(`/project/edit/${project.project_code}`, { state: { project } }) },
+      canDelete && { key: "delete", label: "Delete", icon: "fa-trash", tone: "delete", onClick: () => openSingleDelete(project.id) },
     ]} />
   );
 
@@ -101,7 +108,7 @@ const ProjectOverview = () => {
     { key: "total", label: "Projects", value: formatOverviewNumber(total), note: "Full project register", icon: "fa-diagram-project", tone: "teal" },
     { key: "codes", label: "Codes assigned", value: formatOverviewNumber(data.filter((item) => item.code).length), note: "Records on this page", icon: "fa-hashtag", tone: "blue" },
     { key: "year", label: `Created in ${currentYear}`, value: formatOverviewNumber(data.filter((item) => new Date(item.created_at).getFullYear() === currentYear).length), note: "Records on this page", icon: "fa-calendar-check", tone: "green" },
-    { key: "selected", label: "Selected projects", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" },
+    ...(canDelete ? [{ key: "selected", label: "Selected projects", value: formatOverviewNumber(selectedItems.length), note: "Ready for bulk action", icon: "fa-circle-check", tone: "amber" }] : []),
   ];
 
   return (
@@ -118,9 +125,9 @@ const ProjectOverview = () => {
             eyebrow: "Project workspace",
             title: "Keep project records structured and accessible",
             description: "Review project identities, internal codes and ownership details without losing the existing project actions and controls.",
-            createLink: "/project/create",
+            createLink: canCreate ? "/project/create" : undefined,
             createLabel: "Create project",
-            onExport: exportToExcel,
+            onExport: canExport ? exportToExcel : undefined,
             exportDisabled: loading || data.length === 0,
           }}
           cards={cards}
@@ -138,7 +145,8 @@ const ProjectOverview = () => {
           searchPlaceholder="Search project name, code or creator"
           pageLimitOptions={overviewPageLimits}
           onItemsPerPageChange={setItemsPerPage}
-          selectedCount={selectedItems.length}
+          selectionEnabled={canDelete}
+          selectedCount={canDelete ? selectedItems.length : 0}
           selectedAction={selectedAction}
           actionOptions={overviewDeleteActions}
           onActionChange={(action) => { setSelectedAction(action); if (action === "delete") setShowDeleteModal(true); }}
@@ -162,11 +170,11 @@ const ProjectOverview = () => {
           }}
           pageNumbers={getOverviewPageNumbers(totalPages, currentPage)}
           onPageChange={(page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); }}
-          empty={{ icon: "fas fa-diagram-project", message: "No projects found matching your criteria", link: "/project/create" }}
+          empty={{ icon: "fas fa-diagram-project", message: "No projects found matching your criteria", link: canCreate ? "/project/create" : undefined }}
         />
 
         <AnimatePresence>
-          {showDeleteModal && (
+          {canDelete && showDeleteModal && (
             <DeleteConfirmationModal
               isOpen={showDeleteModal}
               onClose={() => { setShowDeleteModal(false); setSelectedAction(""); clearSelection(); }}

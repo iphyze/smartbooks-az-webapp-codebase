@@ -16,6 +16,7 @@ import "../inputs-styles/Inputs.css";
 import CreateStaffModal from "../../components/modals/CreateStaffModal";
 import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateProjectModal from "../../components/modals/CreateProjectModal";
+import { defaultRouteForRole, hasPermission, isTimesheetOnly } from "../../utils/permissions";
 
 /* ─────────────────────────────────────────────
    Main Form Component
@@ -25,7 +26,11 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
   const { updateTimesheet } = useTimesheetStore();
   const { staff, clients, projects, searchStaff, searchClients, searchProjects } = useTimesheetReferenceStore();
   const { user } = useAuthStore();
-  const isTimesheetUser = user?.integrity === "Timesheet";
+  const isTimesheetUser = isTimesheetOnly(user);
+  const canViewTimesheets = hasPermission(user, "timesheet.view");
+  const canCreateClients = hasPermission(user, "client.create");
+  const canCreateProjects = hasPermission(user, "project.create");
+  const canCreateStaff = hasPermission(user, "staff.create");
   const { showToast } = useToastStore();
   const navigate = useNavigate();
 
@@ -195,7 +200,7 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
     const result = await updateTimesheet(payload);
     setIsLoading(false);
 
-    if (result.success) {
+    if (result.success && canViewTimesheets) {
       navigate(`/timesheet/view/${form.id}`);
     }
   };
@@ -273,7 +278,7 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                   </div>
                   {errors.staff_name && <div className="input-error-message">{errors.staff_name}</div>}
                 </div>
-                {!isTimesheetUser && (
+                {canCreateStaff && (
                   <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateStaffModal(true)} title="Add New Staff">
                     <span className="fas fa-plus"></span>
                   </button>
@@ -308,7 +313,7 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                   </div>
                   {errors.clients_name && <div className="input-error-message">{errors.clients_name}</div>}
                 </div>
-                {!isTimesheetUser && (
+                {canCreateClients && (
                   <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateClientModal(true)} title="Add New Client">
                     <span className="fas fa-plus"></span>
                   </button>
@@ -360,7 +365,7 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
                     </div>
                   </div>
                 </div>
-                {!isTimesheetUser && (
+                {canCreateProjects && (
                   <button type="button" className="inv-form-flex-btn" onClick={() => setShowCreateProjectModal(true)} title="Add New Project">
                     <span className="fas fa-plus"></span>
                   </button>
@@ -445,7 +450,7 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
               <button
                 type="button"
                 className="form-btn form-btn-cancel"
-                onClick={() => navigate(`/timesheet/view/${form.id}`)}
+                onClick={() => navigate(canViewTimesheets ? `/timesheet/view/${form.id}` : defaultRouteForRole(user))}
                 disabled={isLoading}
                 style={{ marginRight: '12px', background: 'var(--f-surface)', color: 'var(--f-text-muted)', border: '1px solid var(--f-border)', padding: '0 20px', height: '46px', borderRadius: '10px', cursor: 'pointer' }}
               >
@@ -462,21 +467,21 @@ const EditTimesheetForm = ({ timesheetId, timesheet }) => {
 
       {/* ── MODALS ── */}
       <AnimatePresence>
-        {!isTimesheetUser && showCreateStaffModal && (
+        {canCreateStaff && showCreateStaffModal && (
           <CreateStaffModal 
             isOpen={showCreateStaffModal} 
             onClose={() => setShowCreateStaffModal(false)} 
             onStaffCreated={handleStaffCreated} 
           />
         )}
-        {!isTimesheetUser && showCreateClientModal && (
+        {canCreateClients && showCreateClientModal && (
           <CreateClientsModal 
             isOpen={showCreateClientModal} 
             onClose={() => setShowCreateClientModal(false)} 
             onClientCreated={handleClientCreated} 
           />
         )}
-        {!isTimesheetUser && showCreateProjectModal && (
+        {canCreateProjects && showCreateProjectModal && (
           <CreateProjectModal 
             isOpen={showCreateProjectModal} 
             onClose={() => setShowCreateProjectModal(false)} 

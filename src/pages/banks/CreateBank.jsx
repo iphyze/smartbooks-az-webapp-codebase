@@ -7,15 +7,19 @@ import { motion } from "framer-motion";
 import { fadeInUp } from "../../utils/animation";
 import PageNav from "../../components/PageNav";
 import CreateBankForm from "./CreateBankForm";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 
 const CreateBank = () => {
   const [nav, setNav] = useState(false);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "bank.view");
 
   const links = [
     { label: "Home", to: "/", active: true },
-    { label: "Bank Accounts", to: "/banks/home", active: true },
-    { label: "Create Bank Account", to: "/bank/create", active: false }
+    ...(canView ? [{ label: "Bank Accounts", to: "/banks/home", active: true }] : []),
+    { label: "Create Bank Account", to: "/banks/create", active: false }
   ];
 
   useEffect(() => {

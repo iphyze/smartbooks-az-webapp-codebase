@@ -1,21 +1,9 @@
 import React from 'react';
 import {
-  Document, Page, Text, View, StyleSheet, Font, Image,
+  Document, Page, Text, View, StyleSheet, Image,
 } from '@react-pdf/renderer';
-import MontserratRegular from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
-import MontserratBold from '../../assets/fonts/Montserrat/Montserrat-Bold.ttf';
-import MontserratSemiBold from '../../assets/fonts/Montserrat/Montserrat-SemiBold.ttf';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
 import { fmt, fmtDate } from '../../utils/helper';
-
-Font.register({ family: 'Montserrat-Regular', src: MontserratRegular });
-Font.register({ family: 'Montserrat-Light', src: MontserratLight });
-Font.register({ family: 'Montserrat-Medium', src: MontserratMedium });
-Font.register({ family: 'Montserrat-Bold', src: MontserratBold });
-Font.register({ family: 'Montserrat-SemiBold', src: MontserratSemiBold });
-
 
 /* ─────────────────────────────────────────────
    STYLES MOVED TO TOP TO FIX "Undefined" ERRORS
@@ -31,7 +19,7 @@ const styles = StyleSheet.create({
 
   /* ── Page ── */
   page: {
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Helvetica',
     fontSize: 8.1,
     paddingTop: 72,
     paddingBottom: 44,
@@ -70,14 +58,14 @@ const styles = StyleSheet.create({
   },
 
   reportTitle: {
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 11.7,
     color: TEXT1,
     letterSpacing: 0.3,
   },
 
   reportMeta: {
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 6.8,
     color: TEXT3,
     marginTop: 2,
@@ -109,13 +97,13 @@ const styles = StyleSheet.create({
   },
 
   footerLeft: {
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 6.3,
     color: TEXT3,
   },
 
   footerRight: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 6.3,
     color: TEXT2,
   },
@@ -126,7 +114,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 6.8,
     color: TEXT3,
     textTransform: 'uppercase',
@@ -180,7 +168,7 @@ const styles = StyleSheet.create({
   },
 
   summaryCardLabel: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 6.3,
     color: TEXT3,
     textTransform: 'uppercase',
@@ -189,14 +177,14 @@ const styles = StyleSheet.create({
   },
 
   summaryCardValue: {
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 11.7,
     color: TEXT1,
     marginBottom: 2,
   },
 
   summaryCardCurrency: {
-    fontFamily: 'Montserrat-Medium',
+    fontFamily: 'Helvetica',
     fontSize: 6.3,
     color: BRAND,
   },
@@ -209,7 +197,7 @@ const styles = StyleSheet.create({
   },
 
   th: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 6.8,
     color: '#ffffff',
     paddingVertical: 7,
@@ -232,7 +220,7 @@ const styles = StyleSheet.create({
   rowZero: { opacity: 0.5 },
 
   td: {
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 7.2,
     color: TEXT2,
     paddingVertical: 6,
@@ -251,7 +239,7 @@ const styles = StyleSheet.create({
   },
 
   grandTd: {
-    fontFamily: 'Montserrat-Bold',
+    fontFamily: 'Helvetica-Bold',
     fontSize: 7.7,
     color: TEXT1,
     paddingVertical: 8,
@@ -278,7 +266,7 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    fontFamily: 'Montserrat-Light',
+    fontFamily: 'Helvetica',
     fontSize: 7.2,
     color: TEXT3,
   },
@@ -427,7 +415,7 @@ const DownloadGeneralLedger = ({ data = [], totals = null, meta = {} }) => {
                     style={[
                       styles.td,
                       styles.colAmt,
-                      { borderRightWidth: 0, fontFamily: 'Montserrat-SemiBold' },
+                      { borderRightWidth: 0, fontFamily: 'Helvetica-Bold' },
                       bal < 0 && { color: '#dc2626' },
                       bal > 0 && { color: BRAND },
                     ]}

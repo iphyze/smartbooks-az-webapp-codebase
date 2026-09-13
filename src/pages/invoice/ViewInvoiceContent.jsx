@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import { formatCurrencyDecimals, formatDateLong, formatWithDecimals } from "../../utils/helper";
 import { fadeInUp } from "../../utils/animation";
+import { hasPermission } from "../../utils/permissions";
 import printPdfDocument from "../../utils/printPdfDocument";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
 import useToastStore from "../../stores/useToastStore";
 import api from "../../services/api";
 import DownloadInvoice from "./DownloadInvoice";
@@ -45,6 +47,7 @@ const statusClass = (value) => String(value || "pending").toLowerCase().replaceA
 
 const ViewInvoiceContent = ({ invoice, onRefresh }) => {
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const { showToast } = useToastStore();
   const [isPrinting, setIsPrinting] = useState(false);
@@ -55,6 +58,15 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
   const [paymentToReverse, setPaymentToReverse] = useState(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [visibleLineCount, setVisibleLineCount] = useState(LINE_BATCH);
+  const canEdit = hasPermission(user, "invoice.edit");
+  const canSend = hasPermission(user, "invoice.send");
+  const canRecordPayment = hasPermission(user, "invoice.payment_record");
+  const canReversePayment = hasPermission(user, "invoice.payment_reverse");
+  const canDuplicate = hasPermission(user, "invoice.duplicate") && hasPermission(user, "invoice.create");
+  const canManageReminders = hasPermission(user, "invoice.reminder_manage");
+  const canManageWorkflow = hasPermission(user, "invoice.workflow");
+  const canExport = hasPermission(user, "invoice.export");
+  const canViewJournals = hasPermission(user, "journal.view");
 
   const items = useMemo(() => (Array.isArray(invoice?.items) ? invoice.items : []), [invoice?.items]);
   if (!invoice) return null;
@@ -78,7 +90,7 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
     : `AZ-${invoice.invoice_number || ""}`;
 
   const handlePrintInvoice = async () => {
-    if (isPrinting) return;
+    if (!canExport || isPrinting) return;
     setIsPrinting(true);
     try {
       await printPdfDocument(<DownloadInvoice invoice={invoice} />, `Preparing invoice ${invoiceReference}`);
@@ -90,7 +102,7 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
   };
 
   const handleDuplicateInvoice = async () => {
-    if (isDuplicating) return;
+    if (!canDuplicate || isDuplicating) return;
     setIsDuplicating(true);
     try {
       const response = await api.post("/invoice/duplicate-invoice", { invoice_number: invoice.invoice_number });
@@ -133,14 +145,14 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
 
           <div className="invoice-view-actions" aria-label="Invoice actions">
             <button type="button" className="invoice-view-action invoice-view-action--secondary" onClick={() => navigate("/invoice/home")}><i className="fas fa-arrow-left" /><span>Back to invoices</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--primary" onClick={() => navigate(`/invoice/edit/${invoice.invoice_number}`, { state: { invoice } })} disabled={isWorkflowLocked}><i className="fas fa-pen-to-square" /><span>Edit invoice</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--send" onClick={() => setShowSendModal(true)} disabled={isWorkflowLocked}><i className="fas fa-paper-plane" /><span>Send</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--payment" onClick={() => setShowPaymentModal(true)} disabled={isWorkflowLocked || balance <= 0.009}><i className="fas fa-wallet" /><span>{balance <= 0.009 ? "Fully paid" : "Record payment"}</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--more" onClick={handleDuplicateInvoice} disabled={isDuplicating}><i className={`fas ${isDuplicating ? "fa-spinner fa-spin" : "fa-copy"}`} /><span>{isDuplicating ? "Preparing…" : "Duplicate"}</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--more" onClick={() => setShowReminderModal(true)} disabled={isWorkflowLocked || balance <= 0.009}><i className="fas fa-bell" /><span>Reminder</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--more" onClick={() => setShowWorkflowModal(true)}><i className="fas fa-route" /><span>Status</span></button>
-            <button type="button" className="invoice-view-action invoice-view-action--print" onClick={handlePrintInvoice} disabled={isPrinting}><i className={`fas ${isPrinting ? "fa-spinner fa-spin" : "fa-print"}`} /><span>{isPrinting ? "Preparing…" : "Print PDF"}</span></button>
-            <PDFDownloadLink document={<DownloadInvoice invoice={invoice} />} className="invoice-view-action invoice-view-action--download" fileName={`Invoice ${invoice.invoice_number} - ${invoice.clients_name}.pdf`}><i className="fas fa-file-pdf" /><span>Download PDF</span></PDFDownloadLink>
+            {canEdit && <button type="button" className="invoice-view-action invoice-view-action--primary" onClick={() => navigate(`/invoice/edit/${invoice.invoice_number}`, { state: { invoice } })} disabled={isWorkflowLocked}><i className="fas fa-pen-to-square" /><span>Edit invoice</span></button>}
+            {canSend && <button type="button" className="invoice-view-action invoice-view-action--send" onClick={() => setShowSendModal(true)} disabled={isWorkflowLocked}><i className="fas fa-paper-plane" /><span>Send</span></button>}
+            {canRecordPayment && <button type="button" className="invoice-view-action invoice-view-action--payment" onClick={() => setShowPaymentModal(true)} disabled={isWorkflowLocked || balance <= 0.009}><i className="fas fa-wallet" /><span>{balance <= 0.009 ? "Fully paid" : "Record payment"}</span></button>}
+            {canDuplicate && <button type="button" className="invoice-view-action invoice-view-action--more" onClick={handleDuplicateInvoice} disabled={isDuplicating}><i className={`fas ${isDuplicating ? "fa-spinner fa-spin" : "fa-copy"}`} /><span>{isDuplicating ? "Preparing…" : "Duplicate"}</span></button>}
+            {canManageReminders && <button type="button" className="invoice-view-action invoice-view-action--more" onClick={() => setShowReminderModal(true)} disabled={isWorkflowLocked || balance <= 0.009}><i className="fas fa-bell" /><span>Reminder</span></button>}
+            {canManageWorkflow && <button type="button" className="invoice-view-action invoice-view-action--more" onClick={() => setShowWorkflowModal(true)}><i className="fas fa-route" /><span>Status</span></button>}
+            {canExport && <button type="button" className="invoice-view-action invoice-view-action--print" onClick={handlePrintInvoice} disabled={isPrinting}><i className={`fas ${isPrinting ? "fa-spinner fa-spin" : "fa-print"}`} /><span>{isPrinting ? "Preparing…" : "Print PDF"}</span></button>}
+            {canExport && <PDFDownloadLink document={<DownloadInvoice invoice={invoice} />} className="invoice-view-action invoice-view-action--download" fileName={`Invoice ${invoice.invoice_number} - ${invoice.clients_name}.pdf`}><i className="fas fa-file-pdf" /><span>Download PDF</span></PDFDownloadLink>}
           </div>
         </header>
 
@@ -230,15 +242,22 @@ const ViewInvoiceContent = ({ invoice, onRefresh }) => {
         </div>
       </motion.section>
 
-      <InvoicePaymentPanel invoice={invoice} onRecordPayment={() => setShowPaymentModal(true)} onReversePayment={(payment) => setPaymentToReverse(payment)} />
-      <InvoiceReminderPanel invoice={invoice} onCreateReminder={() => setShowReminderModal(true)} onRefresh={onRefresh} />
+      <InvoicePaymentPanel
+        invoice={invoice}
+        onRecordPayment={() => setShowPaymentModal(true)}
+        onReversePayment={(payment) => setPaymentToReverse(payment)}
+        canRecordPayment={canRecordPayment}
+        canReversePayment={canReversePayment}
+        canViewJournals={canViewJournals}
+      />
+      <InvoiceReminderPanel invoice={invoice} onCreateReminder={() => setShowReminderModal(true)} onRefresh={onRefresh} canManageReminders={canManageReminders} />
       <InvoiceActivityTimeline invoiceNumber={invoice.invoice_number} initialActivities={invoice.activity_history || []} initialMeta={invoice.activity_meta || {}} />
 
-      <AnimatePresence>{showSendModal && <SendInvoiceModal invoice={invoice} isOpen={showSendModal} onClose={() => setShowSendModal(false)} onSent={onRefresh} />}</AnimatePresence>
-      <AnimatePresence>{showWorkflowModal && <InvoiceWorkflowModal invoice={invoice} isOpen={showWorkflowModal} onClose={() => setShowWorkflowModal(false)} onUpdated={onRefresh} />}</AnimatePresence>
-      <AnimatePresence>{showPaymentModal && <RecordInvoicePaymentModal invoice={invoice} isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onRecorded={onRefresh} />}</AnimatePresence>
-      <AnimatePresence>{showReminderModal && <InvoiceReminderModal invoice={invoice} isOpen={showReminderModal} onClose={() => setShowReminderModal(false)} onSaved={onRefresh} />}</AnimatePresence>
-      <AnimatePresence>{paymentToReverse && <ReverseInvoicePaymentModal payment={paymentToReverse} isOpen={Boolean(paymentToReverse)} onClose={() => setPaymentToReverse(null)} onReversed={onRefresh} />}</AnimatePresence>
+      <AnimatePresence>{canSend && showSendModal && <SendInvoiceModal invoice={invoice} isOpen={showSendModal} onClose={() => setShowSendModal(false)} onSent={onRefresh} />}</AnimatePresence>
+      <AnimatePresence>{canManageWorkflow && showWorkflowModal && <InvoiceWorkflowModal invoice={invoice} isOpen={showWorkflowModal} onClose={() => setShowWorkflowModal(false)} onUpdated={onRefresh} />}</AnimatePresence>
+      <AnimatePresence>{canRecordPayment && showPaymentModal && <RecordInvoicePaymentModal invoice={invoice} isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onRecorded={onRefresh} />}</AnimatePresence>
+      <AnimatePresence>{canManageReminders && showReminderModal && <InvoiceReminderModal invoice={invoice} isOpen={showReminderModal} onClose={() => setShowReminderModal(false)} onSaved={onRefresh} />}</AnimatePresence>
+      <AnimatePresence>{canReversePayment && paymentToReverse && <ReverseInvoicePaymentModal payment={paymentToReverse} isOpen={Boolean(paymentToReverse)} onClose={() => setPaymentToReverse(null)} onReversed={onRefresh} />}</AnimatePresence>
     </>
   );
 };

@@ -5,6 +5,8 @@ import useThemeStore from "../../stores/useThemeStore";
 import { fadeInUp } from "../../utils/animation";
 import useToastStore from "../../stores/useToastStore";
 import useBankStore from "../../stores/useBankStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import Select, { components } from "react-select";
 import "../inputs-styles/Inputs.css";
 
@@ -35,6 +37,8 @@ const CreateBankForm = () => {
   const { showToast } = useToastStore();
   const { createBank } = useBankStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canView = hasPermission(user, "bank.view");
 
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -108,7 +112,7 @@ const CreateBankForm = () => {
         bank_name: "",
         account_currency: "NGN",
       });
-      navigate("/banks/home");
+      if (canView) navigate("/banks/home");
     }
   };
 

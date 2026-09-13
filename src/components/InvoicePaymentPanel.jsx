@@ -21,7 +21,7 @@ const formatDate = (value) => {
   return date.toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => {
+const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment, canRecordPayment = false, canReversePayment = false, canViewJournals = false }) => {
   const navigate = useNavigate();
   const payments = Array.isArray(invoice?.payments) ? invoice.payments : [];
   const summary = invoice?.payment_summary || {};
@@ -33,7 +33,7 @@ const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => 
     summary.payment_progress ?? (total > 0 ? Math.min(100, (paid / total) * 100) : 0)
   );
   const workflowLocked = ["Cancelled", "Void"].includes(invoice?.workflow_status);
-  const canRecord = !workflowLocked && balance > 0.009;
+  const canRecord = canRecordPayment && !workflowLocked && balance > 0.009;
 
   return (
     <section className="invoice-payment-card">
@@ -43,10 +43,12 @@ const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => 
           <h3>Payments and outstanding balance</h3>
           <p>Receipts may be recorded in a different currency from the invoice and remain visible for audit purposes.</p>
         </div>
-        <button type="button" onClick={onRecordPayment} disabled={!canRecord}>
-          <span className="fas fa-wallet" aria-hidden="true" />
-          <span>{balance <= 0.009 ? "Fully paid" : "Record payment"}</span>
-        </button>
+        {canRecordPayment && (
+          <button type="button" onClick={onRecordPayment} disabled={!canRecord}>
+            <span className="fas fa-wallet" aria-hidden="true" />
+            <span>{balance <= 0.009 ? "Fully paid" : "Record payment"}</span>
+          </button>
+        )}
       </header>
 
       <div className="invoice-payment-card__summary-grid">
@@ -181,7 +183,7 @@ const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => 
                     ) : null}
                   </div>
 
-                  {payment.journal_id ? (
+                  {canViewJournals && payment.journal_id ? (
                     <div className="invoice-payment-item__journal-links">
                       <button type="button" onClick={() => navigate(`/journal/view/${payment.journal_id}`)}>
                         <i className="fas fa-book" aria-hidden="true" /> Receipt journal #{payment.journal_id}
@@ -245,7 +247,7 @@ const InvoicePaymentPanel = ({ invoice, onRecordPayment, onReversePayment }) => 
                   </small>
                 </div>
 
-                {!reversed ? (
+                {!reversed && canReversePayment ? (
                   <button
                     type="button"
                     className="invoice-payment-item__reverse"

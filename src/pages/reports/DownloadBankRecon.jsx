@@ -1,17 +1,6 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
-import MontserratRegular  from '../../assets/fonts/Montserrat/Montserrat-Regular.ttf';
-import MontserratLight    from '../../assets/fonts/Montserrat/Montserrat-Light.ttf';
-import MontserratMedium   from '../../assets/fonts/Montserrat/Montserrat-Medium.ttf';
-import MontserratBold     from '../../assets/fonts/Montserrat/Montserrat-Bold.ttf';
-import MontserratSemiBold from '../../assets/fonts/Montserrat/Montserrat-SemiBold.ttf';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import CompanyLogo from '../../assets/images/smartbooks/az-logo.png';
-
-Font.register({ family:'Montserrat-Regular',  src:MontserratRegular  });
-Font.register({ family:'Montserrat-Light',     src:MontserratLight    });
-Font.register({ family:'Montserrat-Medium',    src:MontserratMedium   });
-Font.register({ family:'Montserrat-Bold',      src:MontserratBold     });
-Font.register({ family:'Montserrat-SemiBold',  src:MontserratSemiBold });
 
 /* ─── Palette ────────────────────────────────────── */
 const BRAND   = '#00b196';
@@ -165,10 +154,10 @@ const DownloadBankRecon = ({ recon = {}, bankLines = [], ledgerLines = [] }) => 
     { key:'txn_date',    label:'Date',     w:55,  render:(r)=>fmtDate(r.txn_date) },
     { key:'description', label:'Narration',w:null, style:(r)=>({flex:1}) },
     { key:'direction',   label:'Dir',      w:26,  align:'center',
-      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Montserrat-SemiBold' }) },
+      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Helvetica-Bold' }) },
     { key:'amount',      label:'Amount',   w:70,  align:'right',
       render:(r)=>fmtAmt(r.amount),
-      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Montserrat-SemiBold' }) },
+      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Helvetica-Bold' }) },
     { key:'match_group', label:'Match Ref',w:70,  render:(r)=>r.match_group||'—',
       style:(r)=>({ color: TEXT3, fontSize:6 }) },
   ];
@@ -179,18 +168,18 @@ const DownloadBankRecon = ({ recon = {}, bankLines = [], ledgerLines = [] }) => 
     { key:'description', label:'Narration',w:null, style:(r)=>({flex:1}) },
     { key:'ledger_name', label:'Ledger',   w:70,  render:(r)=>r.ledger_name||'—', style:(r)=>({color:TEXT3}) },
     { key:'direction',   label:'Dir',      w:26,  align:'center',
-      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Montserrat-SemiBold' }) },
+      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Helvetica-Bold' }) },
     { key:'amount',      label:'Amount',   w:70,  align:'right',
       render:(r)=>fmtAmt(r.amount),
-      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Montserrat-SemiBold' }) },
+      style:(r)=>({ color: r.direction==='OUT' ? RED : BRAND, fontFamily:'Helvetica-Bold' }) },
     { key:'match_group', label:'Match Ref',w:70,  render:(r)=>r.match_group||'—', style:(r)=>({color:TEXT3,fontSize:6}) },
   ];
 
   const bankOnlyCols = [
     { key:'txn_date',             label:'Date',       w:55,  render:(r)=>fmtDate(r.txn_date) },
     { key:'description',          label:'Description',w:null, style:(r)=>({flex:1}) },
-    { key:'bank_only_type',       label:'Type',       w:70,  style:(r)=>({color:AMBER,fontFamily:'Montserrat-SemiBold'}) },
-    { key:'amount',               label:'Amount',     w:60,  align:'right', render:(r)=>fmtAmt(r.amount), style:(r)=>({color:RED,fontFamily:'Montserrat-SemiBold'}) },
+    { key:'bank_only_type',       label:'Type',       w:70,  style:(r)=>({color:AMBER,fontFamily:'Helvetica-Bold'}) },
+    { key:'amount',               label:'Amount',     w:60,  align:'right', render:(r)=>fmtAmt(r.amount), style:(r)=>({color:RED,fontFamily:'Helvetica-Bold'}) },
     { key:'suggested_dr_ledger',  label:'Dr',         w:80,  style:(r)=>({color:TEXT2}) },
     { key:'suggested_cr_ledger',  label:'Cr',         w:80,  style:(r)=>({color:TEXT2}) },
     { key:'journal_note',         label:'Note',       w:70,  style:(r)=>({color:TEXT3,fontSize:6}) },
@@ -259,48 +248,48 @@ export default DownloadBankRecon;
 
 /* ─── Styles ─────────────────────────────────────── */
 const S = StyleSheet.create({
-  page: { fontFamily:'Montserrat-Regular', fontSize: 6.3, paddingTop:68, paddingBottom:36, paddingHorizontal:22, backgroundColor:'#ffffff' },
+  page: { fontFamily:'Helvetica', fontSize: 6.3, paddingTop:68, paddingBottom:36, paddingHorizontal:22, backgroundColor:'#ffffff' },
 
   pageHeader: { position:'absolute', top:0, left:0, right:0, paddingHorizontal:22, paddingTop:12, paddingBottom:8, flexDirection:'row', justifyContent:'space-between', alignItems:'center', backgroundColor:'#ffffff' },
   logo:       { width:100, height:'auto', objectFit:'contain' },
   headerRight:{ alignItems:'flex-end' },
-  reportTitle:{ fontFamily:'Montserrat-Bold', fontSize: 11.7, color:TEXT1, letterSpacing:.3 },
-  reportMeta: { fontFamily:'Montserrat-SemiBold', fontSize: 6.8, color:TEXT2, marginTop:2 },
-  reportSub:  { fontFamily:'Montserrat-Light', fontSize: 5.9, color:TEXT3, marginTop:2 },
+  reportTitle:{ fontFamily:'Helvetica-Bold', fontSize: 11.7, color:TEXT1, letterSpacing:.3 },
+  reportMeta: { fontFamily:'Helvetica-Bold', fontSize: 6.8, color:TEXT2, marginTop:2 },
+  reportSub:  { fontFamily:'Helvetica', fontSize: 5.9, color:TEXT3, marginTop:2 },
   divider:    { position:'absolute', top:58, left:22, right:22, height:1.5, backgroundColor:BRAND },
 
   pageFooter: { position:'absolute', bottom:0, left:0, right:0, paddingHorizontal:22, paddingVertical:8, borderTopWidth:1, borderTopColor:BORDER, flexDirection:'row', justifyContent:'space-between', alignItems:'center', backgroundColor:'#ffffff' },
-  footerL:    { fontFamily:'Montserrat-Light', fontSize: 5.9, color:TEXT3 },
-  footerR:    { fontFamily:'Montserrat-Medium', fontSize: 5.9, color:TEXT2 },
+  footerL:    { fontFamily:'Helvetica', fontSize: 5.9, color:TEXT3 },
+  footerR:    { fontFamily:'Helvetica', fontSize: 5.9, color:TEXT2 },
 
   /* KPI */
   kpiRow:     { flexDirection:'row', marginBottom:10, gap:6 },
   kpiCell:    { flex:1, borderWidth:1, borderColor:BORDER, borderRadius:6, padding:8 },
   kpiCellOk:  { backgroundColor:'rgba(0,177,150,0.06)', borderColor:'rgba(0,177,150,0.25)' },
   kpiCellWarn:{ backgroundColor:'rgba(244,124,124,0.06)', borderColor:'rgba(244,124,124,0.25)' },
-  kpiLabel:   { fontFamily:'Montserrat-Medium', fontSize:6, color:TEXT3, textTransform:'uppercase', letterSpacing:.5, marginBottom:3 },
-  kpiValue:   { fontFamily:'Montserrat-Bold', fontSize: 9, color:TEXT1 },
+  kpiLabel:   { fontFamily:'Helvetica', fontSize:6, color:TEXT3, textTransform:'uppercase', letterSpacing:.5, marginBottom:3 },
+  kpiValue:   { fontFamily:'Helvetica-Bold', fontSize: 9, color:TEXT1 },
 
   /* Formula */
   formulaBox:   { borderWidth:1, borderColor:BORDER, borderRadius:8, padding:10, marginBottom:10, backgroundColor:GRAY },
-  formulaTitle: { fontFamily:'Montserrat-Bold', fontSize: 7.2, color:BRAND, marginBottom:6, textTransform:'uppercase', letterSpacing:.5 },
+  formulaTitle: { fontFamily:'Helvetica-Bold', fontSize: 7.2, color:BRAND, marginBottom:6, textTransform:'uppercase', letterSpacing:.5 },
   formulaRow:   { flexDirection:'row', justifyContent:'space-between', paddingVertical:3, borderBottomWidth:.5, borderBottomColor:BORDER },
-  formulaLabel: { fontFamily:'Montserrat-Light', fontSize: 6.3, color:TEXT2, flex:1 },
-  formulaValue: { fontFamily:'Montserrat-Regular', fontSize: 6.3, color:TEXT1, width:80, textAlign:'right' },
-  formulaBold:  { fontFamily:'Montserrat-Bold', fontSize: 6.8 },
+  formulaLabel: { fontFamily:'Helvetica', fontSize: 6.3, color:TEXT2, flex:1 },
+  formulaValue: { fontFamily:'Helvetica', fontSize: 6.3, color:TEXT1, width:80, textAlign:'right' },
+  formulaBold:  { fontFamily:'Helvetica-Bold', fontSize: 6.8 },
 
   /* Section */
   section:    { marginBottom:12 },
   secHead:    { backgroundColor:BRAND, paddingVertical:6, paddingHorizontal:10, marginBottom:0 },
-  secHeadText:{ fontFamily:'Montserrat-Bold', fontSize: 7.2, color:'#ffffff', letterSpacing:.4 },
+  secHeadText:{ fontFamily:'Helvetica-Bold', fontSize: 7.2, color:'#ffffff', letterSpacing:.4 },
 
   /* Table */
   table:     { borderWidth:1, borderColor:BORDER, overflow:'hidden' },
   tableHead: { flexDirection:'row', backgroundColor:BRAND2 },
-  th:        { fontFamily:'Montserrat-SemiBold', fontSize: 5.9, color:'#ffffff', paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:'rgba(255,255,255,0.2)' },
+  th:        { fontFamily:'Helvetica-Bold', fontSize: 5.9, color:'#ffffff', paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:'rgba(255,255,255,0.2)' },
   tableRow:  { flexDirection:'row', borderBottomWidth:.5, borderBottomColor:BORDER },
   rowAlt:    { backgroundColor:GRAY },
-  td:        { fontFamily:'Montserrat-Light', fontSize: 6.3, color:TEXT2, paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:BORDER },
+  td:        { fontFamily:'Helvetica', fontSize: 6.3, color:TEXT2, paddingVertical:5, paddingHorizontal:5, borderRightWidth:.5, borderRightColor:BORDER },
   emptyRow:  { padding:12 },
-  emptyText: { fontFamily:'Montserrat-Light', fontSize: 6.3, color:TEXT3, textAlign:'center' },
+  emptyText: { fontFamily:'Helvetica', fontSize: 6.3, color:TEXT3, textAlign:'center' },
 });

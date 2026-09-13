@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import useAuthStore from "../stores/useAuthStore";
 import useThemeStore from "../stores/useThemeStore";
 import useNotificationStore from "../stores/useNotificationStore";
-import { canManageUsers, isTimesheetOnly } from "../utils/permissions";
+import { hasAnyPermission, hasPermission, isTimesheetOnly } from "../utils/permissions";
 import { preloadRoute } from "../utils/routePreloader";
 import './NavBar.css';
 
@@ -36,28 +36,33 @@ const OPERATIONAL_SUBMENUS = {
   users: { basePath: "/users", items: [{ path: "/users/home", label: "All Users", icon: "fa-users" }, { path: "/users/create-user", label: "Add User", icon: "fa-user-plus" }] },
 };
 
-const navigationForOperationalUser = (isAdmin) => [
-  { title: "Workspace", items: [{ type: "link", path: "/", label: "Dashboard", icon: "fa-gauge-high", end: true }] },
+const navigationForOperationalUser = (showUserAdministration, showCostCentres, showActivityLogs, showAccountingPeriods, isRestrictedCostCenter, showDashboard, showJournal, showInvoices, showAccounts, showLedgers, showBanks, showRates, showClients, showStaff, showProjects, showTimesheets, showReports, showNotifications) => [
+  ...(showDashboard ? [{ title: "Workspace", items: [{ type: "link", path: "/", label: "Dashboard", icon: "fa-gauge-high", end: true }] }] : []),
   { title: "Finance", items: [
-    { type: "submenu", key: "invoices", label: "Invoices", icon: "fa-file-invoice-dollar" },
-    { type: "submenu", key: "journal", label: "Journals", icon: "fa-book" },
-    { type: "submenu", key: "account", label: "Accounts", icon: "fa-wallet" },
-    { type: "submenu", key: "ledgers", label: "Ledgers", icon: "fa-book-open" },
-    { type: "submenu", key: "banks", label: "Banks", icon: "fa-building-columns" },
-    { type: "submenu", key: "rate", label: "Exchange Rates", icon: "fa-arrow-right-arrow-left" },
+    ...(showInvoices ? [{ type: "submenu", key: "invoices", label: "Invoices", icon: "fa-file-invoice-dollar" }] : []),
+    ...(showJournal ? [{ type: "submenu", key: "journal", label: "Journals", icon: "fa-book" }] : []),
+    ...(showAccounts ? [{ type: "submenu", key: "account", label: "Accounts", icon: "fa-wallet" }] : []),
+    ...(showLedgers ? [{ type: "submenu", key: "ledgers", label: "Ledgers", icon: "fa-book-open" }] : []),
+    ...(showBanks ? [{ type: "submenu", key: "banks", label: "Banks", icon: "fa-building-columns" }] : []),
+    ...(showRates ? [{ type: "submenu", key: "rate", label: "Exchange Rates", icon: "fa-arrow-right-arrow-left" }] : []),
   ] },
   { title: "Operations", items: [
-    { type: "submenu", key: "client", label: "Clients", icon: "fa-address-book" },
-    { type: "submenu", key: "staff", label: "Staff", icon: "fa-id-badge" },
-    { type: "submenu", key: "project", label: "Projects", icon: "fa-diagram-project" },
-    { type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" },
+    ...(showClients ? [{ type: "submenu", key: "client", label: "Clients", icon: "fa-address-book" }] : []),
+    ...(showStaff ? [{ type: "submenu", key: "staff", label: "Staff", icon: "fa-id-badge" }] : []),
+    ...(showProjects ? [{ type: "submenu", key: "project", label: "Projects", icon: "fa-diagram-project" }] : []),
+    ...(showTimesheets && !isRestrictedCostCenter ? [{ type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" }] : []),
   ] },
-  { title: "Insights", items: [{ type: "submenu", key: "report", label: "Reporting Centre", icon: "fa-chart-simple" }] },
+  ...(showReports ? [{ title: "Insights", items: [{ type: "submenu", key: "report", label: "Reporting Centre", icon: "fa-chart-simple" }] }] : []),
   { title: "Governance", items: [
-    ...(isAdmin ? [{ type: "submenu", key: "users", label: "User Administration", icon: "fa-users-gear" }] : []),
-    { type: "link", path: "/lock-period/home", label: "Lock Period", icon: "fa-calendar-xmark" },
-    { type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" },
-    { type: "link", path: "/activity-logs", label: "Activity Logs", icon: "fa-clock-rotate-left" },
+    ...(showUserAdministration ? [
+      { type: "submenu", key: "users", label: "User Administration", icon: "fa-users-gear" },
+    ] : []),
+    ...(showCostCentres ? [
+      { type: "link", path: "/cost-centres/home", label: "Cost Centres", icon: "fa-layer-group" },
+    ] : []),
+    ...(showAccountingPeriods && !isRestrictedCostCenter ? [{ type: "link", path: "/lock-period/home", label: "Lock Period", icon: "fa-calendar-xmark" }] : []),
+    ...(showNotifications ? [{ type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" }] : []),
+    ...(showActivityLogs ? [{ type: "link", path: "/activity-logs", label: "Activity Logs", icon: "fa-clock-rotate-left" }] : []),
     { type: "link", path: "/users/my-profile", label: "My Profile", icon: "fa-circle-user" },
   ] },
 ];
@@ -70,27 +75,168 @@ const NavBar = ({ nav, setNav }) => {
   const navRef = useRef(null);
   const [openSubmenu, setOpenSubmenu] = useState(null);
   const isTimesheetUser = isTimesheetOnly(user);
-  const isAdmin = canManageUsers(user);
+  const canViewDashboard = hasPermission(user, 'dashboard.view');
+  const canViewUsers = hasPermission(user, 'user.view');
+  const canCreateUsers = hasPermission(user, 'user.create');
+  const canViewJournals = hasPermission(user, 'journal.view');
+  const canCreateJournals = hasPermission(user, 'journal.create');
+  const canViewInvoices = hasPermission(user, 'invoice.view');
+  const canCreateInvoices = hasPermission(user, 'invoice.create');
+  const canViewAccounts = hasPermission(user, 'account.view');
+  const canCreateAccounts = hasPermission(user, 'account.create');
+  const canViewLedgers = hasPermission(user, 'ledger.view');
+  const canCreateLedgers = hasPermission(user, 'ledger.create');
+  const canViewBanks = hasPermission(user, 'bank.view');
+  const canCreateBanks = hasPermission(user, 'bank.create');
+  const canViewRates = hasPermission(user, 'exchange_rate.view');
+  const canCreateRates = hasPermission(user, 'exchange_rate.create');
+  const canViewStaff = hasPermission(user, 'staff.view');
+  const canCreateStaff = hasPermission(user, 'staff.create');
+  const canViewClients = hasPermission(user, 'client.view');
+  const canCreateClients = hasPermission(user, 'client.create');
+  const canViewProjects = hasPermission(user, 'project.view');
+  const canCreateProjects = hasPermission(user, 'project.create');
+  const canViewReportHub = hasPermission(user, 'report.view');
+  const canViewLedgerStatement = hasPermission(user, 'ledger_statement.view');
+  const canViewGeneralLedger = hasPermission(user, 'general_ledger.view');
+  const canViewTrialBalance = hasPermission(user, 'trial_balance.view');
+  const canViewProfitLoss = hasPermission(user, 'profit_loss.view');
+  const canViewBalanceSheet = hasPermission(user, 'balance_sheet.view');
+  const canViewInvoiceAging = hasPermission(user, 'invoice_aging.view');
+  const canViewFx = hasPermission(user, 'fx.view');
+  const canViewBankRecon = hasPermission(user, 'bank_reconciliation.view');
+  const canCreateBankRecon = hasPermission(user, 'bank_reconciliation.create');
+  const canAccessAccountingPeriods = hasAnyPermission(user, ['accounting_period.view', 'accounting_period.create', 'accounting_period.edit', 'accounting_period.lock', 'accounting_period.close', 'accounting_period.reverse']);
+  const canAccessCostCentres = hasAnyPermission(user, ['cost_centre.view', 'cost_centre.create', 'cost_centre.edit', 'cost_centre.delete']);
+  const canViewActivityLogs = hasPermission(user, 'activity_log.view');
+  const canViewTimesheets = hasPermission(user, 'timesheet.view');
+  const canCreateTimesheets = hasPermission(user, 'timesheet.create');
+  const canViewNotifications = hasPermission(user, 'notification.view');
+  const isRestrictedCostCenter = String(user?.cost_center_access_mode || 'all').toLowerCase() === 'restricted';
+  const showCostCentres = canAccessCostCentres && !isRestrictedCostCenter;
+  const showActivityLogs = canViewActivityLogs && !isRestrictedCostCenter;
 
   const { menus, categories } = useMemo(() => {
+    const userAdminItems = [
+      ...(canViewUsers ? [{ path: "/users/home", label: "All Users", icon: "fa-users" }] : []),
+      ...(canCreateUsers ? [{ path: "/users/create-user", label: "Add User", icon: "fa-user-plus" }] : []),
+    ];
+
+    const journalItems = [
+      ...(canViewJournals ? [{ path: "/journal/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateJournals ? [{ path: "/journal/create", label: "Create Journal", icon: "fa-plus" }] : []),
+    ];
+    const showJournal = journalItems.length > 0;
+    const invoiceItems = [
+      ...(canViewInvoices ? [{ path: "/invoice/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateInvoices ? [{ path: "/invoice/create", label: "Create Invoice", icon: "fa-plus" }] : []),
+    ];
+    const showInvoices = invoiceItems.length > 0;
+    const accountItems = [
+      ...(canViewAccounts ? [{ path: "/account/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateAccounts ? [{ path: "/account/create", label: "Create Account", icon: "fa-plus" }] : []),
+    ];
+    const showAccounts = accountItems.length > 0;
+    const ledgerItems = [
+      ...(canViewLedgers ? [{ path: "/ledger/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateLedgers ? [{ path: "/ledger/create", label: "Create Ledger", icon: "fa-plus" }] : []),
+    ];
+    const showLedgers = ledgerItems.length > 0;
+    const bankItems = [
+      ...(canViewBanks ? [{ path: "/banks/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateBanks ? [{ path: "/banks/create", label: "Add Bank", icon: "fa-plus" }] : []),
+    ];
+    const showBanks = bankItems.length > 0;
+    const rateItems = [
+      ...(canViewRates ? [{ path: "/rate/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateRates ? [{ path: "/rate/create", label: "Add Rate", icon: "fa-plus" }] : []),
+    ];
+    const showRates = rateItems.length > 0;
+    const clientItems = [
+      ...(canViewClients ? [{ path: "/client/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateClients ? [{ path: "/client/create", label: "Add Client", icon: "fa-user-plus" }] : []),
+    ];
+    const showClients = clientItems.length > 0;
+    const staffItems = [
+      ...(canViewStaff ? [{ path: "/staff/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateStaff ? [{ path: "/staff/create-staff", label: "Add Staff", icon: "fa-user-plus" }] : []),
+    ];
+    const showStaff = staffItems.length > 0;
+    const projectItems = [
+      ...(canViewProjects ? [{ path: "/project/home", label: "Overview", icon: "fa-list-ul" }] : []),
+      ...(canCreateProjects ? [{ path: "/project/create", label: "Create Project", icon: "fa-plus" }] : []),
+    ];
+    const showProjects = projectItems.length > 0;
+    const timesheetItems = [
+      ...(canViewTimesheets ? [{ path: "/timesheet/home", label: "Entries", icon: "fa-list-ul" }] : []),
+      ...(canCreateTimesheets ? [{ path: "/timesheet/create-timesheet", label: "Log Time", icon: "fa-plus" }] : []),
+    ];
+    const showTimesheets = timesheetItems.length > 0 && !isRestrictedCostCenter;
+    const migratedReportItems = [
+      ...(canViewReportHub ? [{ path: "/reports/ledger", label: "Report Library", icon: "fa-table-cells-large" }] : []),
+      ...(canViewLedgerStatement ? [{ path: "/reports/ledger/ledger-statement", label: "Ledger Statement", icon: "fa-book-open" }] : []),
+      ...(canViewGeneralLedger ? [{ path: "/reports/ledger/general-ledger", label: "General Ledger", icon: "fa-table-list" }] : []),
+      ...(canViewTrialBalance ? [{ path: "/reports/ledger/trial-balance", label: "Trial Balance", icon: "fa-scale-balanced" }] : []),
+      ...(canViewProfitLoss ? [{ path: "/reports/ledger/profit-and-loss", label: "Profit & Loss", icon: "fa-chart-line" }] : []),
+      ...(canViewBalanceSheet ? [{ path: "/reports/ledger/balance-sheet", label: "Balance Sheet", icon: "fa-building-columns" }] : []),
+      ...(canViewInvoiceAging ? [{ path: "/reports/invoice-aging", label: "Invoice Aging", icon: "fa-clock-rotate-left" }] : []),
+      ...(canViewFx && !isRestrictedCostCenter ? [{ path: "/reports/fx-revaluation", label: "FX Gain / Loss", icon: "fa-arrow-trend-up" }] : []),
+      ...(canViewBankRecon ? [{ path: "/reports/bank-recon", label: "Bank Reconciliation", icon: "fa-scale-unbalanced-flip" }] : []),
+      ...(canCreateBankRecon ? [{ path: "/reports/bank-recon/create", label: "New Reconciliation", icon: "fa-plus" }] : []),
+      ...(canViewTimesheets && !isRestrictedCostCenter ? [{ path: "/reports/timesheet", label: "Timesheet Analysis", icon: "fa-business-time" }] : []),
+    ];
+    const reportItems = migratedReportItems;
+    const showReports = reportItems.length > 0;
+
     if (isTimesheetUser) {
+      const personalMenus = {
+        ...(showTimesheets ? { timesheet: { ...OPERATIONAL_SUBMENUS.timesheet, items: timesheetItems } } : {}),
+        ...(canViewTimesheets && !isRestrictedCostCenter
+          ? { report: { basePath: "/reports/timesheet", items: [{ path: "/reports/timesheet", label: "My Report", icon: "fa-chart-simple" }] } }
+          : {}),
+      };
       return {
-        menus: {
-          timesheet: OPERATIONAL_SUBMENUS.timesheet,
-          report: { basePath: "/reports/timesheet", items: [{ path: "/reports/timesheet", label: "My Report", icon: "fa-chart-simple" }] },
-        },
+        menus: personalMenus,
         categories: [
           { title: "My Workspace", items: [
-            { type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" },
-            { type: "submenu", key: "report", label: "Reporting", icon: "fa-chart-simple" },
-            { type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" },
+            ...(showTimesheets ? [{ type: "submenu", key: "timesheet", label: "Timesheets", icon: "fa-clock" }] : []),
+            ...(canViewTimesheets && !isRestrictedCostCenter ? [{ type: "submenu", key: "report", label: "Reporting", icon: "fa-chart-simple" }] : []),
+            ...(canViewNotifications ? [{ type: "link", path: "/notifications", label: "Notifications", icon: "fa-bell", badge: "notifications" }] : []),
+            ...(showCostCentres ? [{ type: "link", path: "/cost-centres/home", label: "Cost Centres", icon: "fa-layer-group" }] : []),
+            ...(showActivityLogs ? [{ type: "link", path: "/activity-logs", label: "Activity Logs", icon: "fa-clock-rotate-left" }] : []),
             { type: "link", path: "/users/my-profile", label: "My Profile", icon: "fa-circle-user" },
           ] },
         ],
       };
     }
-    return { menus: OPERATIONAL_SUBMENUS, categories: navigationForOperationalUser(isAdmin) };
-  }, [isAdmin, isTimesheetUser]);
+
+    const baseMenus = {
+      ...OPERATIONAL_SUBMENUS,
+      invoices: { ...OPERATIONAL_SUBMENUS.invoices, items: invoiceItems },
+      journal: { ...OPERATIONAL_SUBMENUS.journal, items: journalItems },
+      account: { ...OPERATIONAL_SUBMENUS.account, items: accountItems },
+      ledgers: { ...OPERATIONAL_SUBMENUS.ledgers, items: ledgerItems },
+      banks: { ...OPERATIONAL_SUBMENUS.banks, items: bankItems },
+      rate: { ...OPERATIONAL_SUBMENUS.rate, items: rateItems },
+      users: { ...OPERATIONAL_SUBMENUS.users, items: userAdminItems },
+      client: { ...OPERATIONAL_SUBMENUS.client, items: clientItems },
+      staff: { ...OPERATIONAL_SUBMENUS.staff, items: staffItems },
+      project: { ...OPERATIONAL_SUBMENUS.project, items: projectItems },
+      timesheet: { ...OPERATIONAL_SUBMENUS.timesheet, items: timesheetItems },
+      report: { ...OPERATIONAL_SUBMENUS.report, items: reportItems },
+    };
+    if (!showAccounts) delete baseMenus.account;
+    if (!showLedgers) delete baseMenus.ledgers;
+    if (!showBanks) delete baseMenus.banks;
+    if (!showRates) delete baseMenus.rate;
+    if (!showStaff) delete baseMenus.staff;
+    if (!showTimesheets) delete baseMenus.timesheet;
+    if (!showReports) delete baseMenus.report;
+    return {
+      menus: baseMenus,
+      categories: navigationForOperationalUser(userAdminItems.length > 0, showCostCentres, showActivityLogs, canAccessAccountingPeriods, isRestrictedCostCenter, canViewDashboard, showJournal, showInvoices, showAccounts, showLedgers, showBanks, showRates, showClients, showStaff, showProjects, showTimesheets, showReports, canViewNotifications),
+    };
+  }, [canAccessAccountingPeriods, canCreateAccounts, canCreateBanks, canCreateClients, canCreateInvoices, canCreateJournals, canCreateLedgers, canCreateProjects, canCreateRates, canCreateStaff, canCreateUsers, canViewAccounts, canViewBalanceSheet, canViewBankRecon, canCreateBankRecon, canViewBanks, canViewClients, canViewDashboard, canViewFx, canViewGeneralLedger, canViewInvoiceAging, canViewInvoices, canViewJournals, canViewLedgerStatement, canViewLedgers, canViewProfitLoss, canViewProjects, canViewRates, canViewReportHub, canViewStaff, canViewTrialBalance, canViewUsers, canViewTimesheets, canCreateTimesheets, canViewNotifications, isRestrictedCostCenter, isTimesheetUser, showActivityLogs, showCostCentres]);
 
   useEffect(() => {
     const active = Object.entries(menus).find(([, menu]) => location.pathname.startsWith(menu.basePath));

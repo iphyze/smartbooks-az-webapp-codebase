@@ -9,9 +9,11 @@ import ChartSearchableSelect from "../../components/ChartSearchableSelect";
 import TableLoaderComponent from "../../components/TableLoaderComponent";
 import EmptyTable from "../../components/EmptyTable";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
 import useToastStore from "../../stores/useToastStore";
 import useActivityLogsStore from "../../stores/useActivityLogsStore";
 import { fadeInUp } from "../../utils/animation";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import "./ActivityLogsPage.css";
 
 const MODULE_ICONS = {
@@ -85,7 +87,9 @@ const ActivityLogsPage = () => {
   const [searchInput, setSearchInput] = useState("");
   const [selectedLog, setSelectedLog] = useState(null);
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
   const { showToast } = useToastStore();
+  const canExport = hasPermission(user, 'activity_log.export');
   const {
     items, meta, summary, filterOptions, filters, loading, exporting, error,
     setFilter, setFilters, resetFilters, fetchLogs, exportLogs,
@@ -167,7 +171,7 @@ const ActivityLogsPage = () => {
       <main className={`content-container theme-${theme}`}>
         <div className={`db-root theme-${theme}`}>
           <div className="db-page activity-log-page">
-            <PageNav pageTitle="Activity Logs" links={[{ label: "Home", to: "/", active: true }, { label: "Activity Logs", to: "/activity-logs", active: false }]} />
+            <PageNav pageTitle="Activity Logs" links={[{ label: "Home", to: defaultRouteForRole(user), active: true }, { label: "Activity Logs", to: "/activity-logs", active: false }]} />
 
             <motion.section variants={fadeInUp} initial="hidden" animate="show" className="activity-log-hero">
               <div className="activity-log-hero__copy">
@@ -188,10 +192,10 @@ const ActivityLogsPage = () => {
                   <span><i className="fas fa-clock-rotate-left" /></span>
                   <div><h3>System activity</h3><p>{meta.total.toLocaleString()} matching {meta.total === 1 ? "event" : "events"}</p></div>
                 </div>
-                <button type="button" className="activity-log-export" onClick={handleExport} disabled={exporting || loading}>
+                {canExport && <button type="button" className="activity-log-export" onClick={handleExport} disabled={exporting || loading}>
                   <i className={`fas ${exporting ? "fa-spinner fa-spin" : "fa-file-csv"}`} />
                   {exporting ? "Preparing export…" : "Export CSV"}
-                </button>
+                </button>}
               </header>
 
               <div className="activity-log-filters">

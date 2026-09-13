@@ -7,6 +7,8 @@ import Header from '../../Header';
 import useThemeStore from '../../../stores/useThemeStore';
 import PageNav from '../../../components/PageNav';
 import useBankReconStore from '../../../stores/useBankReconStore';
+import useAuthStore from '../../../stores/useAuthStore';
+import { defaultRouteForRole, hasPermission } from '../../../utils/permissions';
 import { fadeUp, fmtDate } from '../recon/BankReconUtils';
 import BankReconKpiStrip from '../recon/BankReconKpiStrip';
 import BankReconAppendModal from '../recon/BankReconAppendModal';
@@ -23,6 +25,11 @@ const BankReconWorkspace = () => {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
   const [nav, setNav] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, 'bank_reconciliation.edit');
+  const canMatch = hasPermission(user, 'bank_reconciliation.match');
+  const canExport = hasPermission(user, 'bank_reconciliation.export');
+  const canViewReportHub = hasPermission(user, 'report.view');
 
   const { fetchSingle, downloadExcel, resetCurrent, appendLines, addLine } = useBankReconStore();
   const downloadingExcelId = useBankReconStore((s) => s.downloadingExcelId);
@@ -38,8 +45,8 @@ const BankReconWorkspace = () => {
   }, [id]);
 
   const links = [
-    { label: 'Home', to: '/', active: true },
-    { label: 'Reports & Analytics', to: '/reports/ledger', active: true },
+    { label: 'Home', to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: 'Reports & Analytics', to: '/reports/ledger', active: true }] : []),
     { label: 'Bank Reconciliations', to: '/reports/bank-recon', active: true },
     { label: recon?.recon_number || 'Workspace', to: `/reports/bank-recon/workspace/${id}`, active: false },
   ];
@@ -80,39 +87,47 @@ const BankReconWorkspace = () => {
                   <span className="br-action-chip"><i className="fas fa-briefcase" />{recon.company_name}</span>
                   <span className="br-action-chip"><i className="fas fa-calendar-days" />{fmtDate(recon.period_from)} – {fmtDate(recon.period_to)}</span>
                   {acctSub && <span className="br-action-chip"><i className="fas fa-wallet" />{acctSub}</span>}
-                  <button
-                    className="br-btn-ghost"
-                    style={{ height: 34, padding: '0 14px', fontSize: 12 }}
-                    onClick={() => navigate(`/reports/bank-recon/edit/${id}`)}
-                  >
-                    <i className="fas fa-pen" /> Edit Header
-                  </button>
+                  {canEdit && (
+                    <button
+                      className="br-btn-ghost"
+                      style={{ height: 34, padding: '0 14px', fontSize: 12 }}
+                      onClick={() => navigate(`/reports/bank-recon/edit/${id}`)}
+                    >
+                      <i className="fas fa-pen" /> Edit Header
+                    </button>
+                  )}
                 </div>
                 <div className="br-action-right">
-                  <button className="br-btn-ghost" style={{ height: 34, padding: '0 14px', fontSize: 12 }} onClick={() => setShowAddLine(true)}>
-                    <i className="fas fa-plus-circle" />Add Line
-                  </button>
-                  <button className="br-btn-ghost" style={{ height: 34, padding: '0 14px', fontSize: 12 }} onClick={() => setShowAppend(true)}>
-                    <i className="fas fa-file-arrow-up" />Append Lines
-                  </button>
-                  <button
-                    className={`br-btn-excel${excelLoading ? ' br-btn-loading' : ''}`}
-                    onClick={() => downloadExcel(recon.id, recon.recon_number)}
-                    disabled={excelLoading}
-                    aria-busy={excelLoading}
-                  >
-                    {excelLoading ? (
-                      <>
-                        <span className="br-spinner br-spinner--sm" aria-hidden="true" />
-                        Preparing Excel…
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-file-excel" />
-                        Excel
-                      </>
-                    )}
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button className="br-btn-ghost" style={{ height: 34, padding: '0 14px', fontSize: 12 }} onClick={() => setShowAddLine(true)}>
+                        <i className="fas fa-plus-circle" />Add Line
+                      </button>
+                      <button className="br-btn-ghost" style={{ height: 34, padding: '0 14px', fontSize: 12 }} onClick={() => setShowAppend(true)}>
+                        <i className="fas fa-file-arrow-up" />Append Lines
+                      </button>
+                    </>
+                  )}
+                  {canExport && (
+                    <button
+                      className={`br-btn-excel${excelLoading ? ' br-btn-loading' : ''}`}
+                      onClick={() => downloadExcel(recon.id, recon.recon_number)}
+                      disabled={excelLoading}
+                      aria-busy={excelLoading}
+                    >
+                      {excelLoading ? (
+                        <>
+                          <span className="br-spinner br-spinner--sm" aria-hidden="true" />
+                          Preparing Excel…
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-file-excel" />
+                          Excel
+                        </>
+                      )}
+                    </button>
+                  )}
                   {/* <PDFDownloadLink document={pdfDoc} fileName={`${recon.recon_number}.pdf`}>
                     {({ loading }) => (
                       <button className="br-btn-pdf" disabled={loading}>
@@ -127,12 +142,14 @@ const BankReconWorkspace = () => {
 
               <div className="br-workspace-guide">
                 <i className="fas fa-info-circle" />
-                <p>Select outstanding lines to match or categorise them. Use <strong>Edit Line</strong> on any bank or ledger item to correct its date, narration, amount, direction or reference.</p>
+                <p>{canMatch || canEdit
+                  ? <>Use the actions available to your account to reconcile or maintain statement lines. {canEdit && <><strong>Edit Line</strong> can correct date, narration, amount, direction or reference.</>}</>
+                  : <>Review the reconciliation, matched items and classification schedule. Your access is read-only.</>}</p>
               </div>
 
               <BankReconSmartInsightsPanel recon={recon} />
-              <BankReconAutoRulesPanel recon={recon} />
-              <BankReconMatcher />
+              {canMatch && <BankReconAutoRulesPanel recon={recon} />}
+              <BankReconMatcher canMatch={canMatch} canEdit={canEdit} />
               <BankReconClassifiedItemsTable />
             </motion.div>
           </div>
@@ -141,14 +158,14 @@ const BankReconWorkspace = () => {
     </div>
 
       <AnimatePresence>
-        {showAppend && (
+        {canEdit && showAppend && (
           <BankReconAppendModal
             recon={recon}
             onClose={() => setShowAppend(false)}
             onAppend={appendLines}
           />
         )}
-        {showAddLine && (
+        {canEdit && showAddLine && (
           <BankReconAddLineModal
             recon={recon}
             onClose={() => setShowAddLine(false)}

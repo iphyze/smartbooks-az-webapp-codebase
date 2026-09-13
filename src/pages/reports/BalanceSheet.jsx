@@ -8,6 +8,8 @@ import NavBar from "../NavBar";
 import Header from "../Header";
 import PageNav from "../../components/PageNav";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { defaultRouteForRole, hasPermission } from "../../utils/permissions";
 import useLedgerReportStore from "../../stores/useLedgerReportStore";
 import CompanyLogo from "../../assets/images/smartbooks/az-logo.png";
 import DownloadBalanceSheet from "./DownloadBalanceSheet";
@@ -58,7 +60,7 @@ const fadeUp = {
 /* ─────────────────────────────────────────────
    CATEGORY TABLE  (reusable across all sections)
 ───────────────────────────────────────────── */
-const CategoryTable = ({ title, group, isLess = false }) => {
+const CategoryTable = ({ title, group, isLess = false, canViewLedgers }) => {
   if (!group || !group.records || group.records.length === 0) return null;
 
   return (
@@ -80,12 +82,16 @@ const CategoryTable = ({ title, group, isLess = false }) => {
               <tr key={row.ledger_number || i}>
                 <td className="bs-td-sn">{i + 1}</td>
                 <td>
-                  <button
-                    className="bs-ledger-link"
-                    onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
-                  >
-                    {row.ledger_number}
-                  </button>
+                  {canViewLedgers ? (
+                    <button
+                      className="bs-ledger-link"
+                      onClick={() => openReportDetail(`/ledger/view/${row.ledger_number}`)}
+                    >
+                      {row.ledger_number}
+                    </button>
+                  ) : (
+                    <span>{row.ledger_number}</span>
+                  )}
                 </td>
                 <td className="bs-ledger-name">{row.ledger_name}</td>
                 <td className={`bs-td-num bs-bal-cell ${isNeg ? "bs-neg" : ""}`}>
@@ -212,7 +218,7 @@ const BalanceStrip = ({ summary }) => {
 /* ─────────────────────────────────────────────
    RESULTS VIEW
 ───────────────────────────────────────────── */
-const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
+const ResultsView = ({ data, summary, meta, onExcel, excelLoading, canExport, canViewLedgers }) => {
   const pdfDocument = useMemo(() => (
     <DownloadBalanceSheet data={data} summary={summary} meta={meta} />
   ), [data, summary, meta]);
@@ -228,16 +234,20 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
           {meta?.period && <div className="bs-period-badge"><i className="fas fa-clock" />FY {meta.period}</div>}
         </div>
         <div className="bs-action-right">
-          <button className="bs-excel-btn" onClick={onExcel} disabled={excelLoading}>
-            {excelLoading ? <><div className="bs-btn-loader bs-btn-loader--sm" /> Downloading...</> : <><i className="fas fa-file-excel" /> Export Excel</>}
-          </button>
-          <PDFDownloadLink document={pdfDocument} fileName={`Balance_Sheet_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}>
-            {({ loading: pdfLoading }) => (
-              <button className="bs-pdf-btn" disabled={pdfLoading}>
-                {pdfLoading ? <><div className="bs-btn-loader bs-btn-loader--sm" /> Building PDF...</> : <><i className="fas fa-file-pdf" /> Export PDF</>}
+          {canExport && (
+            <>
+              <button className="bs-excel-btn" onClick={onExcel} disabled={excelLoading}>
+                {excelLoading ? <><div className="bs-btn-loader bs-btn-loader--sm" /> Downloading...</> : <><i className="fas fa-file-excel" /> Export Excel</>}
               </button>
-            )}
-          </PDFDownloadLink>
+              <PDFDownloadLink document={pdfDocument} fileName={`Balance_Sheet_${meta?.currency}_${meta?.datefrom}_to_${meta?.dateto}.pdf`}>
+                {({ loading: pdfLoading }) => (
+                  <button className="bs-pdf-btn" disabled={pdfLoading}>
+                    {pdfLoading ? <><div className="bs-btn-loader bs-btn-loader--sm" /> Building PDF...</> : <><i className="fas fa-file-pdf" /> Export PDF</>}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            </>
+          )}
         </div>
       </div>
 
@@ -266,24 +276,24 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
           </div>
 
           <div className="bs-subsection-heading">Non-Current Assets</div>
-          <CategoryTable title="Intangible Assets"                    group={data.IntangibleAssets} />
-          <CategoryTable title="Tangible Assets"                      group={data.TangibleAssets} />
-          <CategoryTable title="Less: Depreciation & Amortization"    group={data.DepreciationAsset} isLess />
-          <CategoryTable title="Capital Work in Progress (CWIP)"      group={data.CWIP} />
+          <CategoryTable title="Intangible Assets"                    group={data.IntangibleAssets} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Tangible Assets"                      group={data.TangibleAssets} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Less: Depreciation & Amortization"    group={data.DepreciationAsset} isLess canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Capital Work in Progress (CWIP)"      group={data.CWIP} canViewLedgers={canViewLedgers} />
           <SummaryRow label="Total Non-Current Assets" value={summary?.total_non_current_assets} />
 
           <div className="bs-subsection-heading bs-subsection-heading--mt">Current Assets</div>
-          <CategoryTable title="Service Customers"                    group={data.ServiceCustomers} />
-          <CategoryTable title="Less: Allowance for Doubtful Debts"   group={data.AllowanceDoubtfulDebts} isLess />
+          <CategoryTable title="Service Customers"                    group={data.ServiceCustomers} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Less: Allowance for Doubtful Debts"   group={data.AllowanceDoubtfulDebts} isLess canViewLedgers={canViewLedgers} />
           <SummaryRow    label="Service Customers (Net)"              value={summary?.net_service_customers} />
-          <CategoryTable title="Strategic Partners"                   group={data.StrategicPartners} />
-          <CategoryTable title="Agents"                               group={data.Agents} />
-          <CategoryTable title="Prepayments"                          group={data.Prepayments} />
+          <CategoryTable title="Strategic Partners"                   group={data.StrategicPartners} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Agents"                               group={data.Agents} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Prepayments"                          group={data.Prepayments} canViewLedgers={canViewLedgers} />
           <div className="bs-treasury-heading">Treasury Accounts</div>
-          <CategoryTable title="Short Term Investments"               group={data.ShortTermInvestments} />
-          <CategoryTable title="Bank Accounts"                        group={data.BankAccounts} />
-          <CategoryTable title="Petty Cash"                           group={data.PettyCash} />
-          <CategoryTable title="Offshore Bank Accounts"               group={data.OffshoreBankAccounts} />
+          <CategoryTable title="Short Term Investments"               group={data.ShortTermInvestments} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Bank Accounts"                        group={data.BankAccounts} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Petty Cash"                           group={data.PettyCash} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Offshore Bank Accounts"               group={data.OffshoreBankAccounts} canViewLedgers={canViewLedgers} />
           <SummaryRow label="Total Current Assets"                    value={summary?.total_current_assets} />
 
           <SummaryRow label="Total Assets" value={summary?.total_assets} isGrand />
@@ -294,8 +304,8 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
           <div className="bs-section-heading bs-section-heading--equity">
             <i className="fas fa-scale-balanced" /> Equity
           </div>
-          <CategoryTable title="Capital"           group={data.Capital} />
-          <CategoryTable title="Retained Earnings" group={data.RetainedEarnings} />
+          <CategoryTable title="Capital"           group={data.Capital} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Retained Earnings" group={data.RetainedEarnings} canViewLedgers={canViewLedgers} />
           {/* Current Year Earnings injected from P&L */}
           <div className="bs-current-earnings">
             <span className="bs-current-earnings-label">Current Year Earnings</span>
@@ -321,15 +331,15 @@ const ResultsView = ({ data, summary, meta, onExcel, excelLoading }) => {
           </div>
 
           <div className="bs-subsection-heading">Non-Current Liabilities</div>
-          <CategoryTable title="Deferred Tax Payable"    group={data.DeferredTaxPayable} />
-          <CategoryTable title="Loans and Similar Debts" group={data.LoansAndSimilarDebts} />
+          <CategoryTable title="Deferred Tax Payable"    group={data.DeferredTaxPayable} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Loans and Similar Debts" group={data.LoansAndSimilarDebts} canViewLedgers={canViewLedgers} />
           <SummaryRow label="Total Non-Current Liabilities" value={summary?.total_non_current_liability} />
 
           <div className="bs-subsection-heading bs-subsection-heading--mt">Current Liabilities</div>
-          <CategoryTable title="Suppliers / Creditors"        group={data.SuppliersCreditors} />
-          <CategoryTable title="Payroll and Similar Accounts" group={data.PayrollSimilarAccounts} />
-          <CategoryTable title="Outsourcing Agents"           group={data.OutsourcingAgents} />
-          <CategoryTable title="Govt Agencies Payable / Receivable" group={data.GovernmentTax} />
+          <CategoryTable title="Suppliers / Creditors"        group={data.SuppliersCreditors} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Payroll and Similar Accounts" group={data.PayrollSimilarAccounts} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Outsourcing Agents"           group={data.OutsourcingAgents} canViewLedgers={canViewLedgers} />
+          <CategoryTable title="Govt Agencies Payable / Receivable" group={data.GovernmentTax} canViewLedgers={canViewLedgers} />
           <SummaryRow label="Total Current Liabilities"       value={summary?.total_current_liabilities} />
 
           <SummaryRow label="Total Liabilities"               value={summary?.total_liabilities} isGrand />
@@ -358,6 +368,10 @@ const BalanceSheet = () => {
   const [zerobal,      setZerobal]      = useState(ZEROBAL_OPTIONS[1]);
 
   const { theme } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
+  const canExport = hasPermission(user, "balance_sheet.export");
+  const canViewLedgers = hasPermission(user, "ledger.view");
+  const canViewReportHub = hasPermission(user, "report.view");
   const { balanceSheet, fetchBalanceSheet, downloadBalanceSheetExcel } = useLedgerReportStore();
 
   const restoreReportState = useCallback((saved = {}) => {
@@ -398,8 +412,8 @@ const BalanceSheet = () => {
   useEffect(() => { document.title = "Smartbooks | Balance Sheet"; }, []);
 
   const links = [
-    { label: "Home",          to: "/", active: true },
-    { label: "Reports & Analytics", to: "/reports/ledger", active: true },
+    { label: "Home", to: defaultRouteForRole(user), active: true },
+    ...(canViewReportHub ? [{ label: "Reports & Analytics", to: "/reports/ledger", active: true }] : []),
     { label: "Balance Sheet", to: "/reports/ledger/balance-sheet", active: false },
   ];
 
@@ -466,6 +480,8 @@ const BalanceSheet = () => {
                     meta={balanceSheet.meta}
                     onExcel={handleExcel}
                     excelLoading={excelLoading}
+                    canExport={canExport}
+                    canViewLedgers={canViewLedgers}
                   />
                 </motion.div>
               )}

@@ -2,6 +2,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import useThemeStore from "../../stores/useThemeStore";
+import useAuthStore from "../../stores/useAuthStore";
+import { hasPermission } from "../../utils/permissions";
 import { fadeInUp } from "../../utils/animation";
 import { formatDateLong } from "../../utils/helper";
 import {
@@ -14,6 +16,8 @@ import {
 const ViewStaffContent = ({ staff }) => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user, "staff.edit");
 
   if (!staff) return null;
 
@@ -40,7 +44,7 @@ const ViewStaffContent = ({ staff }) => {
           <EntityViewActions
             onBack={() => navigate("/staff/home")}
             backLabel="Back to staff"
-            onEdit={() => navigate(`/staff/edit/${staff.staff_id}`)}
+            onEdit={canEdit ? () => navigate(`/staff/edit/${staff.staff_id}`) : undefined}
             editLabel="Edit staff"
           />
         )}
