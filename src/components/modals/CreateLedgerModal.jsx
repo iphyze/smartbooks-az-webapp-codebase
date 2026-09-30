@@ -21,7 +21,8 @@ const CreateLedgerModal = ({ isOpen, onClose, onLedgerCreated }) => {
   const { createLedger } = useLedgerStore();
   const user = useAuthStore((state) => state.user);
   const canCreateAccount = hasPermission(user, "account.create");
-  const { accounts, searchAccounts, isLoading: accountsLoading } = useAccountSearchStore();
+  const { accounts: rawAccounts, searchAccounts } = useAccountSearchStore();
+  const accounts = Array.isArray(rawAccounts) ? rawAccounts : [];
   const { showToast } = useToastStore();
 
   const [isCreating, setIsCreating] = useState(false);

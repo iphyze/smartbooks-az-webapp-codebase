@@ -10,7 +10,6 @@ import PageNav from '../../../components/PageNav';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import useBankReconStore from '../../../stores/useBankReconStore';
 import useAuthStore from '../../../stores/useAuthStore';
-import useCostCenterOptions from '../../../hooks/useCostCenterOptions';
 import { CURRENCY_OPTIONS, toISO } from './BankReconUtils';
 import { defaultRouteForRole, hasPermission } from '../../../utils/permissions';
 import { Field, FileDrop } from './BankReconCommon';
@@ -37,12 +36,10 @@ const CreateBankRecon = () => {
   const accountingYear = Number(user?.accounting_period || new Date().getFullYear());
   const canView = hasPermission(user, 'bank_reconciliation.view');
   const canViewReportHub = hasPermission(user, 'report.view');
-  const { options: costCenterOptions, loading: costCentersLoading, error: costCentersError } = useCostCenterOptions();
 
   // Form state
   const [errors, setErrors] = useState({});
   const [company, setCo]    = useState('');
-  const [costCenter, setCostCenter] = useState('');
   const [bankName, setBN]   = useState('');
   const [acctName, setAN]   = useState('');
   const [acctNo, setANo]    = useState('');
@@ -62,9 +59,6 @@ const CreateBankRecon = () => {
   ];
 
   useEffect(() => { document.title = 'Smartbooks | New Bank Reconciliation'; }, []);
-  useEffect(() => {
-    if (!costCenter && costCenterOptions.length === 1) setCostCenter(costCenterOptions[0].value);
-  }, [costCenter, costCenterOptions]);
 
   const upd      = (k, v) => setBals((s) => ({ ...s, [k]: v }));
   const clearErr = (key) => setErrors((s) => { const n = { ...s }; delete n[key]; return n; });
@@ -72,7 +66,6 @@ const CreateBankRecon = () => {
   const validate = () => {
     const e = {};
     if (!company.trim()) e.company = 'Required';
-    if (!costCenter.trim()) e.costCenter = 'Required';
     if (!from) e.from = 'Required';
     if (!to) e.to = 'Required';
     if (from && to && from > to) e.to = 'Must be after Period From';
@@ -86,7 +79,7 @@ const CreateBankRecon = () => {
     setErrors(e);
     if (Object.keys(e).length) return;
     const res = await createReconciliation({
-      company_name: company.trim(), cost_center: costCenter.trim(), bank_name: bankName.trim(),
+      company_name: company.trim(), bank_name: bankName.trim(),
       account_name: acctName.trim(), account_number: acctNo.trim(),
       currency, period_from: toISO(from), period_to: toISO(to),
       bank_file: bankFile, ledger_file: ledgerFile,
@@ -135,29 +128,6 @@ const CreateBankRecon = () => {
                         </div>
                       </div>
                       {errors.company && <div className="input-error-message">{errors.company}</div>}
-                    </div>
-                  </div>
-
-                  {/* ── Cost Centre ── */}
-                  <div className="invoice-form invoice-form-full">
-                    <div className="input-form-wrapper">
-                      <div className={`input-form-group ${errors.costCenter ? 'input-form-error' : ''}`}>
-                        <label className={`input-form-label ${errors.costCenter ? 'input-label-message' : ''}`}>
-                          Cost Centre <span style={{ color: '#f47c7c' }}>*</span>
-                        </label>
-                        <div className="filter-wrapper">
-                          <ChartSearchableSelect
-                            options={costCenterOptions}
-                            value={costCenter}
-                            onChange={(value) => { setCostCenter(value || ''); clearErr('costCenter'); }}
-                            className="box-filter-limit"
-                            placeholder={costCentersLoading ? 'Loading cost centres...' : 'Select cost centre'}
-                            disabled={costCentersLoading}
-                          />
-                        </div>
-                      </div>
-                      {errors.costCenter && <div className="input-error-message">{errors.costCenter}</div>}
-                      {costCentersError && <div className="input-error-message">{costCentersError}</div>}
                     </div>
                   </div>
 

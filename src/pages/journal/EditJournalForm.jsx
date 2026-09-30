@@ -499,11 +499,12 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
 
   /* ── Cost centre options respect the authenticated user scope. ── */
   const {
-    costCenterOptions,
-    isRestrictedCostCenterUser,
-    isLoadingCostCenters,
-    costCenterLoadError,
-  } = useCostCenterOptions(clients);
+    options: costCenterOptions = [],
+    accessMode: costCenterAccessMode = "all",
+    loading: isLoadingCostCenters,
+    error: costCenterLoadError,
+  } = useCostCenterOptions();
+  const isRestrictedCostCenterUser = String(costCenterAccessMode).toLowerCase() === "restricted";
 
   const quickLedgers = useMemo(() => {
     const byName = new Map();

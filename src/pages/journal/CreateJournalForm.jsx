@@ -450,11 +450,12 @@ const CreateJournalForm = () => {
 
   /* ── Cost centre options respect the authenticated user scope. ── */
   const {
-    costCenterOptions,
-    isRestrictedCostCenterUser,
-    isLoadingCostCenters,
-    costCenterLoadError,
-  } = useCostCenterOptions(clients);
+    options: costCenterOptions = [],
+    accessMode: costCenterAccessMode = "all",
+    loading: isLoadingCostCenters,
+    error: costCenterLoadError,
+  } = useCostCenterOptions();
+  const isRestrictedCostCenterUser = String(costCenterAccessMode).toLowerCase() === "restricted";
 
   useEffect(() => {
     if (!isRestrictedCostCenterUser || isLoadingCostCenters) return;

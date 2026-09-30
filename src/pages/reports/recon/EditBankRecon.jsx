@@ -10,7 +10,6 @@ import EditLoaderComponent from '../../../components/EditLoaderComponent';
 import useBankReconStore from '../../../stores/useBankReconStore';
 import useAuthStore from '../../../stores/useAuthStore';
 import { defaultRouteForRole, hasPermission } from '../../../utils/permissions';
-import useCostCenterOptions from '../../../hooks/useCostCenterOptions';
 import DatePicker from 'react-datepicker';
 import ChartSearchableSelect from '../../../components/ChartSearchableSelect';
 import { CURRENCY_OPTIONS, toISO } from './BankReconUtils';
@@ -86,7 +85,6 @@ const EditBankRecon = () => {
   const canViewReportHub = hasPermission(user, 'report.view');
 
   const { fetchSingle, updateReconciliation, saving } = useBankReconStore();
-  const { options: costCenterOptions, loading: costCentersLoading, error: costCentersError } = useCostCenterOptions();
   const recon   = useBankReconStore((s) => s.current.reconciliation);
   const loading = useBankReconStore((s) => s.current.loading);
 
@@ -113,7 +111,6 @@ const EditBankRecon = () => {
     if (!recon) return;
     setForm({
       company_name:     recon.company_name   || '',
-      cost_center:      recon.cost_center || recon.company_name || '',
       bank_name:        recon.bank_name      || '',
       account_name:     recon.account_name   || '',
       account_number:   recon.account_number || '',
@@ -135,7 +132,6 @@ const EditBankRecon = () => {
   const errors = submitted ? (() => {
     const e = {};
     if (!form?.company_name?.trim()) e.company_name = 'Required';
-    if (!form?.cost_center?.trim()) e.cost_center = 'Required';
     if (!form?.period_from) e.period_from = 'Required';
     if (!form?.period_to) e.period_to = 'Required';
     if (form?.period_from && form?.period_to && form.period_from > form.period_to) {
@@ -147,13 +143,12 @@ const EditBankRecon = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
-    if (!form?.company_name?.trim() || !form?.cost_center?.trim() || !form?.period_from || !form?.period_to || form.period_from > form.period_to) return;
+    if (!form?.company_name?.trim() || !form?.period_from || !form?.period_to || form.period_from > form.period_to) return;
 
     // Build FormData so we can optionally include new files
     const fd = new FormData();
     fd.append('recon_id',        parseInt(id, 10));
     fd.append('company_name',    form.company_name.trim());
-    fd.append('cost_center',     form.cost_center.trim());
     fd.append('bank_name',       form.bank_name.trim());
     fd.append('account_name',    form.account_name.trim());
     fd.append('account_number',  form.account_number.trim());
@@ -216,22 +211,6 @@ const EditBankRecon = () => {
                       <div className="form-wrapper">
                         <input className={`form-input form-input-no-padding ${errors.company_name ? 'input-error' : ''}`} value={form.company_name} onChange={(e) => upd('company_name', e.target.value)} />
                       </div>
-                    </FormField>
-                  </div>
-
-                  <div className="invoice-form invoice-form-full">
-                    <FormField label="Cost Centre" required err={errors.cost_center}>
-                      <div className="filter-wrapper">
-                        <ChartSearchableSelect
-                          options={costCenterOptions}
-                          value={form.cost_center}
-                          onChange={(value) => upd('cost_center', value || '')}
-                          className="box-filter-limit"
-                          placeholder={costCentersLoading ? 'Loading cost centres...' : 'Select cost centre'}
-                          disabled={costCentersLoading}
-                        />
-                      </div>
-                      {costCentersError && <div className="input-error-message">{costCentersError}</div>}
                     </FormField>
                   </div>
 
