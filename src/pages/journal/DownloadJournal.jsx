@@ -7,7 +7,7 @@ const DownloadJournal = ({ journal }) => {
   // Destructure journal properties
   const {
     journal_date, journal_id, journal_type, journal_currency, 
-    transaction_type, journal_description, items, 
+    transaction_type, journal_description, project, items, 
     created_by, updated_by,
     debit_ngn, credit_ngn, debit_others, credit_others
   } = journal || {};
@@ -54,6 +54,12 @@ const DownloadJournal = ({ journal }) => {
                         <Text style={styles.metaLabel}>Transaction Type:</Text>
                         <Text style={styles.metaValue}>{transaction_type || 'N/A'}</Text>
                     </View>
+                    {project ? (
+                      <View style={styles.metaRow}>
+                        <Text style={styles.metaLabel}>Project:</Text>
+                        <Text style={styles.metaValue}>{project}</Text>
+                      </View>
+                    ) : null}
                     <View style={styles.metaRow}>
                         <Text style={styles.metaLabel}>Description:</Text>
                         <Text style={styles.metaValue}>{journal_description || 'N/A'}</Text>

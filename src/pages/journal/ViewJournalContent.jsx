@@ -269,7 +269,7 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
         </div>
       </header>
 
-      <div className="journal-view-highlight-grid">
+      <div className={`journal-view-highlight-grid${journal.project ? " journal-view-highlight-grid--with-project" : ""}`}>
         <article className="journal-view-highlight">
           <span className="journal-view-highlight__icon">
             <i className="fas fa-calendar-day" aria-hidden="true" />
@@ -299,6 +299,18 @@ const ViewJournalContent = ({ journal, onPaymentRegistered }) => {
             <strong>{journal.cost_center || "Not assigned"}</strong>
           </div>
         </article>
+
+        {journal.project && (
+          <article className="journal-view-highlight">
+            <span className="journal-view-highlight__icon">
+              <i className="fas fa-diagram-project" aria-hidden="true" />
+            </span>
+            <div>
+              <span>Project</span>
+              <strong>{journal.project}</strong>
+            </div>
+          </article>
+        )}
 
         <article className="journal-view-highlight">
           <span className="journal-view-highlight__icon">

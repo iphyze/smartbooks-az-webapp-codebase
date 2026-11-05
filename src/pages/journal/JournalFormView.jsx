@@ -96,6 +96,11 @@ export default function JournalFormView({
   costCenterRestricted = false,
   costCenterLoading = false,
   costCenterLoadError = "",
+  projectOptions = [],
+  projectsLoading = false,
+  searchProjects,
+  setShowCreateProjectModal,
+  canCreateProject = false,
   journalItems = [],
   itemErrorMap = {},
   ledgers = [],
@@ -313,7 +318,7 @@ export default function JournalFormView({
             <span className="journal-form-context__icon"><i className="fas fa-briefcase" /></span>
             <div>
               <h4>Business context</h4>
-              <p>Choose the cost centre first, then add the description that should appear across the journal.</p>
+              <p>Choose the cost centre, optionally link a project, then describe the journal.</p>
             </div>
           </div>
 
@@ -350,6 +355,37 @@ export default function JournalFormView({
                 <FieldError message="No cost centre has been assigned to your account. Contact an administrator." />
               )}
               <FieldError message={headerErrors.cost_center} />
+            </div>
+
+            <div className="journal-form-field">
+              <label className="input-form-label" htmlFor="journal_project">Project <span className="journal-form-optional">Optional</span></label>
+              <div className="journal-form-control-with-action">
+                <div className="input-form-group">
+                  <div className="form-wrapper">
+                    <Select
+                      options={projectOptions}
+                      onInputChange={(value, action) => { if (action.action === "input-change" && value.length > 1) searchProjects?.(value); }}
+                      onMenuOpen={() => setOpenMenuId("journal_project")}
+                      onMenuClose={() => { setOpenMenuId(null); searchProjects?.(""); }}
+                      onChange={(option) => handleDetailChange("project", option?.value || "")}
+                      value={journalDetails.project ? { value: journalDetails.project, label: journalDetails.project } : null}
+                      placeholder="Search project..."
+                      isClearable
+                      isLoading={projectsLoading}
+                      className="form-input-select journal-form-select"
+                      classNamePrefix="form-input-select"
+                      inputId="journal_project"
+                    />
+                    <span className={["chevron-input-icon fas fa-chevron-down", openMenuId === "journal_project" ? "chevron-rotate" : ""].filter(Boolean).join(" ")} />
+                  </div>
+                </div>
+                {canCreateProject && (
+                  <button type="button" className="journal-form-secondary-action" onClick={() => setShowCreateProjectModal(true)}>
+                    <i className="fas fa-plus" />
+                    Add project
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="journal-form-field">

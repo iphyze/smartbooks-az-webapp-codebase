@@ -1888,3 +1888,10 @@
   color: var(--jf-muted);
   font-size: 9px;
 }
+
+.journal-form-optional {
+  margin-left: 6px;
+  color: var(--sb-text-3);
+  font-size: 0.8em;
+  font-weight: 500;
+}

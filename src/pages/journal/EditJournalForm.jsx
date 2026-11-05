@@ -10,6 +10,8 @@ import api from "../../services/api";
 import useAuthStore from "../../stores/useAuthStore";
 import { hasPermission } from "../../utils/permissions";
 import useClientSearchStore from "../../stores/useClientSearchStore";
+import useProjectSearchStore from "../../stores/useProjectSearchStore";
+import CreateProjectModal from "../../components/modals/CreateProjectModal";
 import "../inputs-styles/Inputs.css";
 import "./JournalForm.css";
 import JournalFormView from "./JournalFormView";
@@ -312,10 +314,13 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   const { ledgers, searchLedgers } = useLedgerSearchStore();
   const { rates,   searchRates   } = useRateSearchStore();
   const { clients, searchClients } = useClientSearchStore();
+  const { projects, searchProjects, loading: projectsLoading } = useProjectSearchStore();
+  const projectOptions = useMemo(() => projects.map((project) => ({ value: project.project_name, label: project.project_name })), [projects]);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const canLinkPayment = hasPermission(user, "journal.payment_link");
   const canCreateClient = hasPermission(user, "client.create");
+  const canCreateProject = hasPermission(user, "project.create");
   const canCreateLedger = hasPermission(user, "ledger.create");
   const canCreateRate = hasPermission(user, "exchange_rate.create");
 
@@ -324,6 +329,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
   const [openMenuId, setOpenMenuId] = useState(null);
 
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
   const [showCreateRateModal,   setShowCreateRateModal]   = useState(false);
   const [activeRowId,           setActiveRowId]           = useState(null);
@@ -357,6 +363,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     transaction_type:         "",
     main_journal_description: "",
     cost_center:              "Overhead",
+    project:                  "",
   });
 
   /* ── Master rate id ── */
@@ -371,6 +378,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
     searchRates("");
     searchLedgers("");
     searchClients("");
+    searchProjects("");
 
     const loadLedgerSuggestions = async () => {
       try {
@@ -427,6 +435,7 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
       transaction_type:         journal.transaction_type         || "",
       main_journal_description: journal.journal_description      || "",
       cost_center:              journal.cost_center              || "Overhead",
+      project:                  journal.project                  || "",
     });
 
     if (journal.items && journal.items.length > 0) {
@@ -903,6 +912,12 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
       setTimeout(() => handleItemChange(activeRowId, "ledger_name", newLedger.ledger_name), 500);
   };
 
+  const handleProjectCreated = (newProject) => {
+    setShowCreateProjectModal(false);
+    searchProjects("");
+    if (newProject?.project_name) handleDetailChange("project", newProject.project_name);
+  };
+
   const handleRateCreated = () => { setShowCreateRateModal(false); searchRates(""); };
 
   const buildJournalPayload = () => ({
@@ -1089,6 +1104,11 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             costCenterRestricted={isRestrictedCostCenterUser}
             costCenterLoading={isLoadingCostCenters}
             costCenterLoadError={costCenterLoadError}
+            projectOptions={projectOptions}
+            projectsLoading={projectsLoading}
+            searchProjects={searchProjects}
+            setShowCreateProjectModal={setShowCreateProjectModal}
+            canCreateProject={canCreateProject}
             journalItems={journalItems}
             itemErrorMap={itemErrorMap}
             ledgers={ledgers}
@@ -1145,6 +1165,13 @@ const EditJournalForm = ({ journalId, journal, onSaveSuccess }) => {
             isOpen={showCreateClientModal}
             onClose={() => setShowCreateClientModal(false)}
             onClientCreated={handleClientCreated}
+          />
+        )}
+        {canCreateProject && showCreateProjectModal && (
+          <CreateProjectModal
+            isOpen={showCreateProjectModal}
+            onClose={() => setShowCreateProjectModal(false)}
+            onProjectCreated={handleProjectCreated}
           />
         )}
         {canCreateLedger && showCreateLedgerModal && (

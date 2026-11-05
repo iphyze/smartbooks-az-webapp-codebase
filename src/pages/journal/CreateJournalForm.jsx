@@ -13,6 +13,8 @@ import "../inputs-styles/Inputs.css";
 import "./JournalForm.css";
 import JournalFormView from "./JournalFormView";
 import useClientSearchStore from "../../stores/useClientSearchStore";
+import useProjectSearchStore from "../../stores/useProjectSearchStore";
+import CreateProjectModal from "../../components/modals/CreateProjectModal";
 import DeleteLineItemModal from "../../components/modals/DeleteLineItemModal";
 import CreateClientsModal from "../../components/modals/CreateClientsModal";
 import CreateLedgerModal from "../../components/modals/CreateLedgerModal";
@@ -243,12 +245,15 @@ const CreateJournalForm = () => {
   const { ledgers, searchLedgers } = useLedgerSearchStore();
   const { rates, searchRates } = useRateSearchStore();
   const { clients, searchClients } = useClientSearchStore();
+  const { projects, searchProjects, loading: projectsLoading } = useProjectSearchStore();
+  const projectOptions = useMemo(() => projects.map((project) => ({ value: project.project_name, label: project.project_name })), [projects]);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const canDuplicateJournal = hasPermission(user, "journal.duplicate");
   const canImportJournal = hasPermission(user, "journal.import");
   const canLinkPayment = hasPermission(user, "journal.payment_link");
   const canCreateClient = hasPermission(user, "client.create");
+  const canCreateProject = hasPermission(user, "project.create");
   const canCreateLedger = hasPermission(user, "ledger.create");
   const canCreateRate = hasPermission(user, "exchange_rate.create");
   const [searchParams] = useSearchParams();
@@ -261,6 +266,7 @@ const CreateJournalForm = () => {
   const [deleteModal, setDeleteModal] = useState({ open: false, itemId: null });
 
   const [showCreateClientModal, setShowCreateClientModal] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
   const [showCreateRateModal, setShowCreateRateModal] = useState(false);
   const [activeRowId, setActiveRowId] = useState(null);
@@ -281,6 +287,7 @@ const CreateJournalForm = () => {
     transaction_type: "",
     main_journal_description: "",
     cost_center: "Overhead",
+    project: "",
   });
 
   const [invoicePaymentRegistration, setInvoicePaymentRegistration] = useState({
@@ -321,6 +328,7 @@ const CreateJournalForm = () => {
     searchRates("");
     searchLedgers("");
     searchClients("");
+    searchProjects("");
 
     const loadLedgerSuggestions = async () => {
       try {
@@ -424,6 +432,7 @@ const CreateJournalForm = () => {
           transaction_type: duplicateDetails.transaction_type || "",
           main_journal_description: duplicateDetails.main_journal_description || "",
           cost_center: duplicateDetails.cost_center || "Overhead",
+          project: duplicateDetails.project || "",
         });
         setMasterRateId(preparedItems[0]?.jrate || "");
         setJournalItems(preparedItems);
@@ -882,6 +891,7 @@ const CreateJournalForm = () => {
       transaction_type: importedHeader.transaction_type || "",
       main_journal_description: importedHeader.main_journal_description || "",
       cost_center: importedHeader.cost_center || "Overhead",
+      project: importedHeader.project || "",
     });
     setMasterRateId(importedHeader.master_rate_id || importedItems[0]?.jrate || "");
     setJournalItems(importedItems.length ? importedItems : [buildPreparedItem()]);
@@ -914,6 +924,12 @@ const CreateJournalForm = () => {
     setShowCreateLedgerModal(false); searchLedgers("");
     if (newLedger && activeRowId)
       setTimeout(() => handleItemChange(activeRowId, "ledger_name", newLedger.ledger_name), 500);
+  };
+
+  const handleProjectCreated = (newProject) => {
+    setShowCreateProjectModal(false);
+    searchProjects("");
+    if (newProject?.project_name) handleDetailChange("project", newProject.project_name);
   };
 
   const handleRateCreated = () => { setShowCreateRateModal(false); searchRates(""); };
@@ -1056,7 +1072,7 @@ const CreateJournalForm = () => {
         setSubmitted(false);
         setJournalDetails({
           journal_date: new Date(), journal_type: "", journal_currency: "NGN",
-          transaction_type: "", main_journal_description: "", cost_center: isRestrictedCostCenterUser ? (costCenterOptions[0]?.value || "") : "Overhead",
+          transaction_type: "", main_journal_description: "", project: "", cost_center: isRestrictedCostCenterUser ? (costCenterOptions[0]?.value || "") : "Overhead",
         });
         setMasterRateId("");
         setInvoicePaymentRegistration({
@@ -1156,6 +1172,11 @@ const CreateJournalForm = () => {
             costCenterRestricted={isRestrictedCostCenterUser}
             costCenterLoading={isLoadingCostCenters}
             costCenterLoadError={costCenterLoadError}
+            projectOptions={projectOptions}
+            projectsLoading={projectsLoading}
+            searchProjects={searchProjects}
+            setShowCreateProjectModal={setShowCreateProjectModal}
+            canCreateProject={canCreateProject}
             journalItems={journalItems}
             itemErrorMap={itemErrorMap}
             ledgers={ledgers}
@@ -1218,6 +1239,13 @@ const CreateJournalForm = () => {
         )}
       </AnimatePresence>
       <AnimatePresence>
+        {canCreateProject && showCreateProjectModal && (
+          <CreateProjectModal
+            isOpen={showCreateProjectModal}
+            onClose={() => setShowCreateProjectModal(false)}
+            onProjectCreated={handleProjectCreated}
+          />
+        )}
         {canCreateLedger && showCreateLedgerModal && (
           <CreateLedgerModal
             isOpen={showCreateLedgerModal}

@@ -7,6 +7,7 @@ const HEADER_ALIASES = {
   journal_currency: ["journalcurrency", "basecurrency", "headercurrency"],
   main_journal_description: ["mainjournaldescription", "maindescription", "journalnarration", "headerdescription"],
   cost_center: ["costcenter", "costcentre"],
+  project: ["project", "projectname"],
   rate_date: ["ratedate", "exchangeratedate"],
 };
 
@@ -124,6 +125,7 @@ const JOURNAL_TEMPLATE_HEADERS = [
   "Journal Currency",
   "Main Journal Description",
   "Cost Center",
+  "Project",
   "Rate Date",
   "Ledger Name",
   "Ledger Number",
@@ -142,6 +144,7 @@ const JOURNAL_TEMPLATE_ROWS = [
     "NGN",
     "June office electricity expense",
     "Overhead",
+    "",
     "2026-05-08",
     "Electricity Expense",
     "61000000",
@@ -152,6 +155,7 @@ const JOURNAL_TEMPLATE_ROWS = [
     50000,
   ],
   [
+    "",
     "",
     "",
     "",
@@ -203,11 +207,11 @@ function buildJournalTemplateWorkbook() {
 
   journalSheet["!cols"] = [
     { wch: 15 }, { wch: 18 }, { wch: 20 }, { wch: 18 },
-    { wch: 32 }, { wch: 18 }, { wch: 15 }, { wch: 24 },
+    { wch: 32 }, { wch: 18 }, { wch: 24 }, { wch: 15 }, { wch: 24 },
     { wch: 16 }, { wch: 32 }, { wch: 15 }, { wch: 12 },
     { wch: 16 }, { wch: 16 },
   ];
-  journalSheet["!autofilter"] = { ref: `A1:N${JOURNAL_TEMPLATE_ROWS.length + 1}` };
+  journalSheet["!autofilter"] = { ref: `A1:O${JOURNAL_TEMPLATE_ROWS.length + 1}` };
 
   const instructionsSheet = XLSX.utils.aoa_to_sheet(JOURNAL_TEMPLATE_INSTRUCTIONS);
   instructionsSheet["!cols"] = [{ wch: 10 }, { wch: 46 }, { wch: 52 }];

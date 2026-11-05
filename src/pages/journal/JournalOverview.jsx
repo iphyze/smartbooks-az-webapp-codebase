@@ -458,6 +458,7 @@ const JournalOverview = () => {
                               <th>Description</th>
                               <th className="sortable" onClick={() => handleSort("journal_type")}>Type {getSortIcon("journal_type")}</th>
                               <th>Cost centre</th>
+                              <th className="sortable" onClick={() => handleSort("project")}>Project {getSortIcon("project")}</th>
                               <th>Amount</th>
                               <th className="invoice-actions-cell">Actions</th>
                             </tr>
@@ -497,6 +498,7 @@ const JournalOverview = () => {
                                     </span>
                                   </td>
                                   <td><span className="journal-cost-centre">{journal.cost_center || "—"}</span></td>
+                                  <td><span className="journal-cost-centre">{journal.project || "—"}</span></td>
                                   <td className="journal-overview-amount-cell">
                                     <div className="journal-overview-amount">
                                       <strong className="invoice-amount-value">
@@ -563,6 +565,10 @@ const JournalOverview = () => {
                                 <div>
                                   <span>Cost centre</span>
                                   <strong>{journal.cost_center || "—"}</strong>
+                                </div>
+                                <div>
+                                  <span>Project</span>
+                                  <strong>{journal.project || "—"}</strong>
                                 </div>
                                 <div>
                                   <span>Currency</span>
